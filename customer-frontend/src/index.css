@@ -1,0 +1,44 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer utilities {
+  .bg-prettyglitz {
+    background: linear-gradient(45deg, #FF1493, #8A2BE2, #FF00FF, #FF8C00, #FFD700);
+  }
+  .border-prettyglitz {
+    border-color: transparent;
+    background-image: linear-gradient(white, white), linear-gradient(45deg, #FF1493, #8A2BE2, #FF00FF, #FF8C00, #FFD700);
+    background-origin: border-box;
+    background-clip: padding-box, border-box;
+  }
+}
+
+body {
+  margin: 0;
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen',
+    'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue',
+    sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+.scrolling-carousel {
+  animation: scroll 30s linear infinite;
+}
+.scrolling-carousel:hover {
+  animation-play-state: paused;
+}
+@keyframes scroll {
+  0% { transform: translateX(0); }
+  100% { transform: translateX(-50%); }
+}
+
+/* Hide scrollbar for category tabs */
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+.no-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
