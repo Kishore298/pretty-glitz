@@ -1,33 +1,49 @@
 import React, { useContext } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { CartContext } from '../context/CartContext';
-import { AuthContext } from '../context/AuthContext';
+
 import { motion, AnimatePresence } from 'framer-motion';
 import { Trash2, ArrowRight } from 'lucide-react';
+import { useTheme } from '../context/ThemeContext';
 
 const Cart = () => {
   const { cartItems, updateQuantity, removeFromCart, getCartTotal } = useContext(CartContext);
-  const { user } = useContext(AuthContext);
+
   const navigate = useNavigate();
+  const { isDark } = useTheme();
 
   const handleCheckout = () => {
-    if (!user) {
-      navigate('/login?redirect=/checkout');
-    } else {
-      navigate('/checkout');
-    }
+    navigate('/checkout');
   };
+
+  const cardBg = isDark ? '#1a1a2a' : '#ffffff';
+  const cardBorder = isDark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.08)';
 
   if (cartItems.length === 0) {
     return (
-      <div className="min-h-screen pt-32 pb-20 flex flex-col items-center justify-center bg-white">
-        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="text-center">
-          <div className="w-24 h-24 bg-gray-50 rounded-full flex items-center justify-center mx-auto mb-6">
-            <span className="text-4xl">🛒</span>
+      <div style={{ minHeight: '100vh', paddingTop: 80, paddingBottom: 100, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }}>
+        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} style={{ textAlign: 'center' }}>
+          <div style={{ width: 100, height: 100, borderRadius: '50%', background: 'var(--bg-secondary)', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 24px', border: `1px solid ${cardBorder}` }}>
+            <span style={{ fontSize: '3rem' }}>🛍️</span>
           </div>
-          <h2 className="text-3xl font-bold text-gray-900 mb-4 tracking-widest uppercase">Cart is Empty</h2>
-          <p className="text-gray-500 mb-8 max-w-sm mx-auto text-sm">Looks like you haven't added anything yet. Discover our premium collections to find something beautiful.</p>
-          <Link to="/" className="inline-block bg-gray-900 text-white px-8 py-4 uppercase tracking-widest text-sm font-semibold hover:bg-black transition shadow-xl shadow-gray-200">
+          <h2 style={{ fontSize: '2rem', fontFamily: 'Outfit, sans-serif', fontWeight: 800, color: 'var(--text)', marginBottom: 16, textTransform: 'uppercase', letterSpacing: '0.1em' }}>
+            Cart is Empty
+          </h2>
+          <p style={{ color: 'var(--text-secondary)', marginBottom: 32, maxWidth: 360, margin: '0 auto 32px', fontSize: '0.95rem', lineHeight: 1.6 }}>
+            Looks like you haven't added anything yet. Discover our premium collections to find something beautiful.
+          </p>
+          <Link to="/" style={{
+            display: 'inline-flex', alignItems: 'center', gap: 8,
+            background: isDark ? '#fff' : '#0f0f12',
+            color: isDark ? '#000' : '#fff',
+            padding: '16px 36px', borderRadius: 12,
+            fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.1em',
+            textDecoration: 'none', fontSize: '0.85rem',
+            transition: 'transform 0.2s',
+          }}
+          onMouseEnter={e => e.currentTarget.style.transform = 'translateY(-2px)'}
+          onMouseLeave={e => e.currentTarget.style.transform = 'none'}
+          >
             Continue Shopping
           </Link>
         </motion.div>
@@ -36,59 +52,68 @@ const Cart = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 pt-28 pb-24">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <h1 className="text-2xl md:text-3xl font-bold text-gray-900 mb-10 tracking-widest uppercase border-b border-gray-200 pb-4">Shopping Bag</h1>
+    <div style={{ minHeight: '100vh', paddingTop: 80, paddingBottom: 100 }}>
+      <div style={{ maxWidth: 1280, margin: '0 auto', padding: '0 24px' }}>
+        <h1 style={{ fontSize: 'clamp(1.2rem, 4vw, 2rem)', fontFamily: 'Outfit, sans-serif', fontWeight: 800, color: 'var(--text)', marginBottom: 40, textTransform: 'uppercase', letterSpacing: '0.1em', borderBottom: `1px solid ${cardBorder}`, paddingBottom: 16 }}>
+          Shopping Bag
+        </h1>
 
-        <div className="flex flex-col lg:flex-row gap-12">
+        <div style={{ display: 'flex', flexWrap: 'wrap', gap: 48 }}>
           {/* Cart Items */}
-          <div className="flex-1">
-            <div className="bg-white shadow-sm border border-gray-100 rounded-sm overflow-hidden">
-              <ul className="divide-y divide-gray-100">
+          <div style={{ flex: '1 1 600px' }}>
+            <div style={{ background: cardBg, borderRadius: 20, border: `1px solid ${cardBorder}`, overflow: 'hidden' }}>
+              <ul style={{ listStyle: 'none', padding: 0, margin: 0 }}>
                 <AnimatePresence>
-                  {cartItems.map((item) => {
+                  {cartItems.map((item, idx) => {
                     const uniqueKey = `${item.product._id}-${item.size || 'none'}`;
+                    const isLast = idx === cartItems.length - 1;
                     return (
                       <motion.li 
                         key={uniqueKey}
-                        layout
-                        initial={{ opacity: 0, y: 10 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        exit={{ opacity: 0, height: 0, overflow: 'hidden' }}
-                        transition={{ duration: 0.3 }}
-                        className="p-6 flex flex-col sm:flex-row items-start sm:items-center gap-6"
+                        layout initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, height: 0 }}
+                        style={{
+                          padding: '24px 32px', display: 'flex', gap: 24, flexWrap: 'wrap', alignItems: 'center',
+                          borderBottom: isLast ? 'none' : `1px solid ${cardBorder}`
+                        }}
                       >
-                        <div className="w-24 h-24 sm:w-28 sm:h-32 bg-gray-50 rounded-sm overflow-hidden flex-shrink-0 border border-gray-100">
+                        <div style={{ width: 100, height: 120, borderRadius: 12, background: 'var(--bg-secondary)', overflow: 'hidden', flexShrink: 0 }}>
                           {item.product.images?.[0] ? (
-                            <img src={item.product.images[0].url} alt="" className="w-full h-full object-cover" />
+                            <img src={item.product.images[0].url} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
                           ) : (
-                            <span className="text-xs text-gray-400 h-full w-full flex items-center justify-center">No Img</span>
+                            <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>No Img</span>
                           )}
                         </div>
 
-                        <div className="flex-1 w-full">
-                          <Link to={`/product/${item.product._id}`} className="text-lg font-semibold text-gray-900 hover:text-pink-600 transition truncate block">
+                        <div style={{ flex: '1 1 200px' }}>
+                          <Link to={`/product/${item.product._id}`} style={{ fontSize: '1.1rem', fontWeight: 600, color: 'var(--text)', textDecoration: 'none', display: 'block', marginBottom: 4 }}>
                             {item.product.name}
                           </Link>
-                          <p className="text-xs text-gray-400 uppercase tracking-widest mt-1 mb-2">{item.product.subcategoryId?.name || item.product.category}</p>
+                          <p style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', textTransform: 'uppercase', letterSpacing: '0.1em', margin: '0 0 12px' }}>
+                            {item.product.category}
+                          </p>
                           
                           {item.size && (
-                            <p className="text-sm text-gray-500">Size: <span className="font-semibold text-gray-900 bg-gray-100 px-2 py-0.5 rounded ml-1">{item.size}</span></p>
+                            <p style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', margin: 0 }}>
+                              Size: <span style={{ fontWeight: 600, color: 'var(--text)', background: 'var(--bg-secondary)', padding: '2px 6px', borderRadius: 4, marginLeft: 6 }}>{item.size}</span>
+                            </p>
                           )}
-                          <p className="text-sm font-semibold text-gray-900 mt-3">₹{item.product.price}</p>
+                          <p style={{ fontSize: '1.1rem', fontWeight: 700, color: 'var(--text)', marginTop: 12, fontFamily: 'Outfit, sans-serif' }}>
+                            ₹{item.product.price}
+                          </p>
                         </div>
 
-                        <div className="flex items-center space-x-4 w-full sm:w-auto justify-between sm:justify-end mt-4 sm:mt-0">
-                          <div className="flex items-center border border-gray-300 rounded-sm h-10 w-28">
-                            <button onClick={() => updateQuantity(item.product._id, item.size, item.quantity - 1)} className="flex-1 h-full text-gray-600 hover:bg-gray-100 transition">-</button>
-                            <span className="flex-1 text-center text-sm font-medium">{item.quantity}</span>
-                            <button onClick={() => updateQuantity(item.product._id, item.size, item.quantity + 1)} className="flex-1 h-full text-gray-600 hover:bg-gray-100 transition">+</button>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 24, marginLeft: 'auto' }}>
+                          <div style={{ display: 'flex', alignItems: 'center', border: `1px solid var(--border-strong)`, borderRadius: 8, height: 40, width: 110 }}>
+                            <button onClick={() => updateQuantity(item.product._id, item.size, item.quantity - 1)} style={{ flex: 1, height: '100%', background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-secondary)' }}>-</button>
+                            <span style={{ flex: 1, textAlign: 'center', fontSize: '0.9rem', fontWeight: 600, color: 'var(--text)' }}>{item.quantity}</span>
+                            <button onClick={() => updateQuantity(item.product._id, item.size, item.quantity + 1)} style={{ flex: 1, height: '100%', background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-secondary)' }}>+</button>
                           </div>
                           
                           <button 
                             onClick={() => removeFromCart(item.product._id, item.size)}
-                            className="text-gray-400 hover:text-red-500 transition p-2"
-                            title="Remove item"
+                            style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-muted)', transition: 'color 0.2s', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 8 }}
+                            onMouseEnter={e => e.currentTarget.style.color = '#ef4444'}
+                            onMouseLeave={e => e.currentTarget.style.color = 'var(--text-muted)'}
                           >
                             <Trash2 size={20} />
                           </button>
@@ -102,36 +127,46 @@ const Cart = () => {
           </div>
 
           {/* Order Summary */}
-          <div className="w-full lg:w-[380px]">
-            <div className="bg-white shadow-sm border border-gray-100 p-8 rounded-sm sticky top-32">
-              <h2 className="text-lg font-semibold text-gray-900 uppercase tracking-widest mb-6">Order Summary</h2>
+          <div style={{ flex: '1 1 350px', maxWidth: 450 }}>
+            <div style={{ background: cardBg, borderRadius: 20, border: `1px solid ${cardBorder}`, padding: 32, position: 'sticky', top: 120 }}>
+              <h2 style={{ fontSize: '1.1rem', fontWeight: 700, color: 'var(--text)', textTransform: 'uppercase', letterSpacing: '0.1em', margin: '0 0 24px', borderBottom: `1px solid ${cardBorder}`, paddingBottom: 16 }}>
+                Order Summary
+              </h2>
               
-              <div className="space-y-4 mb-6 text-sm text-gray-600 border-b border-gray-100 pb-6">
-                <div className="flex justify-between">
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 16, borderBottom: `1px solid ${cardBorder}`, paddingBottom: 24, marginBottom: 24 }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.9rem', color: 'var(--text-secondary)' }}>
                   <span>Subtotal</span>
-                  <span className="font-medium text-gray-900">₹{getCartTotal()}</span>
+                  <span style={{ fontWeight: 600, color: 'var(--text)' }}>₹{getCartTotal()}</span>
                 </div>
-                <div className="flex justify-between">
+                <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.9rem', color: 'var(--text-secondary)' }}>
                   <span>Shipping</span>
-                  <span className="text-xs text-gray-400 font-medium">Calculated on WhatsApp</span>
+                  <span style={{ fontSize: '0.75rem', fontWeight: 500 }}>Calculated on WhatsApp</span>
                 </div>
               </div>
 
-              <div className="mb-8 flex justify-between items-center">
-                <span className="text-base font-semibold text-gray-900 uppercase tracking-wider">Total</span>
-                <span className="text-2xl font-bold text-gray-900">₹{getCartTotal()}</span>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 32 }}>
+                <span style={{ fontSize: '1rem', fontWeight: 700, color: 'var(--text)', textTransform: 'uppercase', letterSpacing: '0.1em' }}>Total</span>
+                <span style={{ fontSize: '1.8rem', fontWeight: 800, color: 'var(--text)', fontFamily: 'Outfit, sans-serif' }}>₹{getCartTotal()}</span>
               </div>
 
               <button 
                 onClick={handleCheckout}
-                className="w-full bg-gray-900 text-white py-4 flex items-center justify-center space-x-2 text-sm font-bold tracking-widest uppercase hover:bg-black transition shadow-xl shadow-gray-200"
+                style={{
+                  width: '100%', padding: '18px', background: 'linear-gradient(135deg, #FF1493, #8A2BE2)',
+                  color: 'white', border: 'none', borderRadius: 12,
+                  fontSize: '0.9rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.1em',
+                  cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 10,
+                  transition: 'transform 0.2s, box-shadow 0.2s',
+                  boxShadow: '0 8px 30px rgba(138,43,226,0.3)',
+                }}
+                onMouseEnter={e => { e.currentTarget.style.transform = 'translateY(-2px)'; e.currentTarget.style.boxShadow = '0 12px 40px rgba(138,43,226,0.4)'; }}
+                onMouseLeave={e => { e.currentTarget.style.transform = 'none'; e.currentTarget.style.boxShadow = '0 8px 30px rgba(138,43,226,0.3)'; }}
               >
-                <span>Proceed to Checkout</span>
-                <ArrowRight size={18} />
+                Proceed to Checkout <ArrowRight size={18} />
               </button>
 
-              <div className="mt-6 flex items-center justify-center space-x-2 text-xs text-gray-400">
-                <span>Secure ordering via WhatsApp</span>
+              <div style={{ textAlign: 'center', marginTop: 20, fontSize: '0.75rem', color: 'var(--text-muted)' }}>
+                Secure ordering via WhatsApp
               </div>
             </div>
           </div>

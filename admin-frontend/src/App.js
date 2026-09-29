@@ -4,9 +4,9 @@ import { AuthProvider, AuthContext } from './context/AuthContext';
 import Login from './pages/Login';
 import Dashboard from './pages/Dashboard';
 import Products from './pages/Products';
-import AddEditProduct from './pages/AddEditProduct';
-import Subcategories from './pages/Subcategories';
 import Categories from './pages/Categories';
+import Subcategories from './pages/Subcategories';
+import Offers from './pages/Offers';
 
 const ProtectedRoute = ({ children }) => {
   const { admin, loading } = useContext(AuthContext);
@@ -25,9 +25,9 @@ function App() {
           <Route path="/login" element={<Login />} />
           <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
           <Route path="/products" element={<ProtectedRoute><Products /></ProtectedRoute>} />
-          <Route path="/products/new" element={<ProtectedRoute><AddEditProduct /></ProtectedRoute>} />
-          <Route path="/products/edit/:id" element={<ProtectedRoute><AddEditProduct /></ProtectedRoute>} />
+          <Route path="/categories" element={<ProtectedRoute><Categories /></ProtectedRoute>} />
           <Route path="/subcategories" element={<ProtectedRoute><Subcategories /></ProtectedRoute>} />
+          <Route path="/offers" element={<ProtectedRoute><Offers /></ProtectedRoute>} />
           <Route path="*" element={<Navigate to="/dashboard" />} />
         </Routes>
       </Router>

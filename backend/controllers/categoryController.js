@@ -1,13 +1,17 @@
 const Category = require('../models/Category');
 
 const seedCategories = async () => {
-    // Ensures the 3 fixed categories exist
     const cats = await Category.find();
     if(cats.length === 0) {
         await Category.insertMany([
-          {name: 'Bangles'}, 
-          {name: 'Artificial Flowers'}, 
-          {name: 'Hair Accessories'}
+          {name: 'glass bangles'}, 
+          {name: 'Valaikaappu bangles'}, 
+          {name: 'Antique bangles'},
+          {name: 'wedding bangles'},
+          {name: 'Gift box combo'},
+          {name: 'artifical flowers'},
+          {name: 'jumkhas'},
+          {name: 'jewels'}
         ]);
     }
 }
@@ -22,11 +26,30 @@ const getCategories = async (req, res) => {
   }
 };
 
+const createCategory = async (req, res) => {
+  try {
+    const newCategory = new Category(req.body);
+    const saved = await newCategory.save();
+    res.json(saved);
+  } catch (error) {
+    res.status(500).json({ message: 'Server error' });
+  }
+};
+
 const updateCategory = async (req, res) => {
   try {
-    const { bannerImage, description } = req.body;
-    const category = await Category.findByIdAndUpdate(req.params.id, { bannerImage, description }, { new: true });
+    const { name, bannerImage, description } = req.body;
+    const category = await Category.findByIdAndUpdate(req.params.id, { name, bannerImage, description }, { new: true });
     res.json(category);
+  } catch (error) {
+    res.status(500).json({ message: 'Server error' });
+  }
+};
+
+const deleteCategory = async (req, res) => {
+  try {
+    await Category.findByIdAndDelete(req.params.id);
+    res.json({ message: 'Category deleted' });
   } catch (error) {
     res.status(500).json({ message: 'Server error' });
   }
@@ -34,7 +57,7 @@ const updateCategory = async (req, res) => {
 
 const updateCategoryOrders = async (req, res) => {
   try {
-    const { items } = req.body; // Array of { id, order }
+    const { items } = req.body;
     const updates = items.map(item => 
       Category.findByIdAndUpdate(item.id, { order: item.order })
     );
@@ -45,4 +68,4 @@ const updateCategoryOrders = async (req, res) => {
   }
 };
 
-module.exports = { getCategories, updateCategory, updateCategoryOrders };
+module.exports = { getCategories, createCategory, updateCategory, deleteCategory, updateCategoryOrders };

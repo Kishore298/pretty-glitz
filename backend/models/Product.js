@@ -8,10 +8,16 @@ const productSchema = new mongoose.Schema({
   
   category: { 
     type: String, 
-    enum: ['Bangles', 'Artificial Flowers', 'Hair Accessories'], 
     required: true 
   },
+  
+  // Specific for Gift Boxes
+  giftBoxDetails: { type: String },
+  
+  // Specific for Artificial Flowers
   subcategoryId: { type: mongoose.Schema.Types.ObjectId, ref: 'Subcategory' },
+  
+  isOffer: { type: Boolean, default: false },
   
   // Cloudinary image storage
   images: [{
@@ -27,6 +33,7 @@ const productSchema = new mongoose.Schema({
   
   isFlagship: { type: Boolean, default: false },
   isActive: { type: Boolean, default: true },
+  inStock: { type: Boolean, default: true },
   order: { type: Number, default: 0 }
 }, { timestamps: true });
 

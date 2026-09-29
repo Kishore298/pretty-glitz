@@ -1,4 +1,8 @@
 require('dotenv').config();
+const dns = require("node:dns");
+
+// Force Node.js to use public DNS servers to resolve MongoDB SRV records
+dns.setServers(["8.8.8.8", "8.8.4.4"]);
 const mongoose = require('mongoose');
 const bcrypt = require('bcryptjs');
 const User = require('./models/User');
@@ -25,7 +29,7 @@ const createAdmin = async () => {
       username: 'admin',
       password: hashedPassword
     });
-    
+
     console.log('Admin created successfully.');
     console.log('Username: admin');
     console.log('Password: password123');

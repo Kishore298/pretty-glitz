@@ -1,4 +1,8 @@
 require('dotenv').config();
+const dns = require("node:dns");
+
+// Force Node.js to use public DNS servers to resolve MongoDB SRV records
+dns.setServers(["8.8.8.8", "8.8.4.4"]);
 const express = require('express');
 const cors = require('cors');
 const helmet = require('helmet');
@@ -18,10 +22,9 @@ connectDB();
 
 // Routes
 app.use('/api/admin/auth', adminAuthRoutes);
-app.use('/api/customer/auth', require('./routes/customerAuthRoutes'));
 app.use('/api/products', require('./routes/productRoutes'));
-app.use('/api/subcategories', require('./routes/subcategoryRoutes'));
 app.use('/api/categories', require('./routes/categoryRoutes'));
+app.use('/api/subcategories', require('./routes/subcategoryRoutes'));
 
 // Basic Route
 app.get('/api', (req, res) => {

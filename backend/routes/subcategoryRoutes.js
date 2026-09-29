@@ -1,17 +1,10 @@
 const express = require('express');
 const router = express.Router();
-const { createSubcategory, getSubcategories, updateSubcategory, deleteSubcategory } = require('../controllers/subcategoryController');
-const { protectAdmin } = require('../middleware/authMiddleware');
+const { createSubcategory, getSubcategories, deleteSubcategory } = require('../controllers/subcategoryController');
+const { protect } = require('../middleware/authMiddleware');
 
-router.route('/')
-  .post(protectAdmin, createSubcategory)
-  .get(getSubcategories);
-
-router.route('/reorder')
-  .put(protectAdmin, require('../controllers/subcategoryController').updateSubcategoryOrders);
-
-router.route('/:id')
-  .put(protectAdmin, updateSubcategory)
-  .delete(protectAdmin, deleteSubcategory);
+router.post('/', protect, createSubcategory);
+router.get('/', getSubcategories);
+router.delete('/:id', protect, deleteSubcategory);
 
 module.exports = router;

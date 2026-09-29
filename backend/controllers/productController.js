@@ -2,10 +2,10 @@ const Product = require('../models/Product');
 
 const createProduct = async (req, res) => {
   try {
-    const { name, description, price, originalPrice, category, subcategoryId, images, sizes, isFlagship, isActive } = req.body;
+    const { name, description, price, originalPrice, category, subcategoryId, giftBoxDetails, inStock, images, sizes, isFlagship, isOffer, isActive } = req.body;
     
     // Core Bangle logic: sizes are ONLY saved for Bangles.
-    const productSizes = category === 'Bangles' ? sizes : [];
+    const productSizes = (category || '').toLowerCase().includes('bangles') ? sizes : [];
 
     const product = new Product({
       name,
@@ -13,10 +13,13 @@ const createProduct = async (req, res) => {
       price,
       originalPrice,
       category,
-      subcategoryId,
+      subcategoryId: subcategoryId || undefined,
+      giftBoxDetails,
+      inStock,
       images,
       sizes: productSizes,
       isFlagship,
+      isOffer,
       isActive
     });
 
@@ -33,6 +36,7 @@ const getProducts = async (req, res) => {
     const query = {};
     if (req.query.category) query.category = req.query.category;
     if (req.query.isFlagship === 'true') query.isFlagship = true;
+    if (req.query.isOffer === 'true') query.isOffer = true;
     
     const products = await Product.find(query)
       .populate('subcategoryId', 'name')
@@ -55,7 +59,7 @@ const getProductById = async (req, res) => {
 
 const updateProduct = async (req, res) => {
   try {
-    const { name, description, price, originalPrice, category, subcategoryId, images, sizes, isFlagship, isActive } = req.body;
+    const { name, description, price, originalPrice, category, subcategoryId, giftBoxDetails, inStock, images, sizes, isFlagship, isOffer, isActive } = req.body;
     
     const product = await Product.findById(req.params.id);
     if (!product) return res.status(404).json({ message: 'Product not found' });
@@ -66,12 +70,15 @@ const updateProduct = async (req, res) => {
     product.originalPrice = originalPrice !== undefined ? originalPrice : product.originalPrice;
     product.category = category !== undefined ? category : product.category;
     product.subcategoryId = subcategoryId !== undefined ? subcategoryId : product.subcategoryId;
+    product.giftBoxDetails = giftBoxDetails !== undefined ? giftBoxDetails : product.giftBoxDetails;
+    product.inStock = inStock !== undefined ? inStock : product.inStock;
     product.images = images !== undefined ? images : product.images;
     product.isFlagship = isFlagship !== undefined ? isFlagship : product.isFlagship;
+    product.isOffer = isOffer !== undefined ? isOffer : product.isOffer;
     product.isActive = isActive !== undefined ? isActive : product.isActive;
 
     // Core Bangle update logic
-    if (product.category === 'Bangles') {
+    if ((product.category || '').toLowerCase().includes('bangles')) {
       product.sizes = sizes !== undefined ? sizes : product.sizes;
     } else {
       product.sizes = []; // Strips out sizes if category changed away from Bangles

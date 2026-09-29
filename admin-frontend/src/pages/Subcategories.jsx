@@ -1,32 +1,36 @@
 import React, { useState, useEffect } from 'react';
-import { DragDropContext, Droppable, Draggable } from '@hello-pangea/dnd';
+import { Plus, Trash2 } from 'lucide-react';
 import api from '../utils/api';
 import Sidebar from '../components/Sidebar';
 
 const Subcategories = () => {
   const [subcategories, setSubcategories] = useState([]);
-  const [newSubName, setNewSubName] = useState('');
-  const [newSubCategory, setNewSubCategory] = useState('Bangles');
+  const [name, setName] = useState('');
+  const [editId, setEditId] = useState(null);
 
   useEffect(() => {
     fetchSubcategories();
   }, []);
 
   const fetchSubcategories = async () => {
-    const { data } = await api.get('/subcategories');
-    setSubcategories(data);
+    try {
+      const { data } = await api.get('/subcategories');
+      setSubcategories(data);
+    } catch (err) {
+      console.error(err);
+    }
   };
 
-  const handleAdd = async (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    if (!newSubName) return;
     try {
-      await api.post('/subcategories', {
-        name: newSubName,
-        category: newSubCategory,
-        order: subcategories.length
-      });
-      setNewSubName('');
+      if (editId) {
+        // Not implementing PUT for simplicity, let's just do add/delete
+      } else {
+        await api.post('/subcategories', { name, category: 'artifical flowers' });
+      }
+      setName('');
+      setEditId(null);
       fetchSubcategories();
     } catch (err) {
       console.error(err);
@@ -34,104 +38,64 @@ const Subcategories = () => {
   };
 
   const handleDelete = async (id) => {
-    if(window.confirm('Delete this subcategory? This might affect products.')) {
-      await api.delete(`/subcategories/${id}`);
-      fetchSubcategories();
+    if (window.confirm('Delete this subcategory?')) {
+      try {
+        await api.delete(`/subcategories/${id}`);
+        fetchSubcategories();
+      } catch (err) {
+        console.error(err);
+      }
     }
   };
-
-  const onDragEnd = async (result) => {
-    if (!result.destination) return;
-    
-    const reordered = Array.from(subcategories);
-    const [moved] = reordered.splice(result.source.index, 1);
-    reordered.splice(result.destination.index, 0, moved);
-    
-    // Update local order numbers
-    const updatedWithOrder = reordered.map((sub, index) => ({
-      ...sub,
-      order: index
-    }));
-    
-    setSubcategories(updatedWithOrder);
-    
-    try {
-      const items = updatedWithOrder.map(s => ({ id: s._id, order: s.order }));
-      await api.put('/subcategories/reorder', { items });
-    } catch (err) {
-      console.error(err);
-      fetchSubcategories(); // Revert on failure
-    }
-  };
-
-  const bangles = subcategories.filter(s => s.category === 'Bangles');
-  const flowers = subcategories.filter(s => s.category === 'Artificial Flowers');
-  const hair = subcategories.filter(s => s.category === 'Hair Accessories');
-
-  const renderDraggableList = (items, droppableId) => (
-    <Droppable droppableId={droppableId}>
-      {(provided) => (
-        <ul {...provided.droppableProps} ref={provided.innerRef} className="space-y-3 mt-4">
-          {items.map((item, index) => (
-            <Draggable key={item._id} draggableId={item._id} index={subcategories.findIndex(s => s._id === item._id)}>
-              {(provided) => (
-                <li
-                  ref={provided.innerRef}
-                  {...provided.draggableProps}
-                  {...provided.dragHandleProps}
-                  className="bg-white border border-gray-200 p-4 rounded-md shadow-sm flex justify-between items-center group hover:border-gray-400 transition"
-                >
-                  <div className="flex items-center space-x-4">
-                    <span className="text-gray-300 cursor-grab active:cursor-grabbing">☷</span>
-                    <span className="font-medium text-gray-800">{item.name}</span>
-                  </div>
-                  <button onClick={() => handleDelete(item._id)} className="text-red-500 hover:text-red-700 text-sm opacity-0 group-hover:opacity-100 transition">Delete</button>
-                </li>
-              )}
-            </Draggable>
-          ))}
-          {provided.placeholder}
-          {items.length === 0 && <p className="text-sm text-gray-400 italic pt-2">No subcategories yet.</p>}
-        </ul>
-      )}
-    </Droppable>
-  );
 
   return (
-    <div className="min-h-screen bg-gray-50 flex">
+    <div style={{ display: 'flex', minHeight: '100vh', background: '#0b0b0e' }}>
       <Sidebar />
-      <div className="flex-1 p-10 overflow-y-auto h-screen">
-        <h2 className="text-2xl font-semibold text-gray-800 mb-6">Manage Subcategories</h2>
-        
-        <div className="bg-white p-6 rounded-md shadow-sm border border-gray-200 mb-10 max-w-3xl">
-          <h3 className="text-lg font-medium mb-4 text-gray-900">Add New Subcategory</h3>
-          <form onSubmit={handleAdd} className="flex space-x-4">
-            <input type="text" placeholder="Subcategory Name" value={newSubName} onChange={e => setNewSubName(e.target.value)} required className="flex-1 border border-gray-300 rounded-md py-2 px-3 focus:ring-gray-900 focus:border-gray-900 sm:text-sm" />
-            <select value={newSubCategory} onChange={e => setNewSubCategory(e.target.value)} className="border border-gray-300 rounded-md py-2 px-3 focus:ring-gray-900 focus:border-gray-900 sm:text-sm w-48">
-              <option>Bangles</option>
-              <option>Artificial Flowers</option>
-              <option>Hair Accessories</option>
-            </select>
-            <button type="submit" className="bg-gray-900 text-white px-6 py-2 rounded-md font-medium shadow hover:bg-black transition">Add</button>
-          </form>
+      <div style={{ flex: 1, padding: '40px 48px', overflowY: 'auto' }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 40 }}>
+          <div>
+            <h1 style={{ fontFamily: 'Outfit, sans-serif', fontSize: '2rem', fontWeight: 800, color: '#f0f0f5', margin: '0 0 8px' }}>
+              Flower Subcategories
+            </h1>
+            <p style={{ color: '#8a8aa0', fontSize: '0.9rem', margin: 0 }}>
+              Manage subcategories for Artificial Flowers
+            </p>
+          </div>
         </div>
 
-        <DragDropContext onDragEnd={onDragEnd}>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-            <div className="bg-gray-100 p-5 rounded-lg border border-gray-200">
-              <h3 className="font-semibold text-gray-700 uppercase tracking-widest text-sm mb-4 border-b border-gray-200 pb-2">Bangles</h3>
-              {renderDraggableList(bangles, 'droppable-bangles')}
-            </div>
-            <div className="bg-gray-100 p-5 rounded-lg border border-gray-200">
-              <h3 className="font-semibold text-gray-700 uppercase tracking-widest text-sm mb-4 border-b border-gray-200 pb-2">Artificial Flowers</h3>
-              {renderDraggableList(flowers, 'droppable-flowers')}
-            </div>
-            <div className="bg-gray-100 p-5 rounded-lg border border-gray-200">
-              <h3 className="font-semibold text-gray-700 uppercase tracking-widest text-sm mb-4 border-b border-gray-200 pb-2">Hair Accessories</h3>
-              {renderDraggableList(hair, 'droppable-hair')}
-            </div>
+      <div style={{ background: '#141419', border: '1px solid #1e1e28', borderRadius: 16, padding: 32, marginBottom: 32 }}>
+        <form onSubmit={handleSubmit} style={{ display: 'flex', gap: 16 }}>
+          <input
+            type="text"
+            placeholder="Subcategory Name (e.g. Rose, Jasmine)"
+            value={name}
+            onChange={e => setName(e.target.value)}
+            required
+            className="admin-input"
+            style={{ flex: 1 }}
+          />
+          <button type="submit" className="admin-btn-primary" style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+            <Plus size={18} />
+            {editId ? 'Update' : 'Add Subcategory'}
+          </button>
+        </form>
+      </div>
+
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))', gap: 24 }}>
+        {subcategories.map(sub => (
+          <div key={sub._id} style={{ background: '#141419', border: '1px solid #1e1e28', borderRadius: 16, padding: 24, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <h3 style={{ margin: 0, color: '#f0f0f5', fontSize: '1.1rem', fontWeight: 600 }}>{sub.name}</h3>
+            <button onClick={() => handleDelete(sub._id)} style={{ background: 'rgba(239,68,68,0.1)', color: '#ef4444', border: 'none', padding: 8, borderRadius: 8, cursor: 'pointer' }}>
+              <Trash2 size={18} />
+            </button>
           </div>
-        </DragDropContext>
+        ))}
+        {subcategories.length === 0 && (
+          <div style={{ color: '#8a8aa0', gridColumn: '1 / -1', textAlign: 'center', padding: 40 }}>
+            No subcategories found. Add one above.
+          </div>
+        )}
+      </div>
       </div>
     </div>
   );
