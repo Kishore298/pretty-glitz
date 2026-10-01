@@ -18,9 +18,9 @@ const GlitterBackground = () => {
     canvas.height = height;
 
     // Premium gold palette depending on theme
-    const COLORS = isDark 
+    const COLORS = isDark
       ? ['#D4AF37', '#F5C542', '#FFD700', '#FFE08A'] // Bright gold for dark mode
-      : ['#B8860B', '#CD853F', '#D2691E', '#8B6508']; // Dark/Antique gold for light mode
+      : ['#FFB90F', '#FFC125', '#FFD700', '#FF8C00']; // Brighter, more vibrant gold for light mode
 
     class Particle {
       constructor(initialY = null) {
@@ -59,10 +59,10 @@ const GlitterBackground = () => {
         ctx.save();
         ctx.globalAlpha = safeOpacity;
         ctx.fillStyle = this.color;
-        
+
         // Add subtle shadow for visibility and brighter glow
-        ctx.shadowColor = isDark ? 'rgba(255, 215, 0, 0.4)' : 'rgba(139, 69, 19, 0.6)';
-        ctx.shadowBlur = isDark ? 6 : 8;
+        ctx.shadowColor = isDark ? 'rgba(255, 215, 0, 0.4)' : 'rgba(255, 185, 15, 0.4)';
+        ctx.shadowBlur = isDark ? 6 : 4;
 
         if (this.shape === 'diamond') {
           // Diamond sparkle
@@ -81,7 +81,7 @@ const GlitterBackground = () => {
           ctx.globalAlpha = safeOpacity * 0.25;
           const grad = ctx.createRadialGradient(0, 0, 0, 0, 0, r * 2.5);
           grad.addColorStop(0, this.color);
-          grad.addColorStop(1, 'transparent');
+          grad.addColorStop(1, isDark ? 'rgba(0,0,0,0)' : 'rgba(255,255,255,0)');
           ctx.fillStyle = grad;
           ctx.beginPath();
           ctx.arc(0, 0, r * 2.5, 0, Math.PI * 2);
@@ -98,7 +98,7 @@ const GlitterBackground = () => {
             ctx.globalAlpha = safeOpacity * 0.2;
             const grad = ctx.createRadialGradient(0, 0, 0, 0, 0, this.radius * 3);
             grad.addColorStop(0, this.color);
-            grad.addColorStop(1, 'transparent');
+            grad.addColorStop(1, isDark ? 'rgba(0,0,0,0)' : 'rgba(255,255,255,0)');
             ctx.fillStyle = grad;
             ctx.beginPath();
             ctx.arc(0, 0, this.radius * 3, 0, Math.PI * 2);

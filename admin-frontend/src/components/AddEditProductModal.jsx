@@ -5,11 +5,11 @@ import api from '../utils/api';
 
 const field = (label, children, hint) => (
   <div>
-    <label style={{ display: 'block', fontSize: '0.8rem', color: '#8a8aa0', fontWeight: 600, marginBottom: 8, letterSpacing: '0.05em', textTransform: 'uppercase' }}>
+    <label style={{ display: 'block', fontSize: '0.75rem', color: '#8a8aa0', fontWeight: 600, marginBottom: 4, letterSpacing: '0.05em', textTransform: 'uppercase' }}>
       {label}
     </label>
     {children}
-    {hint && <p style={{ fontSize: '0.75rem', color: '#3a3a50', marginTop: 5 }}>{hint}</p>}
+    {hint && <p style={{ fontSize: '0.7rem', color: '#4a4a60', marginTop: 2 }}>{hint}</p>}
   </div>
 );
 
@@ -25,6 +25,7 @@ const AddEditProductModal = ({ isOpen, onClose, productId, onSuccess, isOfferPre
   const [subcategories, setSubcategories] = useState([]);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState('');
+  const [uploadingImage, setUploadingImage] = useState(false);
 
   useEffect(() => {
     if (isOpen) {
@@ -76,6 +77,30 @@ const AddEditProductModal = ({ isOpen, onClose, productId, onSuccess, isOfferPre
     ...prev, sizes: prev.sizes.filter((_, i) => i !== index)
   }));
 
+  const handleImageUpload = async (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+
+    setUploadingImage(true);
+    const form = new FormData();
+    form.append('image', file);
+
+    try {
+      const { data } = await api.post('/upload', form, {
+        headers: { 'Content-Type': 'multipart/form-data' }
+      });
+      setFormData(prev => ({
+        ...prev,
+        images: [...(prev.images || []), { url: data.url }]
+      }));
+    } catch (err) {
+      setError('Failed to upload image. Please try again.');
+    } finally {
+      setUploadingImage(false);
+      e.target.value = null;
+    }
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     setSaving(true); setError('');
@@ -93,7 +118,7 @@ const AddEditProductModal = ({ isOpen, onClose, productId, onSuccess, isOfferPre
 
   const sectionStyle = {
     background: '#141419', border: '1px solid #1e1e28',
-    borderRadius: 16, padding: '28px 32px', marginBottom: 20,
+    borderRadius: 12, padding: '16px 20px', marginBottom: 12,
   };
 
   if (!isOpen) return null;
@@ -102,11 +127,11 @@ const AddEditProductModal = ({ isOpen, onClose, productId, onSuccess, isOfferPre
     <div style={{ position: 'fixed', top: 0, left: 0, width: '100%', height: '100%', background: 'rgba(0,0,0,0.7)', backdropFilter: 'blur(4px)', zIndex: 1000, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 24 }}>
       <div style={{ background: '#0b0b0e', width: '100%', maxWidth: 800, maxHeight: '90vh', overflowY: 'auto', borderRadius: 16, border: '1px solid #1e1e28', padding: '32px 40px', position: 'relative' }} className="no-scrollbar">
         <button type="button" onClick={onClose} style={{ position: 'absolute', top: 24, right: 24, background: 'transparent', border: 'none', color: '#8a8aa0', cursor: 'pointer' }}><X size={24} /></button>
-        <div style={{ marginBottom: 32 }}>
-          <h1 style={{ fontFamily: 'Outfit, sans-serif', fontSize: '1.8rem', fontWeight: 800, color: '#f0f0f5', margin: 0 }}>
+        <div style={{ marginBottom: 16 }}>
+          <h1 style={{ fontFamily: 'Outfit, sans-serif', fontSize: '1.4rem', fontWeight: 800, color: '#f0f0f5', margin: 0 }}>
             {isEdit ? 'Edit Product' : 'Add New Product'}
           </h1>
-          <p style={{ color: '#4a4a60', fontSize: '0.85rem', marginTop: 6 }}>
+          <p style={{ color: '#4a4a60', fontSize: '0.75rem', marginTop: 4 }}>
             {isEdit ? 'Update product details and variations' : 'List a new item in your store'}
           </p>
         </div>
@@ -120,70 +145,54 @@ const AddEditProductModal = ({ isOpen, onClose, productId, onSuccess, isOfferPre
         <form onSubmit={handleSubmit}>
           {/* Basic Info */}
           <div style={sectionStyle}>
-            <h3 style={{ margin: '0 0 24px', fontSize: '0.8rem', color: '#4a4a60', fontWeight: 600, letterSpacing: '0.1em', textTransform: 'uppercase' }}>
+            <h3 style={{ margin: '0 0 12px', fontSize: '0.75rem', color: '#4a4a60', fontWeight: 600, letterSpacing: '0.1em', textTransform: 'uppercase' }}>
               Basic Information
             </h3>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
-              {field('Product Name',
-                <input type="text" name="name" required value={formData.name} onChange={handleChange} placeholder="e.g. Gold Plated Bangle Set" className="admin-input" />
-              )}
-              {field('Description',
-                <textarea name="description" required rows="4" value={formData.description} onChange={handleChange} placeholder="Describe this product..." className="admin-input" style={{ resize: 'vertical' }} />
-              )}
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 20 }}>
-                {field('Price (₹)',
-                  <input type="number" name="price" required value={formData.price} onChange={handleChange} placeholder="999" className="admin-input" />
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
+                {field('Product Name', <input type="text" name="name" required value={formData.name} onChange={handleChange} placeholder="e.g. Gold Plated Bangle Set" className="admin-input" />)}
+                {field('Main Category',
+                  <select name="category" value={formData.category} onChange={handleChange} className="admin-input">
+                    {categories.map(c => <option key={c._id} value={c.name}>{c.name}</option>)}
+                  </select>
                 )}
-                {field('Original Price (₹)', 
-                  <input type="number" name="originalPrice" value={formData.originalPrice} onChange={handleChange} placeholder="1499 (optional)" className="admin-input" />,
-                  'Shows as strikethrough to display discount'
-                )}
+              </div>
+              <div style={{ display: 'grid', gridTemplateColumns: '2fr 1fr', gap: 12 }}>
+                {field('Description', <textarea name="description" required rows="2" value={formData.description} onChange={handleChange} placeholder="Describe this product..." className="admin-input" style={{ resize: 'vertical' }} />)}
+                
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+                  {(formData.category?.toLowerCase() === 'artificial flowers' || formData.category?.toLowerCase() === 'bangles') && field('Subcategory',
+                    <select name="subcategoryId" value={formData.subcategoryId || ''} onChange={handleChange} className="admin-input">
+                      <option value="">-- Select --</option>
+                      {subcategories
+                        .filter(s => {
+                          const c = categories.find(cat => cat.name === formData.category);
+                          const sCatId = typeof s.category === 'object' ? s.category?._id : s.category;
+                          return c && sCatId === c._id;
+                        })
+                        .map(s => <option key={s._id} value={s._id}>{s.name}</option>)}
+                    </select>
+                  )}
+                  {formData.category?.toLowerCase() === 'gift box combo' && field('Gift Box Details',
+                    <textarea name="giftBoxDetails" required rows="2" value={formData.giftBoxDetails || ''} onChange={handleChange} placeholder="Items included..." className="admin-input" style={{ resize: 'vertical' }} />
+                  )}
+                </div>
+              </div>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
+                {field('Price (₹)', <input type="number" name="price" required value={formData.price} onChange={handleChange} placeholder="999" className="admin-input" />)}
+                {field('Original Price (₹)', <input type="number" name="originalPrice" value={formData.originalPrice} onChange={handleChange} placeholder="1499" className="admin-input" />)}
               </div>
             </div>
           </div>
 
-          {/* Category */}
-          <div style={sectionStyle}>
-            <h3 style={{ margin: '0 0 24px', fontSize: '0.8rem', color: '#4a4a60', fontWeight: 600, letterSpacing: '0.1em', textTransform: 'uppercase' }}>
-              Category
-            </h3>
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 20 }}>
-              {field('Main Category',
-                <select name="category" value={formData.category} onChange={handleChange} className="admin-input">
-                  {categories.map(c => <option key={c._id} value={c.name}>{c.name}</option>)}
-                </select>
-              )}
-              
-              {formData.category === 'artifical flowers' && field('Subcategory',
-                <select name="subcategoryId" value={formData.subcategoryId || ''} onChange={handleChange} className="admin-input">
-                  <option value="">-- Select Subcategory --</option>
-                  {subcategories.map(s => <option key={s._id} value={s._id}>{s.name}</option>)}
-                </select>
-              )}
-            </div>
-            
-            {formData.category === 'Gift box combo' && (
-              <div style={{ marginTop: 20 }}>
-                {field('Gift Box Included Items & Details',
-                  <textarea name="giftBoxDetails" required rows="3" value={formData.giftBoxDetails || ''} onChange={handleChange} placeholder="List items included in the gift box combo..." className="admin-input" style={{ resize: 'vertical' }} />
-                )}
-              </div>
-            )}
-          </div>
+
 
           {/* Bangle Sizes */}
           {(formData.category || '').toLowerCase().includes('bangles') && (
-            <div style={sectionStyle}>
-              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 20 }}>
-                <div>
-                  <h3 style={{ margin: 0, fontSize: '0.8rem', color: '#4a4a60', fontWeight: 600, letterSpacing: '0.1em', textTransform: 'uppercase' }}>
-                    Bangle Sizes
-                  </h3>
-                  <p style={{ fontSize: '0.75rem', color: '#3a3a50', marginTop: 4 }}>Customers must select a size before adding to cart</p>
-                </div>
-                <button type="button" onClick={handleAddSize} className="btn-primary">
-                  <Plus size={14} /> Add Size
-                </button>
+            <div style={{...sectionStyle, display: 'flex', flexDirection: 'column', gap: 12}}>
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                <h3 style={{ margin: 0, fontSize: '0.75rem', color: '#4a4a60', fontWeight: 600, letterSpacing: '0.1em', textTransform: 'uppercase' }}>Bangle Sizes</h3>
+                <button type="button" onClick={handleAddSize} className="btn-primary" style={{ padding: '4px 10px', fontSize: '0.7rem' }}><Plus size={12} /> Add Size</button>
               </div>
               {formData.sizes.length === 0
                 ? <p style={{ color: '#3a3a50', fontSize: '0.85rem', fontStyle: 'italic' }}>No sizes added. Customers won't be able to purchase this product until sizes are specified.</p>
@@ -204,43 +213,51 @@ const AddEditProductModal = ({ isOpen, onClose, productId, onSuccess, isOfferPre
 
           {/* Images */}
           <div style={sectionStyle}>
-            <h3 style={{ margin: '0 0 20px', fontSize: '0.8rem', color: '#4a4a60', fontWeight: 600, letterSpacing: '0.1em', textTransform: 'uppercase' }}>
+            <h3 style={{ margin: '0 0 12px', fontSize: '0.75rem', color: '#4a4a60', fontWeight: 600, letterSpacing: '0.1em', textTransform: 'uppercase' }}>
               Product Images
             </h3>
-            <p style={{ color: '#3a3a50', fontSize: '0.85rem', marginBottom: 16 }}>
-              Paste Cloudinary or any public image URLs below. The first image will be used as the cover.
-            </p>
-            {(formData.images || []).map((img, idx) => (
-              <div key={idx} style={{ display: 'flex', gap: 10, marginBottom: 10 }}>
-                <input
-                  type="url"
-                  value={img.url || ''}
-                  onChange={e => {
-                    const imgs = [...formData.images];
-                    imgs[idx] = { ...imgs[idx], url: e.target.value };
-                    setFormData({ ...formData, images: imgs });
-                  }}
-                  placeholder="https://res.cloudinary.com/..."
-                  className="admin-input"
-                />
-                <button type="button" onClick={() => {
-                  setFormData({ ...formData, images: formData.images.filter((_, i) => i !== idx) });
-                }} className="btn-danger">
-                  <Trash2 size={13} />
-                </button>
-              </div>
-            ))}
-            <button type="button" onClick={() => setFormData({ ...formData, images: [...(formData.images || []), { url: '', publicId: '' }] })} className="btn-secondary" style={{ marginTop: 4 }}>
-              + Add Image URL
-            </button>
+            
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: 12, marginBottom: 4 }}>
+              {(formData.images || []).map((img, idx) => (
+                <div key={idx} style={{ position: 'relative', width: '100%', aspectRatio: '1', borderRadius: 8, overflow: 'hidden', border: '1px solid #1e1e28' }}>
+                  <img src={img.url} alt={`Preview ${idx}`} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                  <button type="button" onClick={() => {
+                    setFormData({ ...formData, images: formData.images.filter((_, i) => i !== idx) });
+                  }} className="btn-danger" style={{ position: 'absolute', top: 4, right: 4, padding: 4, minWidth: 'auto', width: 24, height: 24, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                    <Trash2 size={13} />
+                  </button>
+                </div>
+              ))}
+              
+              <label style={{
+                display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
+                width: 80, height: 80, borderRadius: 8, border: '1px dashed #4a4a60',
+                cursor: uploadingImage ? 'not-allowed' : 'pointer', background: 'rgba(255,255,255,0.02)',
+                color: '#8a8aa0', transition: 'all 0.2s', gap: 4
+              }}
+              onMouseEnter={e => { if(!uploadingImage) e.currentTarget.style.borderColor = '#FF1493'; }}
+              onMouseLeave={e => { if(!uploadingImage) e.currentTarget.style.borderColor = '#4a4a60'; }}
+              >
+                <input type="file" accept="image/*" onChange={handleImageUpload} disabled={uploadingImage} style={{ display: 'none' }} />
+                {uploadingImage ? (
+                  <div style={{ width: 20, height: 20, borderRadius: '50%', border: '2px solid #4a4a60', borderTopColor: '#FF1493', animation: 'spin 1s linear infinite' }} />
+                ) : (
+                  <>
+                    <Plus size={24} />
+                    <span style={{ fontSize: '0.7rem', fontWeight: 500 }}>Upload</span>
+                  </>
+                )}
+              </label>
+            </div>
+            <style>{`@keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }`}</style>
           </div>
 
           {/* Settings */}
           <div style={sectionStyle}>
-            <h3 style={{ margin: '0 0 20px', fontSize: '0.8rem', color: '#4a4a60', fontWeight: 600, letterSpacing: '0.1em', textTransform: 'uppercase' }}>
+            <h3 style={{ margin: '0 0 12px', fontSize: '0.75rem', color: '#4a4a60', fontWeight: 600, letterSpacing: '0.1em', textTransform: 'uppercase' }}>
               Settings
             </h3>
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
               {[
                 { name: 'isFlagship', label: '★ Flagship Product', desc: 'Showcases in the homepage carousel' },
                 { name: 'isOffer', label: '🎁 Special Offer', desc: 'Displays in the special offers section' },

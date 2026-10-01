@@ -1,4 +1,6 @@
 const Category = require('../models/Category');
+const Product = require('../models/Product');
+const Subcategory = require('../models/Subcategory');
 
 const seedCategories = async () => {
     const cats = await Category.find();
@@ -19,7 +21,14 @@ const seedCategories = async () => {
 const getCategories = async (req, res) => {
   try {
     await seedCategories();
-    const categories = await Category.find().sort({ order: 1 });
+    const categories = await Category.find().sort({ order: 1 }).lean();
+    
+    // Add product counts
+    for (let cat of categories) {
+      cat.productCount = await Product.countDocuments({ category: cat.name });
+      cat.subcategoryCount = await Subcategory.countDocuments({ category: cat.name });
+    }
+    
     res.json(categories);
   } catch (error) {
     res.status(500).json({ message: 'Server error' });
@@ -38,8 +47,8 @@ const createCategory = async (req, res) => {
 
 const updateCategory = async (req, res) => {
   try {
-    const { name, bannerImage, description } = req.body;
-    const category = await Category.findByIdAndUpdate(req.params.id, { name, bannerImage, description }, { new: true });
+    const { name, bannerImage } = req.body;
+    const category = await Category.findByIdAndUpdate(req.params.id, { name, bannerImage }, { returnDocument: 'after' });
     res.json(category);
   } catch (error) {
     res.status(500).json({ message: 'Server error' });

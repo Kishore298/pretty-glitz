@@ -25,6 +25,7 @@ app.use('/api/admin/auth', adminAuthRoutes);
 app.use('/api/products', require('./routes/productRoutes'));
 app.use('/api/categories', require('./routes/categoryRoutes'));
 app.use('/api/subcategories', require('./routes/subcategoryRoutes'));
+app.use('/api/upload', require('./routes/uploadRoutes'));
 
 // Basic Route
 app.get('/api', (req, res) => {

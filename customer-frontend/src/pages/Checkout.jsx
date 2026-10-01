@@ -4,6 +4,7 @@ import { CartContext } from '../context/CartContext';
 
 import { motion } from 'framer-motion';
 import { useTheme } from '../context/ThemeContext';
+import { optimizeImageUrl } from '../utils/cloudinary';
 
 const Checkout = () => {
   const { cartItems, getCartTotal, clearCart } = useContext(CartContext);
@@ -138,7 +139,7 @@ const Checkout = () => {
                 {cartItems.map((item, idx) => (
                   <li key={idx} style={{ display: 'flex', gap: 16, padding: '16px 0', borderBottom: idx === cartItems.length - 1 ? 'none' : `1px solid ${cardBorder}` }}>
                     <div style={{ width: 64, height: 64, borderRadius: 8, background: 'var(--bg-secondary)', overflow: 'hidden', flexShrink: 0 }}>
-                      {item.product.images?.[0] && <img src={item.product.images[0].url} alt={item.product.name} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />}
+                      {item.product.images?.[0] && <img src={optimizeImageUrl(item.product.images[0].url, 150)} alt={item.product.name} loading="lazy" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />}
                     </div>
                     <div style={{ flex: 1 }}>
                       <h4 style={{ fontSize: '0.9rem', fontWeight: 600, color: 'var(--text)', margin: '0 0 4px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{item.product.name}</h4>

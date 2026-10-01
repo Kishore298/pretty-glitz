@@ -2,6 +2,7 @@ import React from 'react';
 import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { useTheme } from '../context/ThemeContext';
+import { optimizeImageUrl } from '../utils/cloudinary';
 
 const ProductCard = ({ product }) => {
   const { isDark } = useTheme();
@@ -24,8 +25,9 @@ const ProductCard = ({ product }) => {
         }}>
           {product.images && product.images[0] ? (
             <img 
-              src={product.images[0].url} 
+              src={optimizeImageUrl(product.images[0].url, 400)} 
               alt={product.name}
+              loading="lazy"
               style={{
                 width: '100%', height: '100%',
                 objectFit: 'cover',
@@ -78,7 +80,8 @@ const ProductCard = ({ product }) => {
           <h3 style={{
             fontSize: '0.95rem', fontWeight: 600,
             color: 'var(--text)',
-            whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis',
+            display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden',
+            lineHeight: '1.3', height: '2.6em',
             transition: 'color 0.2s',
           }}
           className="group-hover:text-prettyglitz"

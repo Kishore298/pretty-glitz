@@ -4,6 +4,7 @@ import api from '../utils/api';
 import { motion, AnimatePresence } from 'framer-motion';
 import { CartContext } from '../context/CartContext';
 import { useTheme } from '../context/ThemeContext';
+import { optimizeImageUrl } from '../utils/cloudinary';
 import { Check } from 'lucide-react';
 
 const ProductDetail = () => {
@@ -72,7 +73,7 @@ const ProductDetail = () => {
                   onMouseEnter={e => e.currentTarget.style.opacity = 1}
                   onMouseLeave={e => { if (activeImage !== idx) e.currentTarget.style.opacity = 0.6; }}
                 >
-                  <img src={img.url} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                  <img src={optimizeImageUrl(img.url, 150)} alt="" loading="lazy" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
                 </button>
               ))}
             </div>
@@ -83,8 +84,9 @@ const ProductDetail = () => {
                 <motion.img 
                   key={activeImage}
                   initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.3 }}
-                  src={product.images?.[activeImage]?.url} 
+                  src={optimizeImageUrl(product.images?.[activeImage]?.url, 800)} 
                   alt={product.name} 
+                  loading="lazy"
                   style={{ width: '100%', height: '100%', objectFit: 'cover' }} 
                 />
               </AnimatePresence>
@@ -191,7 +193,7 @@ const ProductDetail = () => {
                 <p style={{ whiteSpace: 'pre-wrap', fontSize: '0.95rem', color: 'var(--text-secondary)', lineHeight: 1.8, margin: 0 }}>
                   {product.description}
                 </p>
-                {product.category === 'Gift box combo' && product.giftBoxDetails && (
+                {product.category?.toLowerCase() === 'gift box combo' && product.giftBoxDetails && (
                   <>
                     <h3 style={{ fontSize: '0.85rem', fontWeight: 700, color: 'var(--text)', textTransform: 'uppercase', letterSpacing: '0.1em', marginTop: 24, marginBottom: 16 }}>
                       Included Items

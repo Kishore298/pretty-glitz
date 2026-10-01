@@ -2,21 +2,53 @@ import React, { useEffect, useState } from 'react';
 import { DragDropContext, Droppable, Draggable } from '@hello-pangea/dnd';
 import api from '../utils/api';
 import Sidebar from '../components/Sidebar';
-import { GripVertical, Pencil, Trash2, Plus } from 'lucide-react';
+import { Pencil, Trash2, Plus, Sparkles, Gem, Star, Heart, Flower2, Gift, Crown } from 'lucide-react';
+import ImageUpload from '../components/ImageUpload';
+import ConfirmModal from '../components/ConfirmModal';
+import toast from 'react-hot-toast';
 
-const catColors = {
-  'Bangles': { accent: '#fb7185', glow: 'rgba(251,113,133,0.3)' },
-  'Artificial Flowers': { accent: '#c084fc', glow: 'rgba(192,132,252,0.3)' },
-  'Jewels': { accent: '#fb923c', glow: 'rgba(251,146,60,0.3)' },
+const catGradients = [
+  { from: 'rgba(255,20,147,0.12)', to: 'rgba(138,43,226,0.04)', accent: '#FF1493', ring: '#FF1493' },
+  { from: 'rgba(138,43,226,0.12)', to: 'rgba(99,102,241,0.04)', accent: '#8A2BE2', ring: '#8A2BE2' },
+  { from: 'rgba(255,140,0,0.12)', to: 'rgba(255,215,0,0.04)', accent: '#FF8C00', ring: '#FF8C00' },
+  { from: 'rgba(255,0,255,0.1)', to: 'rgba(218,112,214,0.04)', accent: '#FF00FF', ring: '#FF00FF' },
+  { from: 'rgba(16,185,129,0.1)', to: 'rgba(52,211,153,0.04)', accent: '#10B981', ring: '#10B981' },
+  { from: 'rgba(245,158,11,0.1)', to: 'rgba(252,211,77,0.04)', accent: '#F59E0B', ring: '#F59E0B' },
+  { from: 'rgba(239,68,68,0.1)', to: 'rgba(252,165,165,0.04)', accent: '#EF4444', ring: '#EF4444' },
+  { from: 'rgba(99,102,241,0.1)', to: 'rgba(165,180,252,0.04)', accent: '#6366F1', ring: '#6366F1' },
+];
+
+const catIcons = {
+  'Bangles': <Sparkles size={24} />,
+  'Glass Bangles': <Gem size={24} />,
+  'Valaikaappu Bangles': <Star size={24} />,
+  'Antique Bangles': <Crown size={24} />,
+  'Wedding Bangles': <Heart size={24} />,
+  'Artificial Flowers': <Flower2 size={24} />,
+  'Gift Box Combo': <Gift size={24} />,
+  'Jumkhas': <Star size={24} />,
+  'Jewels': <Crown size={24} />,
 };
+
+const optimizeImageUrl = (url, opts = {}) => {
+  if (!url || !url.includes('cloudinary.com')) return url;
+  const parts = url.split('/upload/');
+  if (parts.length !== 2) return url;
+  const transforms = ['f_auto', 'q_auto'];
+  if (opts.width) transforms.push(`w_${opts.width}`);
+  if (opts.height) transforms.push(`h_${opts.height}`);
+  if (opts.crop) transforms.push(`c_${opts.crop}`);
+  return `${parts[0]}/upload/${transforms.join(',')}/${parts[1]}`;
+};
+
 
 const Categories = () => {
   const [categories, setCategories] = useState([]);
   const [name, setName] = useState('');
-  const [description, setDescription] = useState('');
   const [bannerImage, setBannerImage] = useState('');
   const [editId, setEditId] = useState(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [deleteConfirm, setDeleteConfirm] = useState(null);
 
   useEffect(() => { fetchCategories(); }, []);
 
@@ -46,21 +78,23 @@ const Categories = () => {
     e.preventDefault();
     try {
       if (editId) {
-        await api.put(`/categories/${editId}`, { name, description, bannerImage });
+        await api.put(`/categories/${editId}`, { name, bannerImage });
+        toast.success('Category updated successfully');
       } else {
-        await api.post('/categories', { name, description, bannerImage });
+        await api.post('/categories', { name, bannerImage });
+        toast.success('Category created successfully');
       }
       closeModal();
       fetchCategories();
     } catch (err) {
       console.error(err);
+      toast.error(err.response?.data?.message || 'Failed to save category');
     }
   };
 
   const handleEdit = (c) => {
     setEditId(c._id);
     setName(c.name);
-    setDescription(c.description || '');
     setBannerImage(c.bannerImage || '');
     setIsModalOpen(true);
   };
@@ -69,16 +103,19 @@ const Categories = () => {
     setIsModalOpen(false);
     setEditId(null);
     setName('');
-    setDescription('');
     setBannerImage('');
   };
 
-  const handleDelete = async (id) => {
-    if (window.confirm('Delete this category?')) {
-      try {
-        await api.delete(`/categories/${id}`);
-        fetchCategories();
-      } catch (err) { console.error(err); }
+  const handleDelete = async () => {
+    if (!deleteConfirm) return;
+    try {
+      await api.delete(`/categories/${deleteConfirm}`);
+      toast.success('Category deleted successfully');
+      setDeleteConfirm(null);
+      fetchCategories();
+    } catch (err) { 
+      console.error(err); 
+      toast.error('Failed to delete category');
     }
   };
 
@@ -101,95 +138,123 @@ const Categories = () => {
         </div>
 
         <div>
-          {/* Left Column: Drag & Drop List */}
-          <div style={{ maxWidth: 640 }}>
+          <div style={{
+            marginBottom: 24, padding: '16px 20px',
+            background: 'rgba(255,140,0,0.05)', border: '1px solid rgba(255,140,0,0.15)',
+            borderRadius: 10, fontSize: '0.8rem', color: '#4a4a60',
+          }}>
+            💡 Changes take effect immediately on the customer storefront.
+          </div>
           <DragDropContext onDragEnd={onDragEnd}>
-            <Droppable droppableId="categories-list">
+            <Droppable droppableId="categories-list" direction="horizontal">
               {(provided) => (
-                <div
-                  {...provided.droppableProps}
-                  ref={provided.innerRef}
-                  style={{ display: 'flex', flexDirection: 'column', gap: 12 }}
-                >
-                  {categories.map((category, index) => {
-                    const colors = catColors[category.name] || { accent: '#8a8aa0', glow: 'transparent' };
-                    return (
-                      <Draggable key={category._id} draggableId={category._id} index={index}>
-                        {(provided, snapshot) => (
+                  <div
+                    {...provided.droppableProps}
+                    ref={provided.innerRef}
+                    style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 20 }}
+                  >
+                    {categories.map((category, index) => {
+                      const col = {
+                        name: category.name,
+                        bannerImage: category.bannerImage,
+                        gradient: catGradients[index % catGradients.length],
+                      };
+
+                      return (
+                        <Draggable key={category._id} draggableId={category._id} index={index}>
+                          {(provided, snapshot) => (
                           <div
                             ref={provided.innerRef}
                             {...provided.draggableProps}
+                            {...provided.dragHandleProps}
                             style={{
-                              background: snapshot.isDragging ? '#1a1a28' : '#141419',
-                              border: `1px solid ${snapshot.isDragging ? colors.accent + '40' : '#1e1e28'}`,
-                              borderRadius: 12, padding: '18px 20px',
-                              display: 'flex', alignItems: 'center', gap: 16,
-                              boxShadow: snapshot.isDragging ? `0 8px 30px ${colors.glow}` : 'none',
-                              transition: 'border-color 0.2s, background 0.2s',
+                              border: '1px solid rgba(255,255,255,0.07)',
+                              borderRadius: 20,
+                              overflow: 'hidden',
+                              background: col.bannerImage ? 'rgba(255,255,255,0.03)' : `linear-gradient(135deg, ${col.gradient.from}, ${col.gradient.to})`,
+                              display: 'flex', flexDirection: 'column', height: '100%', minHeight: 'auto',
+                              position: 'relative',
+                              boxShadow: snapshot.isDragging ? `0 8px 30px ${col.gradient.from.replace('0.12', '0.4')}` : 'none',
+                              borderColor: snapshot.isDragging ? col.gradient.ring + '50' : 'rgba(255,255,255,0.07)',
+                              transition: 'border-color 0.2s, box-shadow 0.2s, transform 0.2s',
+                              transform: snapshot.isDragging ? 'translateY(-6px)' : 'none',
+                              cursor: snapshot.isDragging ? 'grabbing' : 'grab',
                               ...provided.draggableProps.style,
                             }}
                           >
-                            <div {...provided.dragHandleProps} style={{
-                              color: '#2a2a38', cursor: 'grab', display: 'flex',
-                              transition: 'color 0.15s',
-                            }}
-                            onMouseEnter={e => e.currentTarget.style.color = '#4a4a60'}
-                            onMouseLeave={e => e.currentTarget.style.color = '#2a2a38'}
-                            >
-                              <GripVertical size={20} />
-                            </div>
+                            {!col.bannerImage && (
+                              <>
+                                <div style={{
+                                  position: 'absolute', top: -40, right: -40,
+                                  width: 160, height: 160, borderRadius: '50%',
+                                  border: `1px solid ${col.gradient.ring}30`,
+                                  pointerEvents: 'none',
+                                }} />
+                                <div style={{
+                                  position: 'absolute', top: -20, right: -20,
+                                  width: 100, height: 100, borderRadius: '50%',
+                                  border: `1px solid ${col.gradient.ring}20`,
+                                  pointerEvents: 'none',
+                                }} />
+                              </>
+                            )}
 
-                            <div style={{
-                              width: 8, height: 8, borderRadius: '50%',
-                              background: colors.accent,
-                              boxShadow: `0 0 8px ${colors.glow}`,
-                              flexShrink: 0,
-                            }} />
-
-                            <div style={{ flex: 1 }}>
-                              <div style={{ color: '#f0f0f5', fontWeight: 700, fontSize: '1rem', fontFamily: 'Outfit, sans-serif' }}>
-                                {category.name}
+                            {col.bannerImage ? (
+                              <div style={{ height: 180, width: '100%', overflow: 'hidden', flexShrink: 0 }}>
+                                <img src={optimizeImageUrl(col.bannerImage, { width: 400, height: 300, crop: 'fill' })} alt={col.name} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
                               </div>
-                              <div style={{ color: '#4a4a60', fontSize: '0.75rem', marginTop: 2 }}>
-                                Position {index + 1}
+                            ) : (
+                              <div style={{ padding: '24px 24px 0', flexShrink: 0 }}>
+                                <div style={{
+                                  width: 40, height: 40, borderRadius: 10,
+                                  background: `linear-gradient(135deg, ${col.gradient.accent}, ${col.gradient.accent}80)`,
+                                  display: 'flex', alignItems: 'center', justifyContent: 'center',
+                                  color: 'white',
+                                  boxShadow: `0 4px 20px ${col.gradient.accent}40`,
+                                }}>
+                                  {catIcons[col.name] || <Sparkles size={20} />}
+                                </div>
+                              </div>
+                            )}
+
+                            <div style={{ padding: '20px 24px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12 }}>
+                              <h3 style={{
+                                fontFamily: 'Outfit, sans-serif', fontWeight: 800,
+                                fontSize: '1.25rem', color: '#f0f0f8', margin: 0,
+                                whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis'
+                              }}>
+                                {col.name}
+                              </h3>
+
+                              {/* Actions */}
+                              <div style={{ display: 'flex', gap: 8, flexShrink: 0 }} onClick={e => e.stopPropagation()}>
+                                <button onClick={() => handleEdit(category)}
+                                  style={{ background: 'transparent', border: 'none', color: '#8888a8', cursor: 'pointer', padding: '6px 12px', borderRadius: 8, display: 'flex', alignItems: 'center', gap: 6, transition: 'all 0.15s', fontSize: '0.85rem', fontWeight: 600 }}
+                                  onMouseEnter={e => { e.currentTarget.style.color = col.gradient.accent; e.currentTarget.style.background = `${col.gradient.accent}15`; }}
+                                  onMouseLeave={e => { e.currentTarget.style.color = '#8888a8'; e.currentTarget.style.background = 'transparent'; }}
+                                >
+                                  <Pencil size={15} /> Edit
+                                </button>
+                                <button onClick={() => setDeleteConfirm(category._id)}
+                                  style={{ background: 'transparent', border: 'none', color: '#8888a8', cursor: 'pointer', padding: '6px 12px', borderRadius: 8, display: 'flex', alignItems: 'center', gap: 6, transition: 'all 0.15s', fontSize: '0.85rem', fontWeight: 600 }}
+                                  onMouseEnter={e => { e.currentTarget.style.color = '#ef4444'; e.currentTarget.style.background = 'rgba(239,68,68,0.15)'; }}
+                                  onMouseLeave={e => { e.currentTarget.style.color = '#8888a8'; e.currentTarget.style.background = 'transparent'; }}
+                                >
+                                  <Trash2 size={15} /> Delete
+                                </button>
                               </div>
                             </div>
-
-                            <div style={{
-                              padding: '4px 12px', borderRadius: 999,
-                              background: colors.accent + '15',
-                              border: `1px solid ${colors.accent}30`,
-                              color: colors.accent, fontSize: '0.75rem', fontWeight: 600,
-                              marginRight: 16
-                            }}>
-                              #{index + 1}
-                            </div>
-
-                            <button onClick={() => handleEdit(category)} style={{ background: 'transparent', border: 'none', color: '#8a8aa0', cursor: 'pointer', padding: 4 }}>
-                              <Pencil size={16} />
-                            </button>
-                            <button onClick={() => handleDelete(category._id)} style={{ background: 'transparent', border: 'none', color: '#ef4444', cursor: 'pointer', padding: 4 }}>
-                              <Trash2 size={16} />
-                            </button>
                           </div>
-                        )}
-                      </Draggable>
-                    );
-                  })}
+                          )}
+                        </Draggable>
+                      );
+                    })}
                   {provided.placeholder}
                 </div>
               )}
             </Droppable>
           </DragDropContext>
 
-          <div style={{
-            marginTop: 24, padding: '16px 20px',
-            background: 'rgba(255,140,0,0.05)', border: '1px solid rgba(255,140,0,0.15)',
-            borderRadius: 10, fontSize: '0.8rem', color: '#4a4a60',
-          }}>
-            💡 Changes take effect immediately on the customer storefront.
-          </div>
-        </div>
 
         </div>
       </div>
@@ -215,26 +280,43 @@ const Categories = () => {
                 <label style={{ display: 'block', fontSize: '0.8rem', color: '#8a8aa0', marginBottom: 8 }}>Name</label>
                 <input type="text" value={name} onChange={e => setName(e.target.value)} required className="admin-input" placeholder="e.g. Glass Bangles" />
               </div>
+
               <div>
-                <label style={{ display: 'block', fontSize: '0.8rem', color: '#8a8aa0', marginBottom: 8 }}>Description</label>
-                <textarea value={description} onChange={e => setDescription(e.target.value)} className="admin-input" rows="3" placeholder="Category description..." />
-              </div>
-              <div>
-                <label style={{ display: 'block', fontSize: '0.8rem', color: '#8a8aa0', marginBottom: 8 }}>Banner Image URL</label>
-                <input type="url" value={bannerImage} onChange={e => setBannerImage(e.target.value)} className="admin-input" placeholder="https://..." />
+                <label style={{ display: 'block', fontSize: '0.8rem', color: '#8a8aa0', marginBottom: 8 }}>Banner Image</label>
+                <ImageUpload value={bannerImage} onChange={setBannerImage} placeholder="Upload Banner Image" />
               </div>
               <div style={{ display: 'flex', gap: 12, marginTop: 8 }}>
                 <button type="button" onClick={closeModal} className="btn-secondary" style={{ flex: 1 }}>
                   Cancel
                 </button>
-                <button type="submit" className="admin-btn-primary" style={{ flex: 2, display: 'flex', justifyContent: 'center', alignItems: 'center', gap: 8 }}>
-                  {editId ? 'Save Changes' : <><Plus size={16} /> Create Category</>}
+                <button type="submit" style={{
+                    flex: 2, display: 'flex', justifyContent: 'center', alignItems: 'center', gap: 8,
+                    background: 'linear-gradient(135deg, #8A2BE2, #FF1493)',
+                    color: '#fff', border: 'none', borderRadius: 8, padding: '10px 20px',
+                    fontWeight: 700, fontSize: '0.9rem', cursor: 'pointer', letterSpacing: '0.02em',
+                    boxShadow: '0 4px 16px rgba(138,43,226,0.35)',
+                    transition: 'transform 0.15s, box-shadow 0.15s',
+                  }}
+                  onMouseEnter={e => { e.currentTarget.style.transform = 'translateY(-1px)'; e.currentTarget.style.boxShadow = '0 6px 20px rgba(138,43,226,0.5)'; }}
+                  onMouseLeave={e => { e.currentTarget.style.transform = 'none'; e.currentTarget.style.boxShadow = '0 4px 16px rgba(138,43,226,0.35)'; }}
+                >
+                  {editId ? '💾 Save Changes' : <><Plus size={16} /> Create Category</>}
                 </button>
               </div>
             </form>
           </div>
         </div>
       )}
+
+      <ConfirmModal
+        isOpen={!!deleteConfirm}
+        onClose={() => setDeleteConfirm(null)}
+        onConfirm={handleDelete}
+        title="Delete Category"
+        message="Are you sure you want to delete this category? This action cannot be undone."
+        confirmText="Delete"
+        type="danger"
+      />
     </div>
   );
 };

@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import { DragDropContext, Droppable, Draggable } from '@hello-pangea/dnd';
 import api from '../utils/api';
+import { optimizeImageUrl } from '../utils/cloudinary';
 import Sidebar from '../components/Sidebar';
 import { Plus, GripVertical, Pencil, Trash2, ShoppingBag } from 'lucide-react';
 import AddEditProductModal from '../components/AddEditProductModal';
@@ -75,7 +76,7 @@ const Products = () => {
   };
 
   return (
-    <div style={{ display: 'flex', minHeight: '100vh', background: '#0b0b0e' }}>
+    <div style={{ display: 'flex', height: '100vh', background: '#0b0b0e', overflow: 'hidden' }}>
       <Sidebar />
       <div style={{ flex: 1, padding: '40px 48px', overflowY: 'auto' }}>
 
@@ -138,7 +139,8 @@ const Products = () => {
         }}>
           {/* Table Header */}
           <div style={{
-            display: 'grid', gridTemplateColumns: '40px 64px 1fr 140px 90px 80px 130px',
+            display: 'grid', 
+            gridTemplateColumns: categoryFilter !== 'All' ? '40px 64px 1fr 180px 90px 80px 130px' : '64px 1fr 180px 90px 80px 130px',
             gap: 12, padding: '14px 20px',
             borderBottom: '1px solid #1e1e28',
             fontSize: '0.72rem', color: '#4a4a60', fontWeight: 600,
@@ -146,7 +148,7 @@ const Products = () => {
           }}>
             {categoryFilter !== 'All' && <span></span>}
             <span>Image</span>
-            <span style={{ gridColumn: categoryFilter !== 'All' ? undefined : '2' }}>Product</span>
+            <span>Product</span>
             <span>Category</span>
             <span>Price</span>
             <span>Status</span>
@@ -172,8 +174,8 @@ const Products = () => {
                           style={{
                             display: 'grid',
                             gridTemplateColumns: categoryFilter !== 'All'
-                              ? '40px 64px 1fr 140px 90px 80px 130px'
-                              : '64px 1fr 140px 90px 80px 130px',
+                              ? '40px 64px 1fr 180px 90px 80px 130px'
+                              : '64px 1fr 180px 90px 80px 130px',
                             gap: 12, padding: '16px 20px',
                             alignItems: 'center',
                             background: snapshot.isDragging ? '#1a1a24' : 'transparent',
@@ -193,7 +195,7 @@ const Products = () => {
                             overflow: 'hidden', display: 'flex', alignItems: 'center', justifyContent: 'center'
                           }}>
                             {product.images?.[0]
-                              ? <img src={product.images[0].url} alt={product.name} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                              ? <img src={optimizeImageUrl(product.images[0].url, 100)} alt={product.name} loading="lazy" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
                               : <span style={{ fontSize: '0.65rem', color: '#4a4a60' }}>No img</span>
                             }
                           </div>
@@ -206,6 +208,7 @@ const Products = () => {
                             <span style={{
                               background: 'rgba(138,43,226,0.1)', border: '1px solid rgba(138,43,226,0.2)',
                               color: '#c084fc', borderRadius: 999, padding: '3px 10px', fontSize: '0.75rem', fontWeight: 500,
+                              whiteSpace: 'nowrap', display: 'inline-block', maxWidth: '100%', overflow: 'hidden', textOverflow: 'ellipsis'
                             }}>
                               {product.category}
                             </span>

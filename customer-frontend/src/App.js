@@ -14,6 +14,7 @@ import Checkout from './pages/Checkout';
 import GlitterBackground from './components/GlitterCursor';
 import ScrollToTop from './components/ScrollToTop';
 import Offers from './pages/Offers';
+import AllProducts from './pages/AllProducts';
 
 function App() {
   return (
@@ -29,6 +30,7 @@ function App() {
               <main className="flex-grow">
                 <Routes>
                   <Route path="/" element={<Home />} />
+                  <Route path="/products" element={<AllProducts />} />
                   <Route path="/category/:categoryName" element={<CategoryPage />} />
                   <Route path="/product/:id" element={<ProductDetail />} />
                   <Route path="/search" element={<Search />} />

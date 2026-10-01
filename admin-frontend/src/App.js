@@ -1,5 +1,6 @@
 import React, { useContext } from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
+import { Toaster } from 'react-hot-toast';
 import { AuthProvider, AuthContext } from './context/AuthContext';
 import Login from './pages/Login';
 import Dashboard from './pages/Dashboard';
@@ -21,6 +22,13 @@ function App() {
   return (
     <AuthProvider>
       <Router>
+        <Toaster position="top-right" toastOptions={{
+          style: {
+            background: '#141419',
+            color: '#f0f0f5',
+            border: '1px solid #1e1e28'
+          }
+        }} />
         <Routes>
           <Route path="/login" element={<Login />} />
           <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />

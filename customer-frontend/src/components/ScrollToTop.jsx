@@ -1,16 +1,17 @@
 import { useEffect } from 'react';
-import { useLocation } from 'react-router-dom';
+import { useLocation, useNavigationType } from 'react-router-dom';
 
 const ScrollToTop = () => {
   const { pathname } = useLocation();
+  const navType = useNavigationType();
 
   useEffect(() => {
-    // Automatically scroll to the top on navigation,
-    // except for the Subcategories/Product Listing (category) page.
-    if (!pathname.startsWith('/category/')) {
+    // 'POP' means the user navigated back/forward in the browser history.
+    // On 'PUSH' or 'REPLACE' (normal navigation), scroll to the top.
+    if (navType !== 'POP') {
       window.scrollTo(0, 0);
     }
-  }, [pathname]);
+  }, [pathname, navType]);
 
   return null;
 };

@@ -5,6 +5,7 @@ import { CartContext } from '../context/CartContext';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Trash2, ArrowRight } from 'lucide-react';
 import { useTheme } from '../context/ThemeContext';
+import { optimizeImageUrl } from '../utils/cloudinary';
 
 const Cart = () => {
   const { cartItems, updateQuantity, removeFromCart, getCartTotal } = useContext(CartContext);
@@ -78,7 +79,7 @@ const Cart = () => {
                       >
                         <div style={{ width: 100, height: 120, borderRadius: 12, background: 'var(--bg-secondary)', overflow: 'hidden', flexShrink: 0 }}>
                           {item.product.images?.[0] ? (
-                            <img src={item.product.images[0].url} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                            <img src={optimizeImageUrl(item.product.images[0].url, 200)} alt="" loading="lazy" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
                           ) : (
                             <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>No Img</span>
                           )}

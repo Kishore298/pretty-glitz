@@ -1,25 +1,32 @@
-import React, { useState, useContext, useEffect } from 'react';
+import React, { useState, useContext, useEffect, useRef } from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { Menu, X, ShoppingBag, Sun, Moon } from 'lucide-react';
+import { Menu, X, ShoppingBag, Sun, Moon, ChevronDown, Gift } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { CartContext } from '../context/CartContext';
 import { useTheme } from '../context/ThemeContext';
 import api from '../utils/api';
 
+// Categories that appear as primary nav items
+const PRIMARY_CATEGORIES = ['Bangles', 'Artificial Flowers', 'Gift Box Combo', 'Jumkhas', 'Jewels'];
+
+// Subcategories grouped under Bangles on customer side
+const BANGLE_SUBCATS = ['Glass Bangles', 'Valaikaappu Bangles', 'Antique Bangles', 'Wedding Bangles'];
+
 const Navbar = () => {
   const [isOpen, setIsOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
+  const [banglesOpen, setBanglesOpen] = useState(false);
   const { pathname } = useLocation();
   const { getCartCount } = useContext(CartContext);
   const { isDark, toggleTheme } = useTheme();
-  const [links, setLinks] = useState([]);
+  const [allCategories, setAllCategories] = useState([]);
+  const banglesRef = useRef(null);
 
   useEffect(() => {
     const fetchCategories = async () => {
       try {
         const { data } = await api.get('/categories');
-        const catLinks = data.map(c => ({ name: c.name, path: `/category/${c.name}` }));
-        setLinks([{ name: 'Offers 🎁', path: '/offers' }, ...catLinks]);
+        setAllCategories(data.map(c => c.name));
       } catch (err) {
         console.error('Failed to load categories', err);
       }
@@ -33,7 +40,48 @@ const Navbar = () => {
     return () => window.removeEventListener('scroll', onScroll);
   }, []);
 
+  // Close dropdowns on outside click
+  useEffect(() => {
+    const handleOutside = (e) => {
+      if (banglesRef.current && !banglesRef.current.contains(e.target)) setBanglesOpen(false);
+    };
+    document.addEventListener('mousedown', handleOutside);
+    return () => document.removeEventListener('mousedown', handleOutside);
+  }, []);
 
+  // Close mobile menu on route change
+  useEffect(() => { setIsOpen(false); }, [pathname]);
+
+  const primaryCats = allCategories.filter(name => PRIMARY_CATEGORIES.includes(name));
+
+  const linkStyle = (path) => {
+    const decodedPathname = decodeURIComponent(pathname);
+    const isActive = decodedPathname === path || decodedPathname.startsWith(path + '/');
+    return {
+      fontSize: '0.875rem', fontWeight: isActive ? 700 : 500,
+      color: isActive ? '#FF1493' : (isDark ? 'rgba(240,240,248,0.7)' : 'rgba(15,15,18,0.7)'),
+      textDecoration: 'none', transition: 'color 0.2s', letterSpacing: '0.02em',
+      whiteSpace: 'nowrap',
+    };
+  };
+
+  const dropdownItemStyle = {
+    display: 'block', padding: '10px 20px',
+    fontSize: '0.85rem', fontWeight: 500, textDecoration: 'none',
+    color: isDark ? 'rgba(240,240,248,0.8)' : 'rgba(15,15,18,0.8)',
+    transition: 'background 0.15s, color 0.15s',
+    whiteSpace: 'nowrap',
+  };
+
+  const dropdownStyle = {
+    position: 'absolute', top: 'calc(100% + 12px)',
+    background: isDark ? 'rgba(12,12,22,0.98)' : 'rgba(255,255,255,0.98)',
+    backdropFilter: 'blur(16px)',
+    border: `1px solid ${isDark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.08)'}`,
+    borderRadius: 12, overflow: 'hidden',
+    boxShadow: isDark ? '0 20px 40px rgba(0,0,0,0.5)' : '0 20px 40px rgba(0,0,0,0.12)',
+    zIndex: 100, minWidth: 200,
+  };
 
   return (
     <>
@@ -55,51 +103,74 @@ const Navbar = () => {
               <span style={{
                 fontFamily: 'Outfit, sans-serif', fontWeight: 900,
                 fontSize: 'clamp(1.1rem, 4vw, 1.5rem)', letterSpacing: '0.05em',
-                color: isDark ? '#f0f0f8' : '#0f0f12',
-                transition: 'color 0.3s',
-              }}>
-                PRETTY
-              </span>
+                color: isDark ? '#f0f0f8' : '#0f0f12', transition: 'color 0.3s',
+              }}>PRETTY</span>
               <span style={{
                 fontFamily: 'Outfit, sans-serif', fontWeight: 900,
                 fontSize: 'clamp(1.1rem, 4vw, 1.5rem)', letterSpacing: '0.05em',
                 background: 'linear-gradient(90deg, #FF1493, #8A2BE2, #FF8C00, #FFD700)',
-                WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent',
-                backgroundClip: 'text',
-              }}>
-                GLITZ
-              </span>
+                WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', backgroundClip: 'text',
+              }}>GLITZ</span>
             </Link>
 
             {/* Desktop Nav Links */}
-            <div style={{ display: 'none', gap: 32 }} className="desktop-nav">
-              {links.map(link => {
-                const decodedPathname = decodeURIComponent(pathname);
-                const isActive = decodedPathname === link.path || decodedPathname.startsWith(link.path + '/');
-                return (
-                  <Link key={link.name} to={link.path} style={{
-                    fontSize: '0.875rem', fontWeight: isActive ? 700 : 500,
-                    color: isActive 
-                      ? '#FF1493' 
-                      : (isDark ? 'rgba(240,240,248,0.7)' : 'rgba(15,15,18,0.7)'),
-                    textDecoration: 'none',
-                    transition: 'color 0.2s',
-                    letterSpacing: '0.02em',
+            <div style={{ display: 'none', gap: 28, alignItems: 'center' }} className="desktop-nav">
+
+
+
+              {/* Bangles with hover dropdown */}
+              <div
+                ref={banglesRef}
+                style={{ position: 'relative' }}
+                onMouseEnter={() => setBanglesOpen(true)}
+                onMouseLeave={() => setBanglesOpen(false)}
+              >
+                <button
+                  style={{
+                    ...linkStyle('/category/Bangles'),
+                    background: 'none', border: 'none', cursor: 'pointer',
+                    display: 'flex', alignItems: 'center', gap: 4, padding: 0,
                   }}
+                >
+                  Bangles
+                  <ChevronDown size={14} style={{ transition: 'transform 0.2s', transform: banglesOpen ? 'rotate(180deg)' : 'none' }} />
+                </button>
+                <AnimatePresence>
+                  {banglesOpen && (
+                    <motion.div
+                      initial={{ opacity: 0, y: -8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -8 }}
+                      transition={{ duration: 0.15 }}
+                      style={{ ...dropdownStyle, left: 0 }}
+                    >
+
+                      {BANGLE_SUBCATS.map(sub => (
+                        <Link key={sub} to={`/category/${encodeURIComponent(sub)}`} style={{...dropdownItemStyle, display: 'flex', alignItems: 'center', gap: 8}}
+                          onMouseEnter={e => { e.currentTarget.style.background = isDark ? 'rgba(255,255,255,0.06)' : 'rgba(0,0,0,0.04)'; e.currentTarget.style.color = '#FF1493'; }}
+                          onMouseLeave={e => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = isDark ? 'rgba(240,240,248,0.8)' : 'rgba(15,15,18,0.8)'; }}
+                          onClick={() => setBanglesOpen(false)}
+                        >
+                          <div style={{ width: 4, height: 4, borderRadius: '50%', background: 'currentColor', opacity: 0.5 }} />
+                          {sub}
+                        </Link>
+                      ))}
+                    </motion.div>
+                  )}
+                </AnimatePresence>
+              </div>
+
+              {/* Artificial Flowers, Gift Box, Jumkhas, Jewels */}
+              {primaryCats.filter(n => n !== 'Bangles').map(name => (
+                <Link key={name} to={`/category/${name}`} style={linkStyle(`/category/${name}`)}
                   onMouseEnter={e => e.currentTarget.style.color = isDark ? '#fff' : '#000'}
-                  onMouseLeave={e => e.currentTarget.style.color = isActive 
-                      ? '#FF1493' 
-                      : (isDark ? 'rgba(240,240,248,0.7)' : 'rgba(15,15,18,0.7)')}
-                  >
-                    {link.name}
-                  </Link>
-                );
-              })}
+                  onMouseLeave={e => e.currentTarget.style.color = decodeURIComponent(pathname) === `/category/${name}` ? '#FF1493' : (isDark ? 'rgba(240,240,248,0.7)' : 'rgba(15,15,18,0.7)')}
+                >{name}</Link>
+              ))}
+
+
             </div>
 
             {/* Right Controls */}
             <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
-
 
               {/* Dark/Light Toggle */}
               <button
@@ -116,8 +187,6 @@ const Navbar = () => {
               >
                 {isDark ? <Sun size={17} /> : <Moon size={17} />}
               </button>
-
-
 
               {/* Cart Icon */}
               <Link to="/cart" style={{ position: 'relative', color: isDark ? 'rgba(240,240,248,0.7)' : 'rgba(15,15,18,0.7)', transition: 'color 0.2s' }}
@@ -172,26 +241,49 @@ const Navbar = () => {
               position: 'fixed', inset: 0, zIndex: 40,
               background: isDark ? '#080810' : '#ffffff',
               paddingTop: 90, paddingLeft: 32, paddingRight: 32,
+              overflowY: 'auto',
             }}
           >
-
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 28 }}>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
               <Link to="/" onClick={() => setIsOpen(false)} style={{
                 fontSize: '1.8rem', fontFamily: 'Outfit, sans-serif', fontWeight: 700,
-                color: isDark ? '#f0f0f8' : '#0f0f12', textDecoration: 'none',
+                color: isDark ? '#f0f0f8' : '#0f0f12', textDecoration: 'none', padding: '10px 0',
               }}>Home</Link>
-              {links.map(link => {
-                const decodedPathname = decodeURIComponent(pathname);
-                const isActive = decodedPathname === link.path || decodedPathname.startsWith(link.path + '/');
-                return (
-                  <Link key={link.name} to={link.path} onClick={() => setIsOpen(false)} style={{
-                    fontSize: '1.8rem', fontFamily: 'Outfit, sans-serif', fontWeight: 700,
-                    color: isActive ? '#FF1493' : (isDark ? '#f0f0f8' : '#0f0f12'), textDecoration: 'none',
-                  }}>
-                    {link.name}
-                  </Link>
-                );
-              })}
+
+              {/* Bangles group */}
+              <div>
+                <Link to="/category/Bangles" onClick={() => setIsOpen(false)} style={{
+                  fontSize: '1.8rem', fontFamily: 'Outfit, sans-serif', fontWeight: 700,
+                  color: isDark ? '#f0f0f8' : '#0f0f12', textDecoration: 'none', padding: '10px 0', display: 'block',
+                }}>Bangles</Link>
+                <div style={{ paddingLeft: 24, marginBottom: 8 }}>
+                  {BANGLE_SUBCATS.map(sub => (
+                    <Link key={sub} to={`/category/${encodeURIComponent(sub)}`} onClick={() => setIsOpen(false)} style={{
+                      display: 'flex', alignItems: 'center', gap: 8, fontSize: '1.1rem', fontFamily: 'Outfit, sans-serif', fontWeight: 500,
+                      color: isDark ? 'rgba(240,240,248,0.6)' : 'rgba(15,15,18,0.6)',
+                      textDecoration: 'none', padding: '6px 0',
+                    }}>
+                      <div style={{ width: 4, height: 4, borderRadius: '50%', background: 'currentColor', opacity: 0.5 }} />
+                      {sub}
+                    </Link>
+                  ))}
+                </div>
+              </div>
+
+              {/* Remaining primary categories */}
+              {allCategories.filter(n => n !== 'Bangles').map(name => (
+                <Link key={name} to={`/category/${name}`} onClick={() => setIsOpen(false)} style={{
+                  fontSize: '1.8rem', fontFamily: 'Outfit, sans-serif', fontWeight: 700,
+                  color: decodeURIComponent(pathname) === `/category/${name}` ? '#FF1493' : (isDark ? '#f0f0f8' : '#0f0f12'),
+                  textDecoration: 'none', padding: '10px 0',
+                }}>{name}</Link>
+              ))}
+
+              <Link to="/offers" onClick={() => setIsOpen(false)} style={{
+                fontSize: '1.8rem', fontFamily: 'Outfit, sans-serif', fontWeight: 700,
+                color: '#FF1493', textDecoration: 'none', padding: '10px 0', display: 'flex', alignItems: 'center', gap: 10
+              }}>Offers <Gift size={20} /></Link>
+
               <div style={{ marginTop: 16, paddingTop: 24, borderTop: `1px solid ${isDark ? 'rgba(255,255,255,0.07)' : 'rgba(0,0,0,0.07)'}` }}>
                 <button onClick={() => { toggleTheme(); setIsOpen(false); }} style={{
                   background: 'none', border: 'none', cursor: 'pointer',

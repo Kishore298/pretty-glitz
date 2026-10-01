@@ -1,23 +1,41 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import api from '../utils/api';
 import ProductCard from '../components/ProductCard';
 import { useTheme } from '../context/ThemeContext';
-import { ArrowRight } from 'lucide-react';
+import { optimizeImageUrl } from '../utils/cloudinary';
+import { ArrowRight, ChevronDown, Sparkles, Gem, Star, Heart, Flower2, Gift, Crown, Award, MessageCircle } from 'lucide-react';
 
 const catGradients = [
   { from: 'rgba(255,20,147,0.12)', to: 'rgba(138,43,226,0.04)', accent: '#FF1493', ring: '#FF1493' },
   { from: 'rgba(138,43,226,0.12)', to: 'rgba(99,102,241,0.04)', accent: '#8A2BE2', ring: '#8A2BE2' },
   { from: 'rgba(255,140,0,0.12)', to: 'rgba(255,215,0,0.04)', accent: '#FF8C00', ring: '#FF8C00' },
   { from: 'rgba(255,0,255,0.1)', to: 'rgba(218,112,214,0.04)', accent: '#FF00FF', ring: '#FF00FF' },
+  { from: 'rgba(16,185,129,0.1)', to: 'rgba(52,211,153,0.04)', accent: '#10B981', ring: '#10B981' },
+  { from: 'rgba(245,158,11,0.1)', to: 'rgba(252,211,77,0.04)', accent: '#F59E0B', ring: '#F59E0B' },
+  { from: 'rgba(239,68,68,0.1)', to: 'rgba(252,165,165,0.04)', accent: '#EF4444', ring: '#EF4444' },
+  { from: 'rgba(99,102,241,0.1)', to: 'rgba(165,180,252,0.04)', accent: '#6366F1', ring: '#6366F1' },
 ];
+
+const catIcons = {
+  'Bangles': <Sparkles size={24} />,
+  'Glass Bangles': <Gem size={24} />,
+  'Valaikaappu Bangles': <Star size={24} />,
+  'Antique Bangles': <Crown size={24} />,
+  'Wedding Bangles': <Heart size={24} />,
+  'Artificial Flowers': <Flower2 size={24} />,
+  'Gift Box Combo': <Gift size={24} />,
+  'Jumkhas': <Star size={24} />,
+  'Jewels': <Crown size={24} />,
+};
 
 const Home = () => {
   const [flagship, setFlagship] = useState([]);
   const [offers, setOffers] = useState([]);
   const [collections, setCollections] = useState([]);
   const { isDark } = useTheme();
+  const collectionsRef = useRef(null);
 
   useEffect(() => {
     fetchFlagship();
@@ -42,15 +60,10 @@ const Home = () => {
   const fetchCategories = async () => {
     try {
       const { data } = await api.get('/categories');
-      const descs = [
-        'Exquisite traditional & modern bangle designs.',
-        'Everlasting floral beauty for every occasion.',
-        'Premium styling pieces for your hair.',
-        'Discover beautiful new collections.',
-      ];
+
       setCollections(data.map((c, i) => ({
         name: c.name,
-        desc: c.description || descs[i % descs.length],
+        bannerImage: c.bannerImage,
         gradient: catGradients[i % catGradients.length],
       })));
     } catch (err) { console.error(err); }
@@ -136,13 +149,13 @@ const Home = () => {
             transition={{ duration: 0.9, delay: 0.3 }}
             style={{ display: 'flex', gap: 16, justifyContent: 'center', flexWrap: 'wrap' }}
           >
-            <Link
-              to={collections.length > 0 ? `/category/${collections[0].name}` : '/'}
+            <button
+              onClick={() => collectionsRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' })}
               style={{
                 display: 'inline-flex', alignItems: 'center', gap: 8,
                 background: 'linear-gradient(135deg, #FF1493, #8A2BE2)',
                 color: 'white', padding: '14px 32px',
-                borderRadius: 999, fontWeight: 600, textDecoration: 'none',
+                borderRadius: 999, fontWeight: 600, border: 'none', cursor: 'pointer',
                 fontSize: '0.9rem', letterSpacing: '0.04em',
                 boxShadow: '0 8px 30px rgba(138,43,226,0.4)',
                 transition: 'transform 0.2s, box-shadow 0.2s',
@@ -150,10 +163,10 @@ const Home = () => {
               onMouseEnter={e => { e.currentTarget.style.transform = 'translateY(-2px)'; e.currentTarget.style.boxShadow = '0 12px 40px rgba(138,43,226,0.55)'; }}
               onMouseLeave={e => { e.currentTarget.style.transform = 'none'; e.currentTarget.style.boxShadow = '0 8px 30px rgba(138,43,226,0.4)'; }}
             >
-              Explore Collection <ArrowRight size={16} />
-            </Link>
+              Explore Collection <ChevronDown size={16} />
+            </button>
             <Link
-              to="/search?q="
+              to="/products"
               style={{
                 display: 'inline-flex', alignItems: 'center', gap: 8,
                 background: 'transparent',
@@ -173,7 +186,7 @@ const Home = () => {
       </section>
 
       {/* ── Collections Grid ──────────────────────────────────── */}
-      <section style={{ padding: '100px 24px', maxWidth: 1280, margin: '0 auto' }}>
+      <section ref={collectionsRef} style={{ padding: '100px 24px', maxWidth: 1280, margin: '0 auto', scrollMarginTop: 80 }}>
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           whileInView={{ opacity: 1, y: 0 }}
@@ -188,14 +201,15 @@ const Home = () => {
             fontFamily: 'Outfit, sans-serif', fontWeight: 800,
             fontSize: 'clamp(1.1rem, 3.5vw, 1.8rem)', color: textPrimary, margin: 0,
           }}>
-            Three Worlds of Beauty
+            Explore Our Collections
           </h2>
+          <p style={{ color: textSec, fontSize: '0.95rem', marginTop: 12 }}>Click any collection to start exploring</p>
         </motion.div>
 
         <div style={{
           display: 'grid',
-          gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))',
-          gap: 24,
+          gridTemplateColumns: 'repeat(auto-fill, minmax(240px, 1fr))',
+          gap: 20,
         }}>
           {collections.map((col, idx) => (
             <motion.div
@@ -206,69 +220,108 @@ const Home = () => {
               transition={{ delay: idx * 0.15, duration: 0.7 }}
             >
               <Link to={`/category/${col.name}`} style={{ textDecoration: 'none', display: 'block' }}>
-                <div
-                  style={{
-                    background: isDark
-                      ? `linear-gradient(135deg, ${col.gradient.from}, ${col.gradient.to})`
-                      : `linear-gradient(135deg, ${col.gradient.from.replace('0.12', '0.08')}, ${col.gradient.to.replace('0.04', '0.02')})`,
-                    border: `1px solid ${isDark ? 'rgba(255,255,255,0.07)' : 'rgba(0,0,0,0.07)'}`,
-                    borderRadius: 20, padding: '40px 32px',
-                    cursor: 'pointer', transition: 'all 0.3s ease',
-                    position: 'relative', overflow: 'hidden',
-                    minHeight: 220,
-                  }}
-                  onMouseEnter={e => {
-                    e.currentTarget.style.transform = 'translateY(-6px)';
-                    e.currentTarget.style.boxShadow = `0 20px 60px ${col.gradient.from.replace('0.12', '0.25')}`;
-                    e.currentTarget.style.borderColor = col.gradient.ring + '50';
-                  }}
-                  onMouseLeave={e => {
-                    e.currentTarget.style.transform = 'none';
-                    e.currentTarget.style.boxShadow = 'none';
-                    e.currentTarget.style.borderColor = isDark ? 'rgba(255,255,255,0.07)' : 'rgba(0,0,0,0.07)';
-                  }}
-                >
-                  {/* Decorative ring */}
-                  <div style={{
-                    position: 'absolute', top: -40, right: -40,
-                    width: 160, height: 160, borderRadius: '50%',
-                    border: `1px solid ${col.gradient.ring}30`,
-                    pointerEvents: 'none',
-                  }} />
-                  <div style={{
-                    position: 'absolute', top: -20, right: -20,
-                    width: 100, height: 100, borderRadius: '50%',
-                    border: `1px solid ${col.gradient.ring}20`,
-                    pointerEvents: 'none',
-                  }} />
-
-                  <div style={{
-                    width: 48, height: 48, borderRadius: 12, marginBottom: 20,
-                    background: `linear-gradient(135deg, ${col.gradient.accent}, ${col.gradient.accent}80)`,
-                    display: 'flex', alignItems: 'center', justifyContent: 'center',
-                    fontSize: '1.4rem',
-                    boxShadow: `0 4px 20px ${col.gradient.accent}40`,
-                  }}>
-                    {idx === 0 ? '💎' : idx === 1 ? '🌸' : '✨'}
+                {col.bannerImage ? (
+                  <div
+                    style={{
+                      border: `1px solid ${isDark ? 'rgba(255,255,255,0.07)' : 'rgba(0,0,0,0.07)'}`,
+                      borderRadius: 20,
+                      cursor: 'pointer', transition: 'all 0.3s ease',
+                      overflow: 'hidden',
+                      background: isDark ? 'rgba(255,255,255,0.03)' : 'rgba(0,0,0,0.02)',
+                      display: 'flex', flexDirection: 'column', height: '100%', minHeight: 280,
+                    }}
+                    onMouseEnter={e => {
+                      e.currentTarget.style.transform = 'translateY(-6px)';
+                      e.currentTarget.style.boxShadow = `0 20px 60px ${col.gradient.from.replace('0.12', '0.25')}`;
+                      e.currentTarget.style.borderColor = col.gradient.ring + '50';
+                    }}
+                    onMouseLeave={e => {
+                      e.currentTarget.style.transform = 'none';
+                      e.currentTarget.style.boxShadow = 'none';
+                      e.currentTarget.style.borderColor = isDark ? 'rgba(255,255,255,0.07)' : 'rgba(0,0,0,0.07)';
+                    }}
+                  >
+                    <div style={{ height: 180, width: '100%', overflow: 'hidden' }}>
+                      <img src={optimizeImageUrl(col.bannerImage, { width: 400, height: 300, crop: 'fill' })} alt={col.name} loading="lazy" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                    </div>
+                    <div style={{ padding: '20px 24px', flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
+                      <h3 style={{
+                        fontFamily: 'Outfit, sans-serif', fontWeight: 800,
+                        fontSize: '1.4rem', color: textPrimary, margin: '0 0 12px',
+                      }}>
+                        {col.name}
+                      </h3>
+                      <div style={{
+                        display: 'inline-flex', alignItems: 'center', gap: 6,
+                        color: col.gradient.accent, fontWeight: 600, fontSize: '0.85rem',
+                        letterSpacing: '0.04em',
+                      }}>
+                        Explore <ArrowRight size={14} />
+                      </div>
+                    </div>
                   </div>
+                ) : (
+                  <div
+                    style={{
+                      background: isDark
+                        ? `linear-gradient(135deg, ${col.gradient.from}, ${col.gradient.to})`
+                        : `linear-gradient(135deg, ${col.gradient.from.replace('0.12', '0.08')}, ${col.gradient.to.replace('0.04', '0.02')})`,
+                      border: `1px solid ${isDark ? 'rgba(255,255,255,0.07)' : 'rgba(0,0,0,0.07)'}`,
+                      borderRadius: 20, padding: '40px 32px',
+                      cursor: 'pointer', transition: 'all 0.3s ease',
+                      position: 'relative', overflow: 'hidden',
+                      minHeight: 220,
+                    }}
+                    onMouseEnter={e => {
+                      e.currentTarget.style.transform = 'translateY(-6px)';
+                      e.currentTarget.style.boxShadow = `0 20px 60px ${col.gradient.from.replace('0.12', '0.25')}`;
+                      e.currentTarget.style.borderColor = col.gradient.ring + '50';
+                    }}
+                    onMouseLeave={e => {
+                      e.currentTarget.style.transform = 'none';
+                      e.currentTarget.style.boxShadow = 'none';
+                      e.currentTarget.style.borderColor = isDark ? 'rgba(255,255,255,0.07)' : 'rgba(0,0,0,0.07)';
+                    }}
+                  >
+                    {/* Decorative ring */}
+                    <div style={{
+                      position: 'absolute', top: -40, right: -40,
+                      width: 160, height: 160, borderRadius: '50%',
+                      border: `1px solid ${col.gradient.ring}30`,
+                      pointerEvents: 'none',
+                    }} />
+                    <div style={{
+                      position: 'absolute', top: -20, right: -20,
+                      width: 100, height: 100, borderRadius: '50%',
+                      border: `1px solid ${col.gradient.ring}20`,
+                      pointerEvents: 'none',
+                    }} />
 
-                  <h3 style={{
-                    fontFamily: 'Outfit, sans-serif', fontWeight: 800,
-                    fontSize: '1.4rem', color: textPrimary, margin: '0 0 10px',
-                  }}>
-                    {col.name}
-                  </h3>
-                  <p style={{ color: textSec, fontSize: '0.9rem', margin: '0 0 24px', lineHeight: 1.6 }}>
-                    {col.desc}
-                  </p>
-                  <div style={{
-                    display: 'inline-flex', alignItems: 'center', gap: 6,
-                    color: col.gradient.accent, fontWeight: 600, fontSize: '0.85rem',
-                    letterSpacing: '0.04em',
-                  }}>
-                    Explore <ArrowRight size={14} />
+                    <div style={{
+                      width: 48, height: 48, borderRadius: 12, marginBottom: 20,
+                      background: `linear-gradient(135deg, ${col.gradient.accent}, ${col.gradient.accent}80)`,
+                      display: 'flex', alignItems: 'center', justifyContent: 'center',
+                      color: 'white',
+                      boxShadow: `0 4px 20px ${col.gradient.accent}40`,
+                    }}>
+                      {catIcons[col.name] || <Sparkles size={24} />}
+                    </div>
+
+                    <h3 style={{
+                      fontFamily: 'Outfit, sans-serif', fontWeight: 800,
+                      fontSize: '1.4rem', color: textPrimary, margin: '0 0 24px',
+                    }}>
+                      {col.name}
+                    </h3>
+                    <div style={{
+                      display: 'inline-flex', alignItems: 'center', gap: 6,
+                      color: col.gradient.accent, fontWeight: 600, fontSize: '0.85rem',
+                      letterSpacing: '0.04em',
+                    }}>
+                      Explore <ArrowRight size={14} />
+                    </div>
                   </div>
-                </div>
+                )}
               </Link>
             </motion.div>
           ))}
@@ -303,11 +356,7 @@ const Home = () => {
             </Link>
           </div>
 
-          <div style={{
-            display: 'grid',
-            gridTemplateColumns: 'repeat(auto-fill, minmax(260px, 1fr))',
-            gap: 24,
-          }}>
+          <div className="product-grid-4">
             {offers.map((product, idx) => (
               <motion.div
                 key={product._id}
@@ -365,11 +414,11 @@ const Home = () => {
           display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: 32,
         }}>
           {[
-            { emoji: '✨', title: 'Premium Quality', desc: 'Every piece is curated with care for exceptional craftsmanship.' },
-            { emoji: '🌺', title: 'Unique Designs', desc: 'Exclusive collections you won\'t find anywhere else.' },
-            { emoji: '📦', title: 'Easy Ordering', desc: 'Simple WhatsApp-based ordering with instant confirmation.' },
-            { emoji: '💖', title: 'Made with Love', desc: 'Passion-driven accessories that celebrate your beauty.' },
-          ].map(({ emoji, title, desc }, i) => (
+            { icon: <Award size={34} color="#F59E0B" strokeWidth={1.5} />, title: 'Premium Quality', desc: 'Every piece is curated with care for exceptional craftsmanship.' },
+            { icon: <Sparkles size={34} color="#FF1493" strokeWidth={1.5} />, title: 'Unique Designs', desc: 'Exclusive collections you won\'t find anywhere else.' },
+            { icon: <MessageCircle size={34} color="#10B981" strokeWidth={1.5} />, title: 'Easy Ordering', desc: 'Simple WhatsApp-based ordering with instant confirmation.' },
+            { icon: <Heart size={34} color="#EF4444" strokeWidth={1.5} />, title: 'Made with Love', desc: 'Passion-driven accessories that celebrate your beauty.' },
+          ].map(({ icon, title, desc }, i) => (
             <motion.div
               key={title}
               initial={{ opacity: 0, y: 20 }}
@@ -378,7 +427,7 @@ const Home = () => {
               transition={{ delay: i * 0.1 }}
               style={{ textAlign: 'center' }}
             >
-              <div style={{ fontSize: '2rem', marginBottom: 14 }}>{emoji}</div>
+              <div style={{ marginBottom: 14, display: 'flex', justifyContent: 'center' }}>{icon}</div>
               <h4 style={{ fontFamily: 'Outfit, sans-serif', fontWeight: 700, fontSize: '1rem', color: textPrimary, margin: '0 0 8px' }}>
                 {title}
               </h4>
