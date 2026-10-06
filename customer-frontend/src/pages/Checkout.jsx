@@ -1,15 +1,13 @@
 import React, { useContext, useState } from 'react';
-import { useNavigate, Navigate } from 'react-router-dom';
+import { useNavigate, Navigate, Link } from 'react-router-dom';
 import { CartContext } from '../context/CartContext';
-
 import { motion } from 'framer-motion';
-import { useTheme } from '../context/ThemeContext';
 import { optimizeImageUrl } from '../utils/cloudinary';
+import { ChevronRight, ShieldCheck, CheckCircle2 } from 'lucide-react';
 
 const Checkout = () => {
   const { cartItems, getCartTotal, clearCart } = useContext(CartContext);
   const navigate = useNavigate();
-  const { isDark } = useTheme();
 
   const [formData, setFormData] = useState({
     name: '',
@@ -21,7 +19,6 @@ const Checkout = () => {
   });
 
   const [redirecting, setRedirecting] = useState(false);
-
 
   if (cartItems.length === 0 && !redirecting) return <Navigate to="/cart" />;
 
@@ -50,19 +47,16 @@ const Checkout = () => {
     setRedirecting(true);
   };
 
-  const cardBg = isDark ? '#1a1a2a' : '#ffffff';
-  const cardBorder = isDark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.08)';
-
   const inputStyle = {
     width: '100%', padding: '14px 16px', borderRadius: 12,
-    background: 'var(--input-bg)', border: `1px solid ${cardBorder}`,
+    background: 'var(--input-bg)', border: `1px solid var(--border-strong)`,
     color: 'var(--text)', fontSize: '0.9rem', outline: 'none', transition: 'border-color 0.2s',
   };
 
   if (redirecting) {
     return (
       <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 24 }}>
-        <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} style={{ background: cardBg, border: `1px solid ${cardBorder}`, borderRadius: 24, padding: '64px 40px', maxWidth: 500, width: '100%', textAlign: 'center', boxShadow: isDark ? '0 20px 60px rgba(0,0,0,0.5)' : '0 20px 60px rgba(0,0,0,0.08)' }}>
+        <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} style={{ background: 'var(--bg-card)', border: `1px solid var(--border)`, borderRadius: 24, padding: '64px 40px', maxWidth: 500, width: '100%', textAlign: 'center', boxShadow: '0 20px 60px var(--shadow)' }}>
           <div style={{ width: 80, height: 80, borderRadius: '50%', background: 'rgba(37,211,102,0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 32px' }}>
             <span style={{ fontSize: '2.5rem' }}>📱</span>
           </div>
@@ -79,51 +73,93 @@ const Checkout = () => {
   }
 
   return (
-    <div style={{ minHeight: '100vh', paddingTop: 80, paddingBottom: 100 }}>
+    <div style={{ minHeight: '100vh', paddingTop: 100, paddingBottom: 100 }}>
       <div style={{ maxWidth: 1280, margin: '0 auto', padding: '0 24px' }}>
-        <h1 style={{ fontSize: 'clamp(1.2rem, 4vw, 2rem)', fontFamily: 'Outfit, sans-serif', fontWeight: 800, color: 'var(--text)', marginBottom: 40, textTransform: 'uppercase', letterSpacing: '0.1em', borderBottom: `1px solid ${cardBorder}`, paddingBottom: 16 }}>
-          Secure Checkout
-        </h1>
+        
+        {/* Breadcrumb */}
+        <div className="breadcrumb">
+          <Link to="/">Home</Link>
+          <ChevronRight size={14} className="separator" />
+          <Link to="/cart">Cart</Link>
+          <ChevronRight size={14} className="separator" />
+          <span style={{ color: 'var(--text)', fontWeight: 600 }}>Checkout</span>
+        </div>
+
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', marginBottom: 40, borderBottom: `1px solid var(--border)`, paddingBottom: 16 }}>
+          <h1 style={{ fontSize: 'clamp(1.5rem, 4vw, 2.5rem)', fontFamily: '"Cormorant Garamond", Georgia, serif', fontWeight: 700, color: 'var(--text)', margin: 0 }}>
+            Secure Checkout
+          </h1>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 6, color: 'var(--text-secondary)', fontSize: '0.85rem', fontWeight: 500 }}>
+            <ShieldCheck size={16} style={{ color: '#10B981' }} />
+            256-bit Secure
+          </div>
+        </div>
+
+        {/* Visual Step Indicator for WhatsApp flow */}
+        <div style={{ 
+          display: 'flex', alignItems: 'center', justifyContent: 'space-between', 
+          maxWidth: 600, margin: '0 auto 48px', position: 'relative',
+          background: 'var(--bg-secondary)', padding: '24px 32px', borderRadius: 16
+        }}>
+          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 8, zIndex: 1, flex: 1 }}>
+            <div style={{ width: 32, height: 32, borderRadius: '50%', background: 'var(--accent)', color: 'white', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 700, fontSize: '0.9rem' }}>1</div>
+            <span style={{ fontSize: '0.75rem', fontWeight: 600, color: 'var(--text)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Details</span>
+          </div>
+          
+          <div style={{ flex: 1, height: 2, background: 'var(--border-strong)', margin: '0 16px', alignSelf: 'flex-start', marginTop: 15 }} />
+          
+          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 8, zIndex: 1, flex: 1 }}>
+            <div style={{ width: 32, height: 32, borderRadius: '50%', background: 'var(--bg-card)', border: '2px solid var(--border-strong)', color: 'var(--text-muted)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 700, fontSize: '0.9rem' }}>2</div>
+            <span style={{ fontSize: '0.75rem', fontWeight: 600, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>WhatsApp</span>
+          </div>
+          
+          <div style={{ flex: 1, height: 2, background: 'var(--border-strong)', margin: '0 16px', alignSelf: 'flex-start', marginTop: 15 }} />
+          
+          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 8, zIndex: 1, flex: 1 }}>
+            <div style={{ width: 32, height: 32, borderRadius: '50%', background: 'var(--bg-card)', border: '2px solid var(--border-strong)', color: 'var(--text-muted)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 700, fontSize: '0.9rem' }}>3</div>
+            <span style={{ fontSize: '0.75rem', fontWeight: 600, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Confirm</span>
+          </div>
+        </div>
 
         <div style={{ display: 'flex', flexWrap: 'wrap', gap: 48 }}>
           
           <div style={{ flex: '1 1 600px' }}>
             <form id="checkout-form" onSubmit={handlePlaceOrder} style={{ display: 'flex', flexDirection: 'column', gap: 32 }}>
               
-              <div style={{ background: cardBg, borderRadius: 20, border: `1px solid ${cardBorder}`, padding: 32 }}>
-                <h2 style={{ fontSize: '1.1rem', fontWeight: 700, color: 'var(--text)', textTransform: 'uppercase', letterSpacing: '0.1em', margin: '0 0 24px', borderBottom: `1px solid ${cardBorder}`, paddingBottom: 16 }}>Customer Details</h2>
+              <div style={{ background: 'var(--bg-card)', borderRadius: 20, border: `1px solid var(--border)`, padding: 32 }}>
+                <h2 style={{ fontSize: '1.1rem', fontWeight: 700, color: 'var(--text)', textTransform: 'uppercase', letterSpacing: '0.1em', margin: '0 0 24px', borderBottom: `1px solid var(--border)`, paddingBottom: 16 }}>Customer Details</h2>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   <div>
                     <label style={{ display: 'block', fontSize: '0.75rem', fontWeight: 600, color: 'var(--text-secondary)', textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: 8 }}>Full Name</label>
-                    <input type="text" name="name" required value={formData.name} onChange={handleChange} style={inputStyle} onFocus={e => e.target.style.borderColor = '#FF1493'} onBlur={e => e.target.style.borderColor = cardBorder} />
+                    <input type="text" name="name" required value={formData.name} onChange={handleChange} style={inputStyle} onFocus={e => e.target.style.borderColor = 'var(--accent)'} onBlur={e => e.target.style.borderColor = 'var(--border-strong)'} />
                   </div>
                   <div>
                     <label style={{ display: 'block', fontSize: '0.75rem', fontWeight: 600, color: 'var(--text-secondary)', textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: 8 }}>Mobile Number</label>
-                    <input type="text" name="mobile" required readOnly value={formData.mobile} style={{ ...inputStyle, opacity: 0.7, cursor: 'not-allowed' }} />
+                    <input type="tel" name="mobile" required value={formData.mobile} onChange={handleChange} placeholder="10-digit number" style={inputStyle} onFocus={e => e.target.style.borderColor = 'var(--accent)'} onBlur={e => e.target.style.borderColor = 'var(--border-strong)'} />
                   </div>
                 </div>
               </div>
 
-              <div style={{ background: cardBg, borderRadius: 20, border: `1px solid ${cardBorder}`, padding: 32 }}>
-                <h2 style={{ fontSize: '1.1rem', fontWeight: 700, color: 'var(--text)', textTransform: 'uppercase', letterSpacing: '0.1em', margin: '0 0 24px', borderBottom: `1px solid ${cardBorder}`, paddingBottom: 16 }}>Delivery Details</h2>
+              <div style={{ background: 'var(--bg-card)', borderRadius: 20, border: `1px solid var(--border)`, padding: 32 }}>
+                <h2 style={{ fontSize: '1.1rem', fontWeight: 700, color: 'var(--text)', textTransform: 'uppercase', letterSpacing: '0.1em', margin: '0 0 24px', borderBottom: `1px solid var(--border)`, paddingBottom: 16 }}>Delivery Details</h2>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
                   <div>
                     <label style={{ display: 'block', fontSize: '0.75rem', fontWeight: 600, color: 'var(--text-secondary)', textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: 8 }}>Full Address</label>
-                    <textarea name="address" required rows="3" value={formData.address} onChange={handleChange} style={{ ...inputStyle, resize: 'vertical' }} onFocus={e => e.target.style.borderColor = '#FF1493'} onBlur={e => e.target.style.borderColor = cardBorder} />
+                    <textarea name="address" required rows="3" value={formData.address} onChange={handleChange} style={{ ...inputStyle, resize: 'vertical' }} onFocus={e => e.target.style.borderColor = 'var(--accent)'} onBlur={e => e.target.style.borderColor = 'var(--border-strong)'} />
                   </div>
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                     <div>
                       <label style={{ display: 'block', fontSize: '0.75rem', fontWeight: 600, color: 'var(--text-secondary)', textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: 8 }}>City</label>
-                      <input type="text" name="city" required value={formData.city} onChange={handleChange} style={inputStyle} onFocus={e => e.target.style.borderColor = '#FF1493'} onBlur={e => e.target.style.borderColor = cardBorder} />
+                      <input type="text" name="city" required value={formData.city} onChange={handleChange} style={inputStyle} onFocus={e => e.target.style.borderColor = 'var(--accent)'} onBlur={e => e.target.style.borderColor = 'var(--border-strong)'} />
                     </div>
                     <div>
                       <label style={{ display: 'block', fontSize: '0.75rem', fontWeight: 600, color: 'var(--text-secondary)', textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: 8 }}>Pincode</label>
-                      <input type="text" name="pincode" required value={formData.pincode} onChange={handleChange} style={inputStyle} onFocus={e => e.target.style.borderColor = '#FF1493'} onBlur={e => e.target.style.borderColor = cardBorder} />
+                      <input type="text" name="pincode" required value={formData.pincode} onChange={handleChange} style={inputStyle} onFocus={e => e.target.style.borderColor = 'var(--accent)'} onBlur={e => e.target.style.borderColor = 'var(--border-strong)'} />
                     </div>
                   </div>
                   <div>
                     <label style={{ display: 'block', fontSize: '0.75rem', fontWeight: 600, color: 'var(--text-secondary)', textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: 8 }}>Additional Notes <span style={{ textTransform: 'none', fontWeight: 400, opacity: 0.7 }}>(Optional)</span></label>
-                    <input type="text" name="notes" value={formData.notes} onChange={handleChange} placeholder="Any specific instructions..." style={inputStyle} onFocus={e => e.target.style.borderColor = '#FF1493'} onBlur={e => e.target.style.borderColor = cardBorder} />
+                    <input type="text" name="notes" value={formData.notes} onChange={handleChange} placeholder="Any specific instructions..." style={inputStyle} onFocus={e => e.target.style.borderColor = 'var(--accent)'} onBlur={e => e.target.style.borderColor = 'var(--border-strong)'} />
                   </div>
                 </div>
               </div>
@@ -132,14 +168,20 @@ const Checkout = () => {
           </div>
 
           <div style={{ flex: '1 1 350px', maxWidth: 450 }}>
-            <div style={{ background: cardBg, borderRadius: 20, border: `1px solid ${cardBorder}`, padding: 32, position: 'sticky', top: 120 }}>
-              <h2 style={{ fontSize: '1.1rem', fontWeight: 700, color: 'var(--text)', textTransform: 'uppercase', letterSpacing: '0.1em', margin: '0 0 24px', borderBottom: `1px solid ${cardBorder}`, paddingBottom: 16 }}>In Your Bag</h2>
+            <div style={{ background: 'var(--bg-card)', borderRadius: 20, border: `1px solid var(--border)`, padding: 32, position: 'sticky', top: 120 }}>
+              <h2 style={{ fontSize: '1.1rem', fontWeight: 700, color: 'var(--text)', textTransform: 'uppercase', letterSpacing: '0.1em', margin: '0 0 24px', borderBottom: `1px solid var(--border)`, paddingBottom: 16 }}>In Your Bag</h2>
               
               <ul style={{ listStyle: 'none', padding: 0, margin: '0 0 24px', maxHeight: '40vh', overflowY: 'auto' }} className="no-scrollbar">
                 {cartItems.map((item, idx) => (
-                  <li key={idx} style={{ display: 'flex', gap: 16, padding: '16px 0', borderBottom: idx === cartItems.length - 1 ? 'none' : `1px solid ${cardBorder}` }}>
+                  <li key={idx} style={{ display: 'flex', gap: 16, padding: '16px 0', borderBottom: idx === cartItems.length - 1 ? 'none' : `1px solid var(--border)` }}>
                     <div style={{ width: 64, height: 64, borderRadius: 8, background: 'var(--bg-secondary)', overflow: 'hidden', flexShrink: 0 }}>
-                      {item.product.images?.[0] && <img src={optimizeImageUrl(item.product.images[0].url, 150)} alt={item.product.name} loading="lazy" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />}
+                      {item.product.images?.[0] ? (
+                        <img src={optimizeImageUrl(item.product.images[0].url, 150)} alt={item.product.name} loading="lazy" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                      ) : (
+                        <div className="no-image-placeholder">
+                          <div className="pg-monogram" style={{ width: 24, height: 24, borderRadius: 4, fontSize: '0.5rem' }}>PG</div>
+                        </div>
+                      )}
                     </div>
                     <div style={{ flex: 1 }}>
                       <h4 style={{ fontSize: '0.9rem', fontWeight: 600, color: 'var(--text)', margin: '0 0 4px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{item.product.name}</h4>
@@ -153,9 +195,13 @@ const Checkout = () => {
                 ))}
               </ul>
 
-              <div style={{ borderTop: `1px solid ${cardBorder}`, paddingTop: 24, marginBottom: 32, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                <span style={{ fontSize: '1rem', fontWeight: 700, color: 'var(--text)', textTransform: 'uppercase', letterSpacing: '0.1em' }}>Total</span>
-                <span style={{ fontSize: '1.8rem', fontWeight: 800, color: 'var(--text)', fontFamily: 'Outfit, sans-serif' }}>₹{getCartTotal()}</span>
+              <div style={{ borderTop: `1px solid var(--border)`, paddingTop: 24, marginBottom: 16, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <span style={{ fontSize: '0.9rem', fontWeight: 600, color: 'var(--text-secondary)' }}>Subtotal</span>
+                <span style={{ fontSize: '1.1rem', fontWeight: 700, color: 'var(--text)', fontFamily: 'Outfit, sans-serif' }}>₹{getCartTotal()}</span>
+              </div>
+              <div style={{ marginBottom: 32, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <span style={{ fontSize: '0.9rem', fontWeight: 600, color: 'var(--text-secondary)' }}>Shipping</span>
+                <span style={{ fontSize: '0.85rem', fontWeight: 600, color: '#10B981' }}>Calculated on WhatsApp</span>
               </div>
 
               <button 
@@ -171,6 +217,11 @@ const Checkout = () => {
               >
                 Place Order on WhatsApp
               </button>
+              
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6, marginTop: 16, fontSize: '0.75rem', color: 'var(--text-muted)' }}>
+                <CheckCircle2 size={12} />
+                No payment required until confirmation
+              </div>
             </div>
           </div>
 

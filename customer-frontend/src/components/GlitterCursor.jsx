@@ -19,8 +19,8 @@ const GlitterBackground = () => {
 
     // Premium gold palette depending on theme
     const COLORS = isDark
-      ? ['#D4AF37', '#F5C542', '#FFD700', '#FFE08A'] // Bright gold for dark mode
-      : ['#FFB90F', '#FFC125', '#FFD700', '#FF8C00']; // Brighter, more vibrant gold for light mode
+      ? ['#C9A84C', '#D4AF37', '#FFD700', '#E8C85A']
+      : ['#C9A84C', '#D4AF37', '#B8975A', '#A67D3D'];
 
     class Particle {
       constructor(initialY = null) {
@@ -29,24 +29,25 @@ const GlitterBackground = () => {
       reset(startY) {
         this.x = Math.random() * width;
         this.y = startY !== undefined ? startY : height + 10;
-        this.radius = isDark ? (Math.random() * 1.8 + 0.35) : (Math.random() * 2.2 + 0.6);
+        // Light mode: smaller, subtler particles
+        this.radius = isDark ? (Math.random() * 1.6 + 0.3) : (Math.random() * 1.4 + 0.3);
         this.color = COLORS[Math.floor(Math.random() * COLORS.length)];
-        this.speedY = -(Math.random() * 0.6 + 0.15);
-        this.speedX = Math.random() * 0.5 - 0.25;
-        this.opacity = isDark ? (Math.random() * 0.8 + 0.2) : (Math.random() * 0.5 + 0.5);
+        this.speedY = -(Math.random() * 0.5 + 0.12);
+        this.speedX = Math.random() * 0.4 - 0.2;
+        this.opacity = isDark ? (Math.random() * 0.7 + 0.2) : (Math.random() * 0.3 + 0.15);
         this.opacityDir = Math.random() > 0.5 ? 1 : -1;
-        this.opacitySpeed = Math.random() * 0.02 + 0.008;
-        // Some particles are diamond-shaped sparkles
-        this.shape = Math.random() < 0.25 ? 'diamond' : 'circle';
+        this.opacitySpeed = Math.random() * 0.015 + 0.005;
+        this.shape = Math.random() < 0.2 ? 'diamond' : 'circle';
         this.rotation = Math.random() * Math.PI;
-        this.rotSpeed = (Math.random() - 0.5) * 0.02;
+        this.rotSpeed = (Math.random() - 0.5) * 0.015;
       }
       update() {
         this.x += this.speedX;
         this.y += this.speedY;
         this.opacity += this.opacitySpeed * this.opacityDir;
-        const lowerBound = isDark ? -0.2 : 0.3;
-        if (this.opacity >= 1.2 || this.opacity <= lowerBound) this.opacityDir *= -1;
+        const lowerBound = isDark ? 0.05 : 0.05;
+        const upperBound = isDark ? 1.0 : 0.5;
+        if (this.opacity >= upperBound || this.opacity <= lowerBound) this.opacityDir *= -1;
         this.rotation += this.rotSpeed;
         if (this.y < -10) this.reset();
         if (this.x < -10) this.x = width + 5;
@@ -60,15 +61,13 @@ const GlitterBackground = () => {
         ctx.globalAlpha = safeOpacity;
         ctx.fillStyle = this.color;
 
-        // Add subtle shadow for visibility and brighter glow
-        ctx.shadowColor = isDark ? 'rgba(255, 215, 0, 0.4)' : 'rgba(255, 185, 15, 0.4)';
-        ctx.shadowBlur = isDark ? 6 : 4;
+        ctx.shadowColor = isDark ? 'rgba(201, 168, 76, 0.3)' : 'rgba(166, 125, 61, 0.2)';
+        ctx.shadowBlur = isDark ? 5 : 3;
 
         if (this.shape === 'diamond') {
-          // Diamond sparkle
           ctx.translate(this.x, this.y);
           ctx.rotate(this.rotation);
-          const r = this.radius * 1.8;
+          const r = this.radius * 1.6;
           ctx.beginPath();
           ctx.moveTo(0, -r);
           ctx.lineTo(r * 0.5, 0);
@@ -77,31 +76,28 @@ const GlitterBackground = () => {
           ctx.closePath();
           ctx.fill();
 
-          // Glow halo for diamonds
-          ctx.globalAlpha = safeOpacity * 0.25;
-          const grad = ctx.createRadialGradient(0, 0, 0, 0, 0, r * 2.5);
+          ctx.globalAlpha = safeOpacity * 0.15;
+          const grad = ctx.createRadialGradient(0, 0, 0, 0, 0, r * 2);
           grad.addColorStop(0, this.color);
-          grad.addColorStop(1, isDark ? 'rgba(0,0,0,0)' : 'rgba(255,255,255,0)');
+          grad.addColorStop(1, isDark ? 'rgba(0,0,0,0)' : 'rgba(253,251,247,0)');
           ctx.fillStyle = grad;
           ctx.beginPath();
-          ctx.arc(0, 0, r * 2.5, 0, Math.PI * 2);
+          ctx.arc(0, 0, r * 2, 0, Math.PI * 2);
           ctx.fill();
         } else {
-          // Soft circle
           ctx.translate(this.x, this.y);
           ctx.beginPath();
           ctx.arc(0, 0, this.radius, 0, Math.PI * 2);
           ctx.fill();
 
-          // Glow for larger circles
-          if (this.radius > 1.5) {
-            ctx.globalAlpha = safeOpacity * 0.2;
-            const grad = ctx.createRadialGradient(0, 0, 0, 0, 0, this.radius * 3);
+          if (this.radius > 1.2) {
+            ctx.globalAlpha = safeOpacity * 0.12;
+            const grad = ctx.createRadialGradient(0, 0, 0, 0, 0, this.radius * 2.5);
             grad.addColorStop(0, this.color);
-            grad.addColorStop(1, isDark ? 'rgba(0,0,0,0)' : 'rgba(255,255,255,0)');
+            grad.addColorStop(1, isDark ? 'rgba(0,0,0,0)' : 'rgba(253,251,247,0)');
             ctx.fillStyle = grad;
             ctx.beginPath();
-            ctx.arc(0, 0, this.radius * 3, 0, Math.PI * 2);
+            ctx.arc(0, 0, this.radius * 2.5, 0, Math.PI * 2);
             ctx.fill();
           }
         }
@@ -109,8 +105,10 @@ const GlitterBackground = () => {
       }
     }
 
-    // ~1 particle per 18000px² – scale intelligently, max 75
-    const count = Math.min(Math.floor((width * height) / 18000), 75);
+    // Fewer particles on light mode, max 60 total
+    const baseDensity = isDark ? 20000 : 30000;
+    const maxParticles = isDark ? 60 : 40;
+    const count = Math.min(Math.floor((width * height) / baseDensity), maxParticles);
     let particles = Array.from({ length: count }, () => new Particle());
 
     const handleResize = () => {
@@ -118,13 +116,18 @@ const GlitterBackground = () => {
       height = window.innerHeight;
       canvas.width = width;
       canvas.height = height;
-      const newCount = Math.min(Math.floor((width * height) / 18000), 75);
+      const newCount = Math.min(Math.floor((width * height) / baseDensity), maxParticles);
       particles = Array.from({ length: newCount }, () => new Particle());
     };
     window.addEventListener('resize', handleResize);
 
     let rafId;
     const animate = () => {
+      // Pause when tab is not visible
+      if (document.hidden) {
+        rafId = requestAnimationFrame(animate);
+        return;
+      }
       ctx.clearRect(0, 0, width, height);
       particles.forEach(p => { p.update(); p.draw(); });
       rafId = requestAnimationFrame(animate);

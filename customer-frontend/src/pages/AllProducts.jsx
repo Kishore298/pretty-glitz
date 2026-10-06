@@ -1,8 +1,9 @@
 import React, { useEffect, useState } from 'react';
+import { Link } from 'react-router-dom';
 import api from '../utils/api';
 import ProductCard from '../components/ProductCard';
 import { motion, AnimatePresence } from 'framer-motion';
-import { ChevronDown, ChevronUp } from 'lucide-react';
+import { ChevronDown, ChevronUp, ChevronRight } from 'lucide-react';
 
 const CategoryAccordion = ({ category, products, subcategories }) => {
   const [isOpen, setIsOpen] = useState(true); // Open by default
@@ -16,7 +17,7 @@ const CategoryAccordion = ({ category, products, subcategories }) => {
           cursor: 'pointer', padding: '16px 0' 
         }}
       >
-        <h2 style={{ fontFamily: 'Outfit, sans-serif', fontSize: '1.6rem', fontWeight: 700, color: 'var(--text)', margin: 0 }}>
+        <h2 style={{ fontFamily: '"Cormorant Garamond", Georgia, serif', fontSize: '2rem', fontWeight: 700, color: 'var(--text)', margin: 0 }}>
           {category.name}
         </h2>
         <div style={{ color: 'var(--text-muted)' }}>
@@ -33,14 +34,17 @@ const CategoryAccordion = ({ category, products, subcategories }) => {
             transition={{ duration: 0.3 }}
             style={{ overflow: 'hidden' }}
           >
-            <div style={{ paddingBottom: 32 }}>
+            <div style={{ paddingBottom: 40 }}>
               {subcategories && subcategories.length > 0 ? (
                 subcategories.map(sub => {
-                  const subProducts = products.filter(p => p.subcategoryId?._id === sub._id);
+                  const subProducts = products.filter(p => p.subcategoryId?._id === sub._id || p.subcategoryId === sub._id);
                   if (subProducts.length === 0) return null;
                   return (
-                    <div key={sub._id} style={{ marginTop: 24 }}>
-                      <h3 style={{ fontSize: '1.2rem', color: 'var(--text)', marginBottom: 16 }}>{sub.name}</h3>
+                    <div key={sub._id} style={{ marginTop: 32 }}>
+                      <h3 style={{ fontSize: '1.2rem', color: 'var(--text)', marginBottom: 24, display: 'flex', alignItems: 'center', gap: 12 }}>
+                        {sub.name}
+                        <div style={{ flex: 1, height: 1, background: 'var(--border)' }} />
+                      </h3>
                       <div className="product-grid-4">
                         {subProducts.map((p, idx) => (
                           <motion.div 
@@ -58,7 +62,7 @@ const CategoryAccordion = ({ category, products, subcategories }) => {
                   );
                 })
               ) : (
-                <div className="product-grid-4" style={{ marginTop: 16 }}>
+                <div className="product-grid-4" style={{ marginTop: 24 }}>
                   {products.map((p, idx) => (
                     <motion.div 
                       key={p._id}
@@ -70,7 +74,7 @@ const CategoryAccordion = ({ category, products, subcategories }) => {
                       <ProductCard product={p} />
                     </motion.div>
                   ))}
-                  {products.length === 0 && <p style={{ color: 'var(--text-muted)' }}>No products in this category yet.</p>}
+                  {products.length === 0 && <p style={{ color: 'var(--text-muted)', gridColumn: '1 / -1', padding: '40px 0', textAlign: 'center' }}>No products in this category yet.</p>}
                 </div>
               )}
             </div>
@@ -89,6 +93,7 @@ const AllProducts = () => {
 
   useEffect(() => {
     fetchData();
+    window.scrollTo(0, 0);
   }, []);
 
   const fetchData = async () => {
@@ -108,34 +113,77 @@ const AllProducts = () => {
     setLoading(false);
   };
 
-  if (loading) {
-    return (
-      <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-        <p style={{ color: 'var(--text-muted)' }}>Loading products...</p>
-      </div>
-    );
-  }
-
   return (
-    <div style={{ padding: '120px 24px 60px', maxWidth: 1280, margin: '0 auto', minHeight: '100vh' }}>
-      <div style={{ marginBottom: 48, textAlign: 'center' }}>
-        <h1 style={{ fontFamily: 'Outfit, sans-serif', fontSize: 'clamp(2rem, 5vw, 3rem)', fontWeight: 800, color: 'var(--text)', marginBottom: 12 }}>
-          All Products
-        </h1>
-        <p style={{ color: 'var(--text-secondary)', fontSize: '1.1rem', maxWidth: 600, margin: '0 auto' }}>
-          Explore our complete collection of exquisite bangles, artificial flowers, and elegant jewelry.
-        </p>
+    <div style={{ minHeight: '100vh', paddingTop: 72, paddingBottom: 100 }}>
+      {/* ── Banner ────────────────────────────────────────────── */}
+      <div style={{ 
+        height: 280, 
+        background: 'var(--bg-secondary)',
+        display: 'flex', alignItems: 'center', justifyContent: 'center',
+        borderBottom: `1px solid var(--border)`,
+        position: 'relative'
+      }}>
+        {/* Decorative background blob */}
+        <div style={{
+          position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%, -50%)',
+          width: '60vw', height: '60vw', maxWidth: 800, maxHeight: 800,
+          background: 'radial-gradient(circle, rgba(138,43,226,0.05) 0%, transparent 70%)',
+          borderRadius: '50%', pointerEvents: 'none'
+        }} />
+
+        <div style={{ position: 'relative', zIndex: 2, textAlign: 'center', padding: '0 24px', width: '100%' }}>
+          <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}>
+            {/* Breadcrumb */}
+            <div style={{ 
+              display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, 
+              fontSize: '0.8rem', color: 'var(--text-muted)', 
+              marginBottom: 16, fontWeight: 600, letterSpacing: '0.1em', textTransform: 'uppercase' 
+            }}>
+              <Link to="/" style={{ color: 'inherit', textDecoration: 'none' }}>Home</Link>
+              <ChevronRight size={14} />
+              <span style={{ color: 'var(--accent)' }}>All Products</span>
+            </div>
+
+            <h1 style={{
+              fontFamily: '"Cormorant Garamond", Georgia, serif', fontWeight: 700,
+              fontSize: 'clamp(2rem, 5vw, 3.5rem)',
+              color: 'var(--text)', 
+              margin: 0,
+            }}>
+              Complete Collection
+            </h1>
+            <p style={{ 
+              color: 'var(--text-secondary)', 
+              marginTop: 12, fontSize: '0.95rem' 
+            }}>
+              Explore our complete collection of exquisite accessories and elegant jewelry.
+            </p>
+          </motion.div>
+        </div>
       </div>
 
-      <div>
-        {categories.map(cat => (
-          <CategoryAccordion 
-            key={cat._id}
-            category={cat}
-            products={products.filter(p => p.category === cat.name)}
-            subcategories={cat.name.toLowerCase() === 'artifical flowers' ? subcategories : null}
-          />
-        ))}
+      <div style={{ padding: '40px 24px 60px', maxWidth: 1280, margin: '0 auto' }}>
+        {loading ? (
+          <div>
+            <div style={{ height: 60, borderBottom: '1px solid var(--border)', marginBottom: 32 }} />
+            <div className="product-grid-4">
+              {Array.from({ length: 8 }).map((_, i) => (
+                <div key={i} className="skeleton" style={{ height: 350 }} />
+              ))}
+            </div>
+          </div>
+        ) : (
+          <div>
+            {categories.map(cat => (
+              <CategoryAccordion 
+                key={cat._id}
+                category={cat}
+                products={products.filter(p => p.category === cat.name)}
+                subcategories={cat.name.toLowerCase() === 'artificial flowers' ? subcategories : null}
+              />
+            ))}
+          </div>
+        )}
       </div>
     </div>
   );
