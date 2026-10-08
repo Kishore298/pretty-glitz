@@ -116,8 +116,7 @@ const AllProducts = () => {
   return (
     <div style={{ minHeight: '100vh', paddingTop: 72, paddingBottom: 100 }}>
       {/* ── Banner ────────────────────────────────────────────── */}
-      <div style={{ 
-        height: 280, 
+      <div className="page-banner" style={{ 
         background: 'var(--bg-secondary)',
         display: 'flex', alignItems: 'center', justifyContent: 'center',
         borderBottom: `1px solid var(--border)`,
@@ -131,7 +130,7 @@ const AllProducts = () => {
           borderRadius: '50%', pointerEvents: 'none'
         }} />
 
-        <div style={{ position: 'relative', zIndex: 2, textAlign: 'center', padding: '0 24px', width: '100%' }}>
+        <div className="section-padding" style={{ position: 'relative', zIndex: 2, textAlign: 'center', width: '100%' }}>
           <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}>
             {/* Breadcrumb */}
             <div style={{ 
@@ -162,13 +161,13 @@ const AllProducts = () => {
         </div>
       </div>
 
-      <div style={{ padding: '40px 24px 60px', maxWidth: 1280, margin: '0 auto' }}>
+      <div className="section-padding" style={{ paddingTop: 40, paddingBottom: 60, maxWidth: 1280, margin: '0 auto' }}>
         {loading ? (
           <div>
             <div style={{ height: 60, borderBottom: '1px solid var(--border)', marginBottom: 32 }} />
             <div className="product-grid-4">
               {Array.from({ length: 8 }).map((_, i) => (
-                <div key={i} className="skeleton" style={{ height: 350 }} />
+                <div key={i} className="skeleton product-skeleton" />
               ))}
             </div>
           </div>

@@ -23,8 +23,11 @@ const Navbar = () => {
   const { getCartCount } = useContext(CartContext);
   const { isDark, toggleTheme } = useTheme();
   const [allCategories, setAllCategories] = useState([]);
+  const [searchResults, setSearchResults] = useState([]);
+  const [isSearching, setIsSearching] = useState(false);
   const banglesRef = useRef(null);
   const searchInputRef = useRef(null);
+  const searchPanelRef = useRef(null);
 
   useEffect(() => {
     const fetchCategories = async () => {
@@ -48,6 +51,9 @@ const Navbar = () => {
   useEffect(() => {
     const handleOutside = (e) => {
       if (banglesRef.current && !banglesRef.current.contains(e.target)) setBanglesOpen(false);
+      if (searchPanelRef.current && !searchPanelRef.current.contains(e.target) && !e.target.closest('.search-toggle-btn')) {
+        setSearchOpen(false);
+      }
     };
     document.addEventListener('mousedown', handleOutside);
     return () => document.removeEventListener('mousedown', handleOutside);
@@ -72,6 +78,31 @@ const Navbar = () => {
     return () => document.removeEventListener('keydown', handleEsc);
   }, [searchOpen]);
 
+  // Search fetching logic
+  useEffect(() => {
+    if (!searchQuery.trim()) {
+      setSearchResults([]);
+      return;
+    }
+    const delayDebounceFn = setTimeout(async () => {
+      setIsSearching(true);
+      try {
+        const { data } = await api.get('/products');
+        const lowerQuery = searchQuery.toLowerCase();
+        const filtered = data.filter(p => 
+          p.name.toLowerCase().includes(lowerQuery) || 
+          (p.category && p.category.toLowerCase().includes(lowerQuery)) ||
+          (p.subcategoryId?.name && p.subcategoryId.name.toLowerCase().includes(lowerQuery))
+        );
+        setSearchResults(filtered.slice(0, 5));
+      } catch (err) {
+        console.error(err);
+      }
+      setIsSearching(false);
+    }, 300);
+    return () => clearTimeout(delayDebounceFn);
+  }, [searchQuery]);
+
   const handleSearchSubmit = (e) => {
     e.preventDefault();
     if (searchQuery.trim()) {
@@ -83,9 +114,11 @@ const Navbar = () => {
 
   const primaryCats = allCategories.filter(name => PRIMARY_CATEGORIES.includes(name));
 
-  const linkStyle = (path) => {
+  const isBanglesActive = decodeURIComponent(pathname) === '/category/Bangles' || BANGLE_SUBCATS.some(sub => decodeURIComponent(pathname) === `/category/${sub}`);
+
+  const linkStyle = (path, forceActive = false) => {
     const decodedPathname = decodeURIComponent(pathname);
-    const isActive = decodedPathname === path || decodedPathname.startsWith(path + '/');
+    const isActive = forceActive || decodedPathname === path || decodedPathname.startsWith(path + '/');
     return {
       fontSize: '0.85rem', fontWeight: isActive ? 700 : 500,
       color: isActive ? 'var(--accent)' : 'var(--text-secondary)',
@@ -99,7 +132,6 @@ const Navbar = () => {
   const dropdownItemStyle = {
     display: 'block', padding: '10px 20px',
     fontSize: '0.85rem', fontWeight: 500, textDecoration: 'none',
-    color: 'var(--text-secondary)',
     transition: 'background 0.15s, color 0.15s',
     whiteSpace: 'nowrap',
   };
@@ -171,10 +203,10 @@ const Navbar = () => {
               >
                 <button
                   style={{
-                    ...linkStyle('/category/Bangles'),
+                    ...linkStyle('/category/Bangles', isBanglesActive),
                     background: 'none', border: 'none', cursor: 'pointer',
                     display: 'flex', alignItems: 'center', gap: 4, padding: 0,
-                    paddingBottom: linkStyle('/category/Bangles').paddingBottom,
+                    paddingBottom: linkStyle('/category/Bangles', isBanglesActive).paddingBottom,
                   }}
                 >
                   Bangles
@@ -188,16 +220,19 @@ const Navbar = () => {
                       style={{ ...dropdownStyle, left: 0 }}
                     >
 
-                      {BANGLE_SUBCATS.map(sub => (
-                        <Link key={sub} to={`/category/${encodeURIComponent(sub)}`} style={{...dropdownItemStyle, display: 'flex', alignItems: 'center', gap: 8}}
-                          onMouseEnter={e => { e.currentTarget.style.background = isDark ? 'rgba(245,240,234,0.06)' : 'rgba(26,17,24,0.04)'; e.currentTarget.style.color = 'var(--accent)'; }}
-                          onMouseLeave={e => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = 'var(--text-secondary)'; }}
-                          onClick={() => setBanglesOpen(false)}
-                        >
-                          <div style={{ width: 4, height: 4, borderRadius: '50%', background: 'currentColor', opacity: 0.5 }} />
-                          {sub}
-                        </Link>
-                      ))}
+                      {BANGLE_SUBCATS.map(sub => {
+                        const isSubActive = decodeURIComponent(pathname) === `/category/${sub}`;
+                        return (
+                          <Link key={sub} to={`/category/${encodeURIComponent(sub)}`} style={{...dropdownItemStyle, color: isSubActive ? 'var(--accent)' : 'var(--text-secondary)', display: 'flex', alignItems: 'center', gap: 8}}
+                            onMouseEnter={e => { e.currentTarget.style.background = isDark ? 'rgba(245,240,234,0.06)' : 'rgba(26,17,24,0.04)'; e.currentTarget.style.color = 'var(--accent)'; }}
+                            onMouseLeave={e => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = isSubActive ? 'var(--accent)' : 'var(--text-secondary)'; }}
+                            onClick={() => setBanglesOpen(false)}
+                          >
+                            <div style={{ width: 4, height: 4, borderRadius: '50%', background: 'currentColor', opacity: 0.5 }} />
+                            {sub}
+                          </Link>
+                        );
+                      })}
                     </motion.div>
                   )}
                 </AnimatePresence>
@@ -227,14 +262,165 @@ const Navbar = () => {
             <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
 
               {/* Search Button */}
-              <button
-                onClick={() => setSearchOpen(true)}
-                style={iconBtnStyle}
-                title="Search products"
-                aria-label="Open search"
-              >
-                <Search size={17} />
-              </button>
+              <div style={{ position: 'relative' }}>
+                <button
+                  onClick={() => setSearchOpen(!searchOpen)}
+                  style={{...iconBtnStyle, background: searchOpen ? 'var(--text)' : iconBtnStyle.background, color: searchOpen ? 'var(--bg)' : 'var(--text)' }}
+                  title="Search products"
+                  aria-label="Open search"
+                  className="search-toggle-btn"
+                >
+                  {searchOpen ? <X size={17} /> : <Search size={17} />}
+                </button>
+                
+                {/* Desktop Search Dropdown */}
+                <style>{`
+                  .desktop-search-dropdown {
+                    position: absolute;
+                    top: calc(100% + 16px);
+                    right: 0;
+                    width: calc(100vw - 48px);
+                    max-width: 500px;
+                  }
+                  @media (max-width: 768px) {
+                    .desktop-search-dropdown {
+                      position: fixed;
+                      top: 72px; /* Navbar height */
+                      right: 24px;
+                      width: calc(100vw - 48px);
+                    }
+                  }
+                `}</style>
+                <AnimatePresence>
+                  {searchOpen && (
+                    <motion.div
+                      ref={searchPanelRef}
+                      initial={{ opacity: 0, y: -10 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      exit={{ opacity: 0, y: -10 }}
+                      transition={{ duration: 0.15 }}
+                      style={{
+                        background: isDark ? 'rgba(14,14,22,0.98)' : 'rgba(253,251,247,0.98)',
+                        backdropFilter: 'blur(16px)',
+                        border: `1px solid var(--border)`,
+                        borderRadius: 16, overflow: 'hidden',
+                        boxShadow: isDark ? '0 20px 40px rgba(0,0,0,0.5)' : '0 20px 40px rgba(26,17,24,0.1)',
+                        zIndex: 100,
+                        display: 'flex', flexDirection: 'column',
+                      }}
+                      className="desktop-search-dropdown"
+                    >
+                      {/* Search Input */}
+                      <form onSubmit={handleSearchSubmit} style={{ position: 'relative', borderBottom: '1px solid var(--border)' }}>
+                        <Search size={18} style={{ position: 'absolute', left: 16, top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)' }} />
+                        <input
+                          ref={searchInputRef}
+                          type="text"
+                          value={searchQuery}
+                          onChange={(e) => setSearchQuery(e.target.value)}
+                          placeholder="Search bangles, flowers, jewels..."
+                          style={{
+                            width: '100%', padding: '16px 48px',
+                            background: 'transparent', border: 'none', outline: 'none',
+                            color: 'var(--text)', fontSize: '1rem',
+                            fontFamily: 'Inter, sans-serif'
+                          }}
+                        />
+                        {searchQuery && (
+                          <button type="button" onClick={() => setSearchQuery('')} style={{
+                            position: 'absolute', right: 16, top: '50%', transform: 'translateY(-50%)',
+                            background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-muted)',
+                            display: 'flex', alignItems: 'center', justifyContent: 'center'
+                          }}>
+                            <X size={16} />
+                          </button>
+                        )}
+                      </form>
+
+                      {/* Content Area */}
+                      <div style={{ maxHeight: 400, overflowY: 'auto' }} className="no-scrollbar">
+                        {!searchQuery.trim() ? (
+                          <div style={{ padding: '20px' }}>
+                            <p style={{ fontSize: '0.7rem', fontWeight: 600, color: 'var(--text-muted)', letterSpacing: '0.1em', textTransform: 'uppercase', marginBottom: 12 }}>
+                              Popular Categories
+                            </p>
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+                              {['Bangles', 'Artificial Flowers', 'Jumkhas', 'Jewels', 'Gift Box Combo'].map(cat => (
+                                <Link
+                                  key={cat} to={`/category/${cat}`} onClick={() => setSearchOpen(false)}
+                                  style={{
+                                    display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+                                    padding: '10px 12px', borderRadius: 8,
+                                    color: 'var(--text)', textDecoration: 'none',
+                                    fontSize: '0.9rem', fontWeight: 500,
+                                    transition: 'background 0.15s',
+                                  }}
+                                  onMouseEnter={e => e.currentTarget.style.background = 'var(--bg-secondary)'}
+                                  onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
+                                >
+                                  {cat}
+                                  <ChevronRight size={14} style={{ color: 'var(--text-muted)' }} />
+                                </Link>
+                              ))}
+                            </div>
+                          </div>
+                        ) : isSearching ? (
+                          <div style={{ padding: '32px 20px', textAlign: 'center', color: 'var(--text-muted)', fontSize: '0.9rem' }}>
+                            Searching...
+                          </div>
+                        ) : searchResults.length > 0 ? (
+                          <div style={{ padding: '12px 0' }}>
+                            <div style={{ padding: '0 20px', marginBottom: 8 }}>
+                              <p style={{ fontSize: '0.7rem', fontWeight: 600, color: 'var(--text-muted)', letterSpacing: '0.1em', textTransform: 'uppercase' }}>
+                                Products
+                              </p>
+                            </div>
+                            {searchResults.map(product => (
+                              <Link key={product._id} to={`/product/${product._id}`} onClick={() => setSearchOpen(false)} style={{
+                                display: 'flex', alignItems: 'center', gap: 12,
+                                padding: '10px 20px', textDecoration: 'none',
+                                transition: 'background 0.15s',
+                              }}
+                              onMouseEnter={e => e.currentTarget.style.background = 'var(--bg-secondary)'}
+                              onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
+                              >
+                                <div style={{ width: 40, height: 40, borderRadius: 6, background: 'var(--bg-secondary)', overflow: 'hidden', flexShrink: 0 }}>
+                                  {product.images && product.images[0] ? (
+                                    <img src={product.images[0].url} alt={product.name} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                                  ) : (
+                                    <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--text-muted)', fontSize: '10px' }}>PG</div>
+                                  )}
+                                </div>
+                                <div style={{ flex: 1, minWidth: 0 }}>
+                                  <div style={{ fontSize: '0.9rem', fontWeight: 500, color: 'var(--text)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                                    {product.name}
+                                  </div>
+                                  <div style={{ fontSize: '0.8rem', fontWeight: 600, color: 'var(--text-secondary)' }}>
+                                    ₹{product.price}
+                                  </div>
+                                </div>
+                              </Link>
+                            ))}
+                            <div style={{ padding: '12px 20px 0', borderTop: '1px solid var(--border)', marginTop: 8 }}>
+                              <Link to={`/search?q=${encodeURIComponent(searchQuery)}`} onClick={() => setSearchOpen(false)} style={{
+                                display: 'inline-flex', alignItems: 'center', gap: 6,
+                                color: 'var(--accent)', fontSize: '0.85rem', fontWeight: 600, textDecoration: 'none',
+                              }}>
+                                View all results <ChevronRight size={14} />
+                              </Link>
+                            </div>
+                          </div>
+                        ) : (
+                          <div style={{ padding: '32px 20px', textAlign: 'center' }}>
+                            <p style={{ color: 'var(--text)', fontSize: '0.95rem', fontWeight: 500, margin: '0 0 4px' }}>No products found</p>
+                            <p style={{ color: 'var(--text-muted)', fontSize: '0.85rem', margin: 0 }}>Try searching for another product or category.</p>
+                          </div>
+                        )}
+                      </div>
+                    </motion.div>
+                  )}
+                </AnimatePresence>
+              </div>
 
               {/* Dark/Light Toggle */}
               <button
@@ -286,94 +472,7 @@ const Navbar = () => {
         </div>
       </nav>
 
-      {/* ── Search Overlay (Responsive) ──────────────────────── */}
-      <AnimatePresence>
-        {searchOpen && (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            transition={{ duration: 0.2 }}
-            className="search-overlay"
-          >
-            {/* Search Header */}
-            <div style={{
-              borderBottom: `1px solid var(--border)`,
-              padding: '16px 24px',
-              display: 'flex', alignItems: 'center', gap: 16,
-            }}>
-              <Link to="/" onClick={() => setSearchOpen(false)} style={{ textDecoration: 'none', display: 'flex', alignItems: 'center', gap: 6, flexShrink: 0 }}>
-                <div style={{
-                  width: 28, height: 28, borderRadius: 7,
-                  background: 'var(--accent-gradient)',
-                  display: 'flex', alignItems: 'center', justifyContent: 'center',
-                }}>
-                  <Sparkles size={14} color="white" />
-                </div>
-              </Link>
-
-              <form onSubmit={handleSearchSubmit} style={{ flex: 1, position: 'relative' }}>
-                <input
-                  ref={searchInputRef}
-                  type="text"
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  placeholder="Search bangles, flowers, jewels..."
-                  className="search-overlay-input"
-                />
-                <button type="submit" style={{
-                  position: 'absolute', right: 12, top: '50%', transform: 'translateY(-50%)',
-                  background: 'none', border: 'none', cursor: 'pointer',
-                  color: 'var(--text-secondary)', display: 'flex', alignItems: 'center',
-                }}>
-                  <Search size={20} />
-                </button>
-              </form>
-
-              <button
-                onClick={() => { setSearchOpen(false); setSearchQuery(''); }}
-                style={{
-                  background: 'none', border: 'none', cursor: 'pointer',
-                  color: 'var(--text-secondary)', display: 'flex', alignItems: 'center',
-                  padding: 8, flexShrink: 0,
-                }}
-              >
-                <X size={22} />
-              </button>
-            </div>
-
-            {/* Quick Category Links */}
-            <div style={{ padding: '32px 24px', maxWidth: 600, margin: '0 auto', width: '100%' }}>
-              <p style={{ fontSize: '0.75rem', fontWeight: 600, color: 'var(--text-muted)', letterSpacing: '0.15em', textTransform: 'uppercase', marginBottom: 20 }}>
-                Popular Categories
-              </p>
-              <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
-                {['Bangles', 'Artificial Flowers', 'Jumkhas', 'Jewels', 'Gift Box Combo'].map(cat => (
-                  <Link
-                    key={cat}
-                    to={`/category/${cat}`}
-                    onClick={() => setSearchOpen(false)}
-                    style={{
-                      display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-                      padding: '14px 16px', borderRadius: 12,
-                      color: 'var(--text)', textDecoration: 'none',
-                      fontSize: '1rem', fontWeight: 500,
-                      transition: 'background 0.15s',
-                    }}
-                    onMouseEnter={e => e.currentTarget.style.background = 'var(--bg-secondary)'}
-                    onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
-                  >
-                    {cat}
-                    <ChevronRight size={16} style={{ color: 'var(--text-muted)' }} />
-                  </Link>
-                ))}
-              </div>
-            </div>
-          </motion.div>
-        )}
-      </AnimatePresence>
-
-      {/* Mobile Overlay */}
+      {/* Desktop search overlay removed */}
       <AnimatePresence>
         {isOpen && (
           <motion.div
@@ -411,44 +510,88 @@ const Navbar = () => {
                 </div>
               </form>
 
-              <Link to="/" onClick={() => setIsOpen(false)} style={{
-                fontSize: '1.8rem', fontFamily: 'Outfit, sans-serif', fontWeight: 700,
-                color: 'var(--text)', textDecoration: 'none', padding: '10px 0',
-              }}>Home</Link>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 0, marginTop: 4 }}>
+                <Link to="/" onClick={() => setIsOpen(false)} style={{
+                  display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+                  padding: '8px 10px', borderRadius: 8,
+                  background: pathname === '/' ? 'var(--bg-secondary)' : 'transparent',
+                  color: pathname === '/' ? 'var(--accent)' : 'var(--text)',
+                  textDecoration: 'none', transition: 'background 0.2s',
+                }}>
+                  <span style={{ fontSize: '1rem', fontFamily: 'Outfit, sans-serif', fontWeight: 600 }}>Home</span>
+                  <ChevronRight size={14} opacity={0.4} />
+                </Link>
 
-              {/* Bangles group */}
-              <div>
-                <Link to="/category/Bangles" onClick={() => setIsOpen(false)} style={{
-                  fontSize: '1.8rem', fontFamily: 'Outfit, sans-serif', fontWeight: 700,
-                  color: 'var(--text)', textDecoration: 'none', padding: '10px 0', display: 'block',
-                }}>Bangles</Link>
-                <div style={{ paddingLeft: 24, marginBottom: 8 }}>
-                  {BANGLE_SUBCATS.map(sub => (
-                    <Link key={sub} to={`/category/${encodeURIComponent(sub)}`} onClick={() => setIsOpen(false)} style={{
-                      display: 'flex', alignItems: 'center', gap: 8, fontSize: '1.1rem', fontFamily: 'Outfit, sans-serif', fontWeight: 500,
-                      color: 'var(--text-secondary)',
-                      textDecoration: 'none', padding: '6px 0',
-                    }}>
-                      <div style={{ width: 4, height: 4, borderRadius: '50%', background: 'currentColor', opacity: 0.5 }} />
-                      {sub}
-                    </Link>
-                  ))}
+                {/* Bangles Group */}
+                <div style={{ 
+                  background: isBanglesActive ? 'var(--bg-secondary)' : 'transparent',
+                  border: `1px solid ${isBanglesActive ? 'var(--border-strong)' : 'transparent'}`,
+                  borderRadius: 8, overflow: 'hidden', transition: 'all 0.3s ease',
+                  marginTop: 2, marginBottom: 2
+                }}>
+                  <Link to="/category/Bangles" onClick={() => setIsOpen(false)} style={{
+                    display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+                    padding: '8px 10px',
+                    color: decodeURIComponent(pathname) === '/category/Bangles' ? 'var(--accent)' : 'var(--text)',
+                    textDecoration: 'none',
+                  }}>
+                    <span style={{ fontSize: '1rem', fontFamily: 'Outfit, sans-serif', fontWeight: 600 }}>Bangles</span>
+                    <ChevronRight size={14} opacity={0.4} />
+                  </Link>
+                  <div style={{ 
+                    padding: '0 8px 8px 16px', display: 'flex', flexDirection: 'column', gap: 2,
+                    borderLeft: `2px solid var(--accent)`, marginLeft: 12,
+                  }}>
+                    {BANGLE_SUBCATS.map(sub => {
+                      const isSubActive = decodeURIComponent(pathname) === `/category/${sub}`;
+                      return (
+                        <Link key={sub} to={`/category/${encodeURIComponent(sub)}`} onClick={() => setIsOpen(false)} style={{
+                          display: 'flex', alignItems: 'center', gap: 8,
+                          fontSize: '0.85rem', fontFamily: 'Inter, sans-serif', fontWeight: isSubActive ? 600 : 500,
+                          color: isSubActive ? 'var(--accent)' : 'var(--text-secondary)',
+                          textDecoration: 'none', padding: '6px 10px', borderRadius: 6,
+                          background: isSubActive ? 'var(--bg-card)' : 'transparent',
+                          boxShadow: isSubActive ? '0 2px 4px rgba(0,0,0,0.05)' : 'none',
+                        }}>
+                          {sub}
+                        </Link>
+                      )
+                    })}
+                  </div>
                 </div>
+
+                {/* Other Categories */}
+                {allCategories.filter(n => n !== 'Bangles' && !BANGLE_SUBCATS.includes(n)).map(name => {
+                  const isActive = decodeURIComponent(pathname) === `/category/${name}`;
+                  return (
+                    <Link key={name} to={`/category/${name}`} onClick={() => setIsOpen(false)} style={{
+                      display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+                      padding: '8px 10px', borderRadius: 8,
+                      background: isActive ? 'var(--bg-secondary)' : 'transparent',
+                      color: isActive ? 'var(--accent)' : 'var(--text)',
+                      textDecoration: 'none', transition: 'background 0.2s',
+                    }}>
+                      <span style={{ fontSize: '1rem', fontFamily: 'Outfit, sans-serif', fontWeight: 600 }}>{name}</span>
+                      <ChevronRight size={14} opacity={0.4} />
+                    </Link>
+                  )
+                })}
+
+                {/* Offers */}
+                <Link to="/offers" onClick={() => setIsOpen(false)} style={{
+                  display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+                  padding: '8px 10px', borderRadius: 8, marginTop: 4,
+                  background: 'linear-gradient(135deg, rgba(236,22,140,0.08), rgba(155,61,255,0.08))',
+                  border: `1px solid rgba(236,22,140,0.15)`,
+                  color: 'var(--accent)', textDecoration: 'none',
+                }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                    <Gift size={18} />
+                    <span style={{ fontSize: '1rem', fontFamily: 'Outfit, sans-serif', fontWeight: 700 }}>Exclusive Offers</span>
+                  </div>
+                  <ChevronRight size={14} opacity={0.6} />
+                </Link>
               </div>
-
-              {/* Remaining primary categories */}
-              {allCategories.filter(n => n !== 'Bangles').map(name => (
-                <Link key={name} to={`/category/${name}`} onClick={() => setIsOpen(false)} style={{
-                  fontSize: '1.8rem', fontFamily: 'Outfit, sans-serif', fontWeight: 700,
-                  color: decodeURIComponent(pathname) === `/category/${name}` ? 'var(--accent)' : 'var(--text)',
-                  textDecoration: 'none', padding: '10px 0',
-                }}>{name}</Link>
-              ))}
-
-              <Link to="/offers" onClick={() => setIsOpen(false)} style={{
-                fontSize: '1.8rem', fontFamily: 'Outfit, sans-serif', fontWeight: 700,
-                color: 'var(--accent)', textDecoration: 'none', padding: '10px 0', display: 'flex', alignItems: 'center', gap: 10
-              }}>Offers <Gift size={20} /></Link>
 
               <div style={{ marginTop: 16, paddingTop: 24, borderTop: `1px solid var(--border)` }}>
                 <button onClick={() => { toggleTheme(); setIsOpen(false); }} style={{

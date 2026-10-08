@@ -65,11 +65,11 @@ const Home = () => {
   return (
     <div style={{ background: 'transparent' }}>
       {/* ── Hero ──────────────────────────────────────────────── */}
-      <section style={{
+      <section className="section-py" style={{
         minHeight: 'min(85vh, 700px)', display: 'flex', alignItems: 'center', justifyContent: 'center',
-        position: 'relative', overflow: 'hidden', paddingTop: 80,
+        position: 'relative', overflow: 'hidden',
       }}>
-        <div style={{ textAlign: 'center', maxWidth: 900, padding: '0 24px', zIndex: 2 }}>
+        <div className="section-padding" style={{ textAlign: 'center', maxWidth: 900, zIndex: 2 }}>
           <motion.div
             initial={{ opacity: 0, y: 30 }}
             animate={{ opacity: 1, y: 0 }}
@@ -125,22 +125,6 @@ const Home = () => {
               >
                 Explore Collection <ChevronDown size={16} />
               </button>
-              <Link
-                to="/search"
-                style={{
-                  display: 'inline-flex', alignItems: 'center', gap: 8,
-                  background: 'transparent',
-                  color: 'var(--text)', padding: '14px 36px',
-                  borderRadius: 999, fontWeight: 600, textDecoration: 'none',
-                  fontSize: '0.9rem', letterSpacing: '0.04em',
-                  border: `1px solid var(--border-strong)`,
-                  transition: 'background 0.2s',
-                }}
-                onMouseEnter={e => e.currentTarget.style.background = 'var(--bg-secondary)'}
-                onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
-              >
-                Browse All
-              </Link>
             </div>
             
             {/* Trust Indicators */}
@@ -166,7 +150,7 @@ const Home = () => {
       </section>
 
       {/* ── Collections Grid ──────────────────────────────────── */}
-      <section ref={collectionsRef} style={{ padding: '80px 24px', maxWidth: 1280, margin: '0 auto', scrollMarginTop: 80 }}>
+      <section ref={collectionsRef} className="section-padding section-py" style={{ maxWidth: 1280, margin: '0 auto', scrollMarginTop: 80 }}>
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           whileInView={{ opacity: 1, y: 0 }}
@@ -185,11 +169,7 @@ const Home = () => {
           </h2>
         </motion.div>
 
-        <div style={{
-          display: 'grid',
-          gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))',
-          gap: 24,
-        }}>
+        <div className="collection-grid">
           {loadingCollections ? (
             Array.from({ length: 8 }).map((_, i) => (
               <div key={i} className="skeleton" style={{ height: 320 }} />
@@ -207,11 +187,11 @@ const Home = () => {
                   <div
                     className="theme-card"
                     style={{
-                      borderRadius: 20, overflow: 'hidden',
-                      display: 'flex', flexDirection: 'column', height: '100%', minHeight: 320,
+                      borderRadius: 16, overflow: 'hidden',
+                      display: 'flex', flexDirection: 'column', height: '100%',
                     }}
                   >
-                    <div style={{ height: 220, width: '100%', overflow: 'hidden' }}>
+                    <div style={{ width: '100%', aspectRatio: '4/3', overflow: 'hidden' }}>
                       <img 
                         src={optimizeImageUrl(col.bannerImage, { width: 600, height: 400, crop: 'fill', gravity: 'auto' })} 
                         alt={col.name} 
@@ -221,7 +201,7 @@ const Home = () => {
                         onMouseLeave={e => e.currentTarget.style.transform = 'scale(1)'}
                       />
                     </div>
-                    <div style={{ padding: '24px', flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'center', background: 'var(--bg-card)' }}>
+                    <div style={{ padding: '16px', flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'center', background: 'var(--bg-card)' }}>
                       <h3 style={{
                         fontFamily: 'Outfit, sans-serif', fontWeight: 700,
                         fontSize: '1.2rem', color: 'var(--text)', margin: '0 0 8px',
@@ -240,14 +220,14 @@ const Home = () => {
                   <div
                     className="theme-card"
                     style={{
-                      borderRadius: 20, padding: '40px 32px',
+                      borderRadius: 16, padding: '24px 16px',
                       position: 'relative', overflow: 'hidden',
-                      height: '100%', minHeight: 320,
+                      height: '100%', aspectRatio: '4/3',
                       display: 'flex', flexDirection: 'column', justifyContent: 'center',
                     }}
                   >
                     <div style={{
-                      width: 48, height: 48, borderRadius: 12, marginBottom: 24,
+                      width: 48, height: 48, borderRadius: 12, marginBottom: 16,
                       background: 'var(--bg-secondary)', color: 'var(--accent)',
                       display: 'flex', alignItems: 'center', justifyContent: 'center',
                     }}>
@@ -276,7 +256,7 @@ const Home = () => {
 
       {/* ── Offers Section ────────────────────────────────── */}
       {(loadingOffers || offers.length > 0) && (
-        <section style={{ padding: '60px 24px 80px', maxWidth: 1280, margin: '0 auto' }}>
+        <section className="section-padding section-py" style={{ maxWidth: 1280, margin: '0 auto' }}>
           <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', marginBottom: 40 }}>
             <motion.div
               initial={{ opacity: 0, y: 20 }}
@@ -293,7 +273,7 @@ const Home = () => {
                 Exclusive Offers
               </h2>
             </motion.div>
-            <Link to="/search?q=offers" style={{
+            <Link to="/offers" style={{
               display: 'inline-flex', alignItems: 'center', gap: 6,
               color: 'var(--text)', fontWeight: 600, fontSize: '0.85rem',
               textDecoration: 'none', borderBottom: `2px solid var(--text)`, paddingBottom: 2
@@ -305,7 +285,7 @@ const Home = () => {
           <div className="product-grid-4">
             {loadingOffers ? (
               Array.from({ length: 4 }).map((_, i) => (
-                <div key={i} className="skeleton" style={{ height: 350 }} />
+                <div key={i} className="skeleton product-skeleton" />
               ))
             ) : offers.map((product, idx) => (
               <motion.div
@@ -324,12 +304,12 @@ const Home = () => {
 
       {/* ── Flagship Carousel ────────────────────────────────── */}
       {flagship.length > 0 && (
-        <section style={{ padding: '80px 0', background: 'var(--bg-secondary)', borderTop: `1px solid var(--border)` }}>
+        <section className="section-py" style={{ background: 'var(--bg-secondary)', borderTop: `1px solid var(--border)` }}>
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true }}
-            style={{ textAlign: 'center', marginBottom: 48, padding: '0 24px' }}
+            className="section-padding" style={{ textAlign: 'center', marginBottom: 48 }}
           >
             <p style={{ color: 'var(--accent-gold)', fontSize: '0.75rem', fontWeight: 700, letterSpacing: '0.2em', textTransform: 'uppercase', marginBottom: 12 }}>
               Hand-Picked
@@ -355,7 +335,7 @@ const Home = () => {
       )}
 
       {/* ── Brand Values ─────────────────────────────────────── */}
-      <section style={{ padding: '80px 24px', maxWidth: 1280, margin: '0 auto' }}>
+      <section className="section-padding section-py" style={{ maxWidth: 1280, margin: '0 auto' }}>
         <div style={{
           display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: 40,
         }}>

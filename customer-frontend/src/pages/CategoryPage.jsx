@@ -3,14 +3,12 @@ import { useParams, Link } from 'react-router-dom';
 import api from '../utils/api';
 import ProductCard from '../components/ProductCard';
 import { motion, AnimatePresence } from 'framer-motion';
-import { optimizeImageUrl } from '../utils/cloudinary';
 import { ChevronRight, Filter } from 'lucide-react';
 
 const CategoryPage = () => {
   const { categoryName } = useParams();
   const [products, setProducts] = useState([]);
   const [subcategories, setSubcategories] = useState([]);
-  const [categoryData, setCategoryData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [sortBy, setSortBy] = useState('newest'); // newest, price-asc, price-desc
 
@@ -22,17 +20,12 @@ const CategoryPage = () => {
   const fetchData = async () => {
     setLoading(true);
     try {
-      const [prodRes, subRes, catRes] = await Promise.all([
+      const [prodRes, subRes] = await Promise.all([
         api.get(`/products?category=${encodeURIComponent(categoryName)}`),
-        categoryName.toLowerCase() === 'artificial flowers' ? api.get(`/subcategories`) : Promise.resolve({ data: [] }),
-        api.get('/categories')
+        categoryName.toLowerCase() === 'artificial flowers' ? api.get(`/subcategories`) : Promise.resolve({ data: [] })
       ]);
       setProducts(prodRes.data);
       setSubcategories(subRes.data);
-      
-      // Find the specific category details for banner image
-      const cat = catRes.data.find(c => c.name.toLowerCase() === categoryName.toLowerCase());
-      if (cat) setCategoryData(cat);
       
     } catch (err) {
       console.error(err);
@@ -50,75 +43,50 @@ const CategoryPage = () => {
 
   return (
     <div style={{ minHeight: '100vh', paddingTop: 72, paddingBottom: 100 }}>
-      {/* ── Category Banner ──────────────────────────────────── */}
-      <div style={{ 
-        height: 280, 
-        position: 'relative', 
-        background: 'var(--bg-secondary)',
-        display: 'flex', alignItems: 'center', justifyContent: 'center',
-        overflow: 'hidden',
-        borderBottom: `1px solid var(--border)`
-      }}>
-        {categoryData?.bannerImage && (
-          <>
-            <img 
-              src={optimizeImageUrl(categoryData.bannerImage, { width: 1920, height: 400, crop: 'fill', gravity: 'auto' })} 
-              alt={categoryName} 
-              style={{ position: 'absolute', inset: 0, width: '100%', height: '100%', objectFit: 'cover', zIndex: 0 }} 
-            />
-            <div style={{ position: 'absolute', inset: 0, background: 'rgba(0,0,0,0.5)', zIndex: 1 }} />
-          </>
-        )}
+      {/* Main Container */}
+      <div className="section-padding" style={{ maxWidth: 1280, margin: '0 auto' }}>
         
-        <div style={{ position: 'relative', zIndex: 2, textAlign: 'center', padding: '0 24px', width: '100%' }}>
-          <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}>
-            {/* Breadcrumb */}
+        {/* Category Header */}
+        <div className="category-header" style={{ 
+          display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between',
+          flexWrap: 'wrap', gap: 16, padding: '24px 0 16px', 
+          borderBottom: '1px solid var(--border)', marginBottom: 24
+        }}>
+          {/* Left Side */}
+          <motion.div initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }} style={{ flex: '1 1 min-content' }}>
             <div style={{ 
-              display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, 
-              fontSize: '0.8rem', color: categoryData?.bannerImage ? 'rgba(255,255,255,0.7)' : 'var(--text-muted)', 
-              marginBottom: 16, fontWeight: 600, letterSpacing: '0.1em', textTransform: 'uppercase' 
+              display: 'flex', alignItems: 'center', gap: 6, 
+              fontSize: '0.7rem', color: 'var(--text-muted)', 
+              marginBottom: 8, fontWeight: 600, letterSpacing: '0.05em', textTransform: 'uppercase' 
             }}>
-              <Link to="/" style={{ color: 'inherit', textDecoration: 'none' }}>Home</Link>
-              <ChevronRight size={14} />
-              <span style={{ color: categoryData?.bannerImage ? 'white' : 'var(--accent)' }}>{categoryName}</span>
+              <Link to="/" style={{ color: 'inherit', textDecoration: 'none', transition: 'color 0.2s' }} className="hover:text-prettyglitz">Home</Link>
+              <ChevronRight size={12} />
+              <span style={{ color: 'var(--text-secondary)' }}>{categoryName}</span>
             </div>
-
             <h1 style={{
               fontFamily: '"Cormorant Garamond", Georgia, serif', fontWeight: 700,
-              fontSize: 'clamp(2rem, 5vw, 3.5rem)',
-              color: categoryData?.bannerImage ? 'white' : 'var(--text)', 
-              margin: 0,
+              fontSize: 'clamp(1.8rem, 5vw, 2.5rem)', color: 'var(--text)', margin: '0 0 4px', lineHeight: 1
             }}>
               {categoryName}
             </h1>
-            <p style={{ 
-              color: categoryData?.bannerImage ? 'rgba(255,255,255,0.8)' : 'var(--text-secondary)', 
-              marginTop: 12, fontSize: '0.95rem' 
-            }}>
+            <p style={{ color: 'var(--text-secondary)', fontSize: '0.8rem', margin: 0, fontWeight: 500 }}>
               {products.length} {products.length === 1 ? 'Product' : 'Products'} Available
             </p>
           </motion.div>
-        </div>
-      </div>
 
-      {/* ── Main Content ─────────────────────────────────────── */}
-      <div style={{ maxWidth: 1280, margin: '40px auto 0', padding: '0 24px' }}>
-        
-        {/* Filter / Sort Bar */}
-        {!loading && products.length > 0 && (
-          <div style={{ 
-            display: 'flex', alignItems: 'center', justifyContent: 'flex-end', 
-            marginBottom: 32, paddingBottom: 24, borderBottom: `1px solid var(--border)` 
-          }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-              <Filter size={18} style={{ color: 'var(--text-muted)' }} />
+          {/* Right Side */}
+          {!loading && products.length > 0 && (
+            <motion.div initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} style={{ display: 'flex', alignItems: 'center', gap: 8, width: '100%', maxWidth: 300, marginLeft: 'auto' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 6, color: 'var(--text-muted)' }}>
+                <Filter size={16} />
+              </div>
               <select 
                 value={sortBy} 
                 onChange={e => setSortBy(e.target.value)}
                 style={{
-                  padding: '10px 16px', borderRadius: 8,
+                  padding: '8px 12px', borderRadius: 8, flex: 1,
                   background: 'var(--bg)', border: `1px solid var(--border-strong)`,
-                  color: 'var(--text)', fontSize: '0.9rem', outline: 'none', cursor: 'pointer',
+                  color: 'var(--text)', fontSize: '0.85rem', outline: 'none', cursor: 'pointer',
                   fontFamily: 'Inter, sans-serif', fontWeight: 500
                 }}
               >
@@ -126,15 +94,15 @@ const CategoryPage = () => {
                 <option value="price-asc">Price: Low to High</option>
                 <option value="price-desc">Price: High to Low</option>
               </select>
-            </div>
-          </div>
-        )}
+            </motion.div>
+          )}
+        </div>
 
         {/* Product Grid */}
         {loading ? (
           <div className="product-grid-4">
             {Array.from({ length: 8 }).map((_, i) => (
-              <div key={i} className="skeleton" style={{ height: 350 }} />
+              <div key={i} className="skeleton product-skeleton" />
             ))}
           </div>
         ) : products.length === 0 ? (

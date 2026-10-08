@@ -1,8 +1,8 @@
 import React, { useEffect, useState } from 'react';
 import { DragDropContext, Droppable, Draggable } from '@hello-pangea/dnd';
+import { motion } from 'framer-motion';
 import api from '../utils/api';
-import Sidebar from '../components/Sidebar';
-import { Pencil, Trash2, Plus, Sparkles, Gem, Star, Heart, Flower2, Gift, Crown } from 'lucide-react';
+import { Pencil, Trash2, Plus, Sparkles, Gem, Star, Heart, Flower2, Gift, Crown, MoreHorizontal } from 'lucide-react';
 import ImageUpload from '../components/ImageUpload';
 import ConfirmModal from '../components/ConfirmModal';
 import toast from 'react-hot-toast';
@@ -49,8 +49,20 @@ const Categories = () => {
   const [editId, setEditId] = useState(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [deleteConfirm, setDeleteConfirm] = useState(null);
+  const [activeMenu, setActiveMenu] = useState(null);
 
   useEffect(() => { fetchCategories(); }, []);
+
+  // Close menus on outside click
+  useEffect(() => {
+    const handleOutside = (e) => {
+      if (!e.target.closest('.category-action-menu') && !e.target.closest('.category-menu-btn')) {
+        setActiveMenu(null);
+      }
+    };
+    document.addEventListener('mousedown', handleOutside);
+    return () => document.removeEventListener('mousedown', handleOutside);
+  }, []);
 
   const fetchCategories = async () => {
     try {
@@ -70,6 +82,7 @@ const Categories = () => {
       await api.put('/categories/reorder', { items: updatedWithOrder.map(c => ({ id: c._id, order: c.order })) });
     } catch (err) {
       console.error(err);
+      toast.error('Failed to reorder: ' + (err.response?.data?.message || err.message));
       fetchCategories();
     }
   };
@@ -113,150 +126,170 @@ const Categories = () => {
       toast.success('Category deleted successfully');
       setDeleteConfirm(null);
       fetchCategories();
-    } catch (err) { 
-      console.error(err); 
+    } catch (err) {
+      console.error(err);
       toast.error('Failed to delete category');
     }
   };
 
   return (
-    <div style={{ display: 'flex', minHeight: '100vh', background: '#0b0b0e' }}>
-      <Sidebar />
-      <div style={{ flex: 1, padding: '40px 48px', overflowY: 'auto' }}>
-        <div style={{ marginBottom: 36, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-          <div>
-            <h1 style={{ fontFamily: 'Outfit, sans-serif', fontSize: '1.8rem', fontWeight: 800, color: '#f0f0f5', margin: 0 }}>
-              Categories
-            </h1>
-            <p style={{ color: '#4a4a60', fontSize: '0.85rem', marginTop: 6 }}>
-              Drag and drop to control the order collections appear on the customer storefront.
-            </p>
-          </div>
-          <button onClick={() => setIsModalOpen(true)} className="btn-primary" style={{ border: 'none', cursor: 'pointer' }}>
-            <Plus size={16} /> Add Category
-          </button>
-        </div>
-
+    <div>
+      <div style={{ marginBottom: 36, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
         <div>
-          <div style={{
-            marginBottom: 24, padding: '16px 20px',
-            background: 'rgba(255,140,0,0.05)', border: '1px solid rgba(255,140,0,0.15)',
-            borderRadius: 10, fontSize: '0.8rem', color: '#4a4a60',
-          }}>
-            💡 Changes take effect immediately on the customer storefront.
-          </div>
-          <DragDropContext onDragEnd={onDragEnd}>
-            <Droppable droppableId="categories-list" direction="horizontal">
-              {(provided) => (
-                  <div
-                    {...provided.droppableProps}
-                    ref={provided.innerRef}
-                    style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 20 }}
-                  >
-                    {categories.map((category, index) => {
-                      const col = {
-                        name: category.name,
-                        bannerImage: category.bannerImage,
-                        gradient: catGradients[index % catGradients.length],
-                      };
+          <h1 style={{ fontFamily: 'Outfit, sans-serif', fontSize: '1.8rem', fontWeight: 800, color: 'var(--text-primary)', margin: 0 }}>
+            Categories
+          </h1>
+          <p style={{ color: 'var(--text-muted)', fontSize: '0.85rem', marginTop: 6 }}>
+            Drag and drop to control the order collections appear on the customer storefront.
+          </p>
+        </div>
+        <button onClick={() => setIsModalOpen(true)} className="btn-primary" style={{ border: 'none', cursor: 'pointer' }}>
+          <Plus size={16} /> Add Category
+        </button>
+      </div>
 
-                      return (
-                        <Draggable key={category._id} draggableId={category._id} index={index}>
-                          {(provided, snapshot) => (
-                          <div
-                            ref={provided.innerRef}
-                            {...provided.draggableProps}
-                            {...provided.dragHandleProps}
+      <div>
+        <div style={{
+          marginBottom: 24, padding: '16px 20px',
+          background: 'rgba(255,140,0,0.05)', border: '1px solid rgba(255,140,0,0.15)',
+          borderRadius: 10, fontSize: '0.8rem', color: '#4a4a60',
+        }}>
+          💡 Changes take effect immediately on the customer storefront.
+        </div>
+        <DragDropContext onDragEnd={onDragEnd}>
+          <Droppable droppableId="categories-list" direction="horizontal">
+            {(provided) => (
+              <div
+                {...provided.droppableProps}
+                ref={provided.innerRef}
+                className="admin-grid"
+              >
+                {categories.map((category, index) => {
+                  const col = {
+                    name: category.name,
+                    bannerImage: category.bannerImage,
+                    gradient: catGradients[index % catGradients.length],
+                  };
+
+                  return (
+                    <Draggable key={category._id} draggableId={category._id} index={index}>
+                      {(provided, snapshot) => (
+                        <div
+                          ref={provided.innerRef}
+                          {...provided.draggableProps}
+                          {...provided.dragHandleProps}
+                          className="admin-category-card-wrapper"
+                          style={{
+                            ...provided.draggableProps.style,
+                          }}
+                        >
+                          <motion.div
+                            className="admin-category-card"
+                            initial={{ opacity: 0, y: 20 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            transition={{ delay: index * 0.05, duration: 0.3 }}
                             style={{
-                              border: '1px solid rgba(255,255,255,0.07)',
-                              borderRadius: 20,
+                              cursor: snapshot.isDragging ? 'grabbing' : 'pointer',
+                              border: 'none',
+                              borderRadius: 16,
                               overflow: 'hidden',
-                              background: col.bannerImage ? 'rgba(255,255,255,0.03)' : `linear-gradient(135deg, ${col.gradient.from}, ${col.gradient.to})`,
+                              background: 'var(--card-bg)',
                               display: 'flex', flexDirection: 'column', height: '100%', minHeight: 'auto',
                               position: 'relative',
-                              boxShadow: snapshot.isDragging ? `0 8px 30px ${col.gradient.from.replace('0.12', '0.4')}` : 'none',
-                              borderColor: snapshot.isDragging ? col.gradient.ring + '50' : 'rgba(255,255,255,0.07)',
-                              transition: 'border-color 0.2s, box-shadow 0.2s, transform 0.2s',
-                              transform: snapshot.isDragging ? 'translateY(-6px)' : 'none',
-                              cursor: snapshot.isDragging ? 'grabbing' : 'grab',
-                              ...provided.draggableProps.style,
+                              boxShadow: snapshot.isDragging ? `0 12px 30px rgba(0,0,0,0.4)` : '0 4px 12px rgba(0,0,0,0.1)',
+                              transform: snapshot.isDragging ? 'translateY(-6px)' : undefined,
                             }}
                           >
-                            {!col.bannerImage && (
-                              <>
-                                <div style={{
-                                  position: 'absolute', top: -40, right: -40,
-                                  width: 160, height: 160, borderRadius: '50%',
-                                  border: `1px solid ${col.gradient.ring}30`,
-                                  pointerEvents: 'none',
-                                }} />
-                                <div style={{
-                                  position: 'absolute', top: -20, right: -20,
-                                  width: 100, height: 100, borderRadius: '50%',
-                                  border: `1px solid ${col.gradient.ring}20`,
-                                  pointerEvents: 'none',
-                                }} />
-                              </>
-                            )}
 
-                            {col.bannerImage ? (
-                              <div style={{ height: 180, width: '100%', overflow: 'hidden', flexShrink: 0 }}>
-                                <img src={optimizeImageUrl(col.bannerImage, { width: 400, height: 300, crop: 'fill' })} alt={col.name} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-                              </div>
-                            ) : (
-                              <div style={{ padding: '24px 24px 0', flexShrink: 0 }}>
-                                <div style={{
-                                  width: 40, height: 40, borderRadius: 10,
-                                  background: `linear-gradient(135deg, ${col.gradient.accent}, ${col.gradient.accent}80)`,
-                                  display: 'flex', alignItems: 'center', justifyContent: 'center',
-                                  color: 'white',
-                                  boxShadow: `0 4px 20px ${col.gradient.accent}40`,
-                                }}>
-                                  {catIcons[col.name] || <Sparkles size={20} />}
-                                </div>
-                              </div>
-                            )}
 
-                            <div style={{ padding: '20px 24px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12 }}>
+                          {/* Image Area */}
+                          {col.bannerImage ? (
+                            <div style={{ aspectRatio: '16/9', width: '100%', overflow: 'hidden', flexShrink: 0 }}>
+                              <img src={optimizeImageUrl(col.bannerImage, { width: 400, height: 300, crop: 'fill' })} alt={col.name} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                            </div>
+                          ) : (
+                            <div style={{ aspectRatio: '16/9', width: '100%', background: `linear-gradient(135deg, ${col.gradient.from}, ${col.gradient.to})`, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                              <div style={{
+                                width: 48, height: 48, borderRadius: 12,
+                                background: `linear-gradient(135deg, ${col.gradient.accent}, ${col.gradient.accent}80)`,
+                                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                                color: 'white',
+                                boxShadow: `0 4px 20px ${col.gradient.accent}40`,
+                              }}>
+                                {catIcons[col.name] || <Sparkles size={24} />}
+                              </div>
+                            </div>
+                          )}
+
+                          {/* Content Area */}
+                          <div className="admin-category-content" style={{ padding: '16px 20px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12, position: 'relative' }}>
+                            <div style={{ minWidth: 0 }}>
                               <h3 style={{
-                                fontFamily: 'Outfit, sans-serif', fontWeight: 800,
-                                fontSize: '1.25rem', color: '#f0f0f8', margin: 0,
+                                fontFamily: 'Outfit, sans-serif', fontWeight: 700,
+                                fontSize: '1.1rem', color: 'var(--text-primary)', margin: '0 0 4px',
                                 whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis'
                               }}>
                                 {col.name}
                               </h3>
+                              {/* Assuming no product count readily available from this endpoint, keep it minimal */}
+                            </div>
 
-                              {/* Actions */}
-                              <div style={{ display: 'flex', gap: 8, flexShrink: 0 }} onClick={e => e.stopPropagation()}>
-                                <button onClick={() => handleEdit(category)}
-                                  style={{ background: 'transparent', border: 'none', color: '#8888a8', cursor: 'pointer', padding: '6px 12px', borderRadius: 8, display: 'flex', alignItems: 'center', gap: 6, transition: 'all 0.15s', fontSize: '0.85rem', fontWeight: 600 }}
-                                  onMouseEnter={e => { e.currentTarget.style.color = col.gradient.accent; e.currentTarget.style.background = `${col.gradient.accent}15`; }}
-                                  onMouseLeave={e => { e.currentTarget.style.color = '#8888a8'; e.currentTarget.style.background = 'transparent'; }}
-                                >
-                                  <Pencil size={15} /> Edit
-                                </button>
-                                <button onClick={() => setDeleteConfirm(category._id)}
-                                  style={{ background: 'transparent', border: 'none', color: '#8888a8', cursor: 'pointer', padding: '6px 12px', borderRadius: 8, display: 'flex', alignItems: 'center', gap: 6, transition: 'all 0.15s', fontSize: '0.85rem', fontWeight: 600 }}
-                                  onMouseEnter={e => { e.currentTarget.style.color = '#ef4444'; e.currentTarget.style.background = 'rgba(239,68,68,0.15)'; }}
-                                  onMouseLeave={e => { e.currentTarget.style.color = '#8888a8'; e.currentTarget.style.background = 'transparent'; }}
-                                >
-                                  <Trash2 size={15} /> Delete
-                                </button>
-                              </div>
+                            {/* Action Menu */}
+                            <div style={{ position: 'relative' }}>
+                              <button
+                                className="category-menu-btn"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  setActiveMenu(activeMenu === category._id ? null : category._id);
+                                }}
+                                style={{
+                                  background: activeMenu === category._id ? 'var(--surface-elevated)' : 'transparent',
+                                  border: 'none', color: 'var(--text-secondary)', cursor: 'pointer',
+                                  width: 32, height: 32, borderRadius: 8, display: 'flex', alignItems: 'center', justifyContent: 'center',
+                                  transition: 'background 0.2s, color 0.2s'
+                                }}
+                              >
+                                <MoreHorizontal size={18} />
+                              </button>
+
+                              {activeMenu === category._id && (
+                                <div className="category-action-menu" style={{
+                                  position: 'absolute', bottom: '100%', right: 0, marginBottom: 8,
+                                  background: 'var(--surface-elevated)', border: '1px solid var(--card-border)',
+                                  borderRadius: 10, padding: 6, minWidth: 140,
+                                  boxShadow: '0 8px 30px rgba(0,0,0,0.5)', zIndex: 20
+                                }}>
+                                  <button onClick={() => { handleEdit(category); setActiveMenu(null); }} style={{
+                                    width: '100%', background: 'transparent', border: 'none', color: 'var(--text-primary)',
+                                    padding: '8px 12px', borderRadius: 6, display: 'flex', alignItems: 'center', gap: 10,
+                                    cursor: 'pointer', fontSize: '0.85rem', fontWeight: 500, transition: 'background 0.15s'
+                                  }} onMouseEnter={e => e.currentTarget.style.background = 'rgba(255,255,255,0.05)'} onMouseLeave={e => e.currentTarget.style.background = 'transparent'}>
+                                    <Pencil size={14} style={{ color: 'var(--text-secondary)' }} /> Edit
+                                  </button>
+                                  <button onClick={() => { setDeleteConfirm(category._id); setActiveMenu(null); }} style={{
+                                    width: '100%', background: 'transparent', border: 'none', color: '#ef4444',
+                                    padding: '8px 12px', borderRadius: 6, display: 'flex', alignItems: 'center', gap: 10,
+                                    cursor: 'pointer', fontSize: '0.85rem', fontWeight: 500, transition: 'background 0.15s'
+                                  }} onMouseEnter={e => e.currentTarget.style.background = 'rgba(239,68,68,0.1)'} onMouseLeave={e => e.currentTarget.style.background = 'transparent'}>
+                                    <Trash2 size={14} /> Delete
+                                  </button>
+                                </div>
+                              )}
                             </div>
                           </div>
-                          )}
-                        </Draggable>
-                      );
-                    })}
-                  {provided.placeholder}
-                </div>
-              )}
-            </Droppable>
-          </DragDropContext>
+                          </motion.div>
+                        </div>
+                      )}
+                    </Draggable>
+                  );
+                })}
+                {provided.placeholder}
+              </div>
+            )}
+          </Droppable>
+        </DragDropContext>
 
 
-        </div>
       </div>
 
       {/* Modal Overlay */}
@@ -267,39 +300,29 @@ const Categories = () => {
           display: 'flex', alignItems: 'center', justifyContent: 'center',
           zIndex: 100, padding: 24
         }}>
-          <div style={{ 
-            background: '#141419', border: '1px solid #1e1e28', 
+          <div style={{
+            background: 'var(--surface-elevated)', border: '1px solid var(--card-border)',
             borderRadius: 16, padding: 32, width: '100%', maxWidth: 440,
-            boxShadow: '0 20px 40px rgba(0,0,0,0.4)'
+            boxShadow: '0 20px 40px rgba(0,0,0,0.5)'
           }}>
-            <h3 style={{ margin: '0 0 24px', color: '#f0f0f5', fontSize: '1.2rem' }}>
+            <h3 style={{ margin: '0 0 24px', color: 'var(--text-primary)', fontSize: '1.2rem' }}>
               {editId ? 'Edit Category' : 'Create Category'}
             </h3>
             <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
               <div>
-                <label style={{ display: 'block', fontSize: '0.8rem', color: '#8a8aa0', marginBottom: 8 }}>Name</label>
+                <label style={{ display: 'block', fontSize: '0.8rem', color: 'var(--text-secondary)', marginBottom: 8, fontWeight: 500 }}>Name</label>
                 <input type="text" value={name} onChange={e => setName(e.target.value)} required className="admin-input" placeholder="e.g. Glass Bangles" />
               </div>
 
               <div>
-                <label style={{ display: 'block', fontSize: '0.8rem', color: '#8a8aa0', marginBottom: 8 }}>Banner Image</label>
+                <label style={{ display: 'block', fontSize: '0.8rem', color: 'var(--text-secondary)', marginBottom: 8, fontWeight: 500 }}>Banner Image</label>
                 <ImageUpload value={bannerImage} onChange={setBannerImage} placeholder="Upload Banner Image" />
               </div>
               <div style={{ display: 'flex', gap: 12, marginTop: 8 }}>
                 <button type="button" onClick={closeModal} className="btn-secondary" style={{ flex: 1 }}>
                   Cancel
                 </button>
-                <button type="submit" style={{
-                    flex: 2, display: 'flex', justifyContent: 'center', alignItems: 'center', gap: 8,
-                    background: 'linear-gradient(135deg, #8A2BE2, #FF1493)',
-                    color: '#fff', border: 'none', borderRadius: 8, padding: '10px 20px',
-                    fontWeight: 700, fontSize: '0.9rem', cursor: 'pointer', letterSpacing: '0.02em',
-                    boxShadow: '0 4px 16px rgba(138,43,226,0.35)',
-                    transition: 'transform 0.15s, box-shadow 0.15s',
-                  }}
-                  onMouseEnter={e => { e.currentTarget.style.transform = 'translateY(-1px)'; e.currentTarget.style.boxShadow = '0 6px 20px rgba(138,43,226,0.5)'; }}
-                  onMouseLeave={e => { e.currentTarget.style.transform = 'none'; e.currentTarget.style.boxShadow = '0 4px 16px rgba(138,43,226,0.35)'; }}
-                >
+                <button type="submit" className="btn-primary" style={{ flex: 2, justifyContent: 'center' }}>
                   {editId ? '💾 Save Changes' : <><Plus size={16} /> Create Category</>}
                 </button>
               </div>

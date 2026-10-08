@@ -10,46 +10,61 @@ import {
   Sparkles
 } from 'lucide-react';
 
-const navItems = [
-  { to: '/dashboard', label: 'Dashboard', Icon: LayoutDashboard },
-  { to: '/categories', label: 'Categories', Icon: LayoutGrid },
-  { to: '/subcategories', label: 'Flower Subcats', Icon: Layers },
-  { to: '/products', label: 'Products', Icon: ShoppingBag },
-  { to: '/offers', label: 'Offers', Icon: Sparkles },
+const navGroups = [
+  {
+    label: 'Overview',
+    items: [
+      { to: '/dashboard', label: 'Dashboard', Icon: LayoutDashboard },
+    ]
+  },
+  {
+    label: 'Catalog',
+    items: [
+      { to: '/categories', label: 'Categories', Icon: LayoutGrid },
+      { to: '/subcategories', label: 'Flower Subcats', Icon: Layers },
+      { to: '/products', label: 'Products', Icon: ShoppingBag },
+    ]
+  },
+  {
+    label: 'Marketing',
+    items: [
+      { to: '/offers', label: 'Offers', Icon: Sparkles },
+    ]
+  }
 ];
 
-const Sidebar = () => {
+const Sidebar = ({ isOpen, setIsOpen }) => {
   const { logout } = useContext(AuthContext);
   const location = useLocation();
 
   return (
     <div
+      className={`admin-sidebar ${isOpen ? 'open' : ''}`}
       style={{
-        width: '240px',
+        width: '260px',
         minHeight: '100vh',
-        background: '#0f0f12',
-        borderRight: '1px solid #1f1f28',
+        background: 'var(--sidebar-bg)',
+        borderRight: '1px solid var(--card-border)',
         display: 'flex',
         flexDirection: 'column',
         flexShrink: 0,
       }}
     >
       {/* Logo */}
-      <div style={{ padding: '28px 20px 24px', borderBottom: '1px solid #1f1f28' }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+      <div style={{ padding: '32px 24px 28px' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
           <div style={{
-            width: 34, height: 34, borderRadius: 8,
-            background: 'linear-gradient(135deg, #FF1493, #8A2BE2, #FF8C00)',
+            width: 32, height: 32, borderRadius: 8,
+            background: 'linear-gradient(135deg, var(--accent-pink), var(--accent-purple))',
             display: 'flex', alignItems: 'center', justifyContent: 'center',
-            boxShadow: '0 0 20px rgba(138,43,226,0.5)'
           }}>
-            <Sparkles size={18} color="white" />
+            <Sparkles size={16} color="white" />
           </div>
           <div>
-            <div style={{ fontFamily: 'Outfit, sans-serif', fontWeight: 700, fontSize: '1rem', letterSpacing: '0.05em', color: '#fff' }}>
+            <div style={{ fontFamily: 'Outfit, sans-serif', fontWeight: 800, fontSize: '1.05rem', letterSpacing: '0.02em', color: 'var(--text-primary)', lineHeight: 1.2 }}>
               PrettyGlitz
             </div>
-            <div style={{ fontSize: '0.65rem', color: '#4a4a60', letterSpacing: '0.1em', textTransform: 'uppercase' }}>
+            <div style={{ fontSize: '0.65rem', color: 'var(--text-muted)', letterSpacing: '0.1em', textTransform: 'uppercase', fontWeight: 600 }}>
               Admin Panel
             </div>
           </div>
@@ -57,53 +72,44 @@ const Sidebar = () => {
       </div>
 
       {/* Navigation */}
-      <nav style={{ flex: 1, padding: '16px 12px' }}>
-        <div style={{ fontSize: '0.65rem', color: '#4a4a60', letterSpacing: '0.1em', textTransform: 'uppercase', padding: '0 8px', marginBottom: 10 }}>
-          Management
-        </div>
-        {navItems.map(({ to, label, Icon }) => {
-          const isActive = location.pathname === to || location.pathname.startsWith(to + '/');
-          return (
-            <NavLink
-              key={to}
-              to={to}
-              className="sidebar-link"
-              style={isActive ? {
-                background: 'linear-gradient(135deg, rgba(255,20,147,0.15), rgba(138,43,226,0.15))',
-                color: '#fff',
-                border: '1px solid rgba(138,43,226,0.25)',
-                textDecoration: 'none',
-              } : { textDecoration: 'none' }}
-            >
-              <Icon
-                size={18}
-                style={isActive ? { color: '#c084fc' } : { color: '#4a4a60' }}
-                className="link-icon"
-              />
-              <span>{label}</span>
-              {isActive && (
-                <div style={{
-                  marginLeft: 'auto',
-                  width: 6, height: 6,
-                  borderRadius: '50%',
-                  background: 'linear-gradient(#FF1493, #8A2BE2)',
-                  boxShadow: '0 0 6px rgba(255,20,147,0.8)'
-                }} />
-              )}
-            </NavLink>
-          );
-        })}
+      <nav style={{ flex: 1, padding: '0 16px' }}>
+        {navGroups.map((group, idx) => (
+          <div key={group.label} style={{ marginBottom: 24 }}>
+            <p style={{
+              fontSize: '0.7rem', fontWeight: 600, color: 'var(--text-muted)',
+              letterSpacing: '0.1em', textTransform: 'uppercase', paddingLeft: 14, marginBottom: 8
+            }}>
+              {group.label}
+            </p>
+            {group.items.map(({ to, label, Icon }) => {
+              const isActive = location.pathname.startsWith(to);
+              return (
+                <NavLink
+                  key={to}
+                  to={to}
+                  onClick={() => setIsOpen && setIsOpen(false)}
+                  className={`sidebar-link ${isActive ? 'active' : ''}`}
+                >
+                  <Icon className="link-icon" size={18} style={{ opacity: isActive ? 1 : 0.7 }} />
+                  {label}
+                </NavLink>
+              );
+            })}
+          </div>
+        ))}
       </nav>
 
       {/* Logout */}
-      <div style={{ padding: '16px 12px', borderTop: '1px solid #1f1f28' }}>
+      <div style={{ padding: '24px 16px' }}>
         <button
           onClick={logout}
           className="sidebar-link"
-          style={{ width: '100%', border: 'none', cursor: 'pointer', background: 'transparent', textAlign: 'left' }}
+          style={{ width: '100%', background: 'transparent', border: 'none', cursor: 'pointer', justifyContent: 'flex-start' }}
+          onMouseEnter={(e) => { e.currentTarget.style.color = '#f87171'; e.currentTarget.style.background = 'rgba(239, 68, 68, 0.05)'; }}
+          onMouseLeave={(e) => { e.currentTarget.style.color = 'var(--text-secondary)'; e.currentTarget.style.background = 'transparent'; }}
         >
-          <LogOut size={18} style={{ color: '#ef4444' }} />
-          <span style={{ color: '#f87171' }}>Logout</span>
+          <LogOut size={18} style={{ opacity: 0.7 }} />
+          Logout
         </button>
       </div>
     </div>

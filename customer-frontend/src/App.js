@@ -5,7 +5,6 @@ import { CartProvider } from './context/CartContext';
 import { ThemeProvider } from './context/ThemeContext';
 import Navbar from './components/Navbar';
 import Footer from './components/Footer';
-import GlitterBackground from './components/GlitterCursor';
 import ScrollToTop from './components/ScrollToTop';
 
 // Lazy loaded pages for performance optimization
@@ -32,8 +31,6 @@ function App() {
         <CartProvider>
           <Router>
             <ScrollToTop />
-            {/* Ambient background glitter – sits behind all content */}
-            <GlitterBackground />
             <div className="flex flex-col min-h-screen" style={{ position: 'relative', zIndex: 1 }}>
               <Navbar />
               <main className="flex-grow">

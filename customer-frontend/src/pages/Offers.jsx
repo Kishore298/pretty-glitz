@@ -28,8 +28,7 @@ const Offers = () => {
   return (
     <div style={{ minHeight: '100vh', paddingTop: 72, paddingBottom: 100 }}>
       {/* ── Banner ────────────────────────────────────────────── */}
-      <div style={{ 
-        height: 280, 
+      <div className="page-banner" style={{ 
         background: 'var(--bg-secondary)',
         display: 'flex', alignItems: 'center', justifyContent: 'center',
         borderBottom: `1px solid var(--border)`,
@@ -43,7 +42,7 @@ const Offers = () => {
           borderRadius: '50%', pointerEvents: 'none'
         }} />
 
-        <div style={{ position: 'relative', zIndex: 2, textAlign: 'center', padding: '0 24px', width: '100%' }}>
+        <div className="section-padding" style={{ position: 'relative', zIndex: 2, textAlign: 'center', width: '100%' }}>
           <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}>
             {/* Breadcrumb */}
             <div style={{ 
@@ -75,11 +74,11 @@ const Offers = () => {
       </div>
 
       {/* ── Product Grid ──────────────────────────────────────── */}
-      <div style={{ maxWidth: 1280, margin: '40px auto 0', padding: '0 24px' }}>
+      <div className="section-padding" style={{ maxWidth: 1280, margin: '40px auto 0' }}>
         {loading ? (
           <div className="product-grid-4">
             {Array.from({ length: 8 }).map((_, i) => (
-              <div key={i} className="skeleton" style={{ height: 350 }} />
+              <div key={i} className="skeleton product-skeleton" />
             ))}
           </div>
         ) : products.length === 0 ? (

@@ -30,6 +30,9 @@ const Checkout = () => {
       msg += `\n${index + 1}. ${item.product.name}\n`;
       if (item.size) msg += `   Size: ${item.size}\n`;
       msg += `   Quantity: ${item.quantity}\n   Price: ₹${item.product.price}\n`;
+      if (item.product.inStock === false) {
+        msg += `   Status: OUT OF STOCK\n`;
+      }
     });
     msg += `\n*Total:* ₹${getCartTotal()}\n\n*Delivery Details:*\nAddress: ${formData.address}\nCity: ${formData.city}\nPincode: ${formData.pincode}\n`;
     if (formData.notes) msg += `\nNotes: ${formData.notes}\n`;

@@ -1,12 +1,12 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
-import { motion } from 'framer-motion';
 import { useTheme } from '../context/ThemeContext';
 import { optimizeImageUrl } from '../utils/cloudinary';
 import { ShoppingBag } from 'lucide-react';
 
 const ProductCard = ({ product }) => {
   const { isDark } = useTheme();
+  const [isHovered, setIsHovered] = useState(false);
 
   // Calculate discount percentage
   const discountPercent = product.originalPrice
@@ -14,21 +14,31 @@ const ProductCard = ({ product }) => {
     : 0;
 
   return (
-    <motion.div 
-      whileHover={{ y: -6 }}
-      transition={{ duration: 0.3 }}
-      className="group cursor-pointer block"
-    >
-      <Link to={`/product/${product._id}`} style={{ textDecoration: 'none' }}>
+    <Link to={`/product/${product._id}`} style={{ textDecoration: 'none', display: 'block' }}>
+      <div 
+        onMouseEnter={() => setIsHovered(true)}
+        onMouseLeave={() => setIsHovered(false)}
+        style={{
+          background: isDark ? 'var(--bg-secondary)' : '#FFFFFF',
+          border: '1px solid',
+          borderColor: isHovered ? 'var(--accent)' : 'var(--border)',
+          borderRadius: 12,
+          padding: 8,
+          display: 'flex',
+          flexDirection: 'column',
+          transition: 'all 0.2s ease',
+          boxShadow: isHovered ? (isDark ? '0 4px 12px rgba(0,0,0,0.4)' : '0 4px 12px rgba(0,0,0,0.05)') : 'none',
+          height: '100%',
+        }}
+      >
+        {/* Image Container */}
         <div style={{
           position: 'relative',
-          aspectRatio: '4/5',
-          background: isDark ? '#1C1C2E' : '#F5F0EA',
+          aspectRatio: '1 / 1',
+          background: isDark ? '#1A1A24' : '#F7F5F2',
+          borderRadius: 8,
           overflow: 'hidden',
-          borderRadius: 16,
-          marginBottom: 16,
-          border: `1px solid ${isDark ? 'rgba(245,240,234,0.05)' : 'rgba(26,17,24,0.06)'}`,
-          transition: 'border-color 0.3s, box-shadow 0.3s',
+          marginBottom: 8,
         }}>
           {product.images && product.images[0] ? (
             <img 
@@ -38,113 +48,101 @@ const ProductCard = ({ product }) => {
               style={{
                 width: '100%', height: '100%',
                 objectFit: 'cover',
-                transition: 'transform 0.7s cubic-bezier(0.2, 0.8, 0.2, 1)',
+                transform: isHovered ? 'scale(1.05)' : 'scale(1)',
+                transition: 'transform 0.4s ease',
               }}
-              className="group-hover:scale-110"
             />
           ) : (
             <div className="no-image-placeholder">
               <div className="pg-monogram">PG</div>
-              <span>Photo Coming Soon</span>
+              <span style={{ fontSize: '0.7rem' }}>Coming Soon</span>
             </div>
           )}
           
-          {/* Discount badge */}
-          {discountPercent > 0 && (
-            <div className="discount-badge">
-              {discountPercent}% OFF
-            </div>
-          )}
-
-          {/* Flagship badge */}
-          {product.isFlagship && !discountPercent && (
-            <div style={{
-              position: 'absolute', top: 12, left: 12,
-              background: isDark ? 'rgba(10,10,15,0.7)' : 'rgba(253,251,247,0.85)',
-              backdropFilter: 'blur(8px)', WebkitBackdropFilter: 'blur(8px)',
-              color: isDark ? '#F5F0EA' : '#1A1118',
-              fontSize: '0.65rem', fontWeight: 800,
-              padding: '4px 10px', borderRadius: 999,
-              letterSpacing: '0.15em', textTransform: 'uppercase',
-              boxShadow: '0 4px 12px rgba(0,0,0,0.1)',
-              zIndex: 2,
-            }}>
-              Flagship
-            </div>
-          )}
-
-          {!product.inStock && (
-            <div style={{
-              position: 'absolute', top: 12, right: discountPercent > 0 ? undefined : 12,
-              left: discountPercent > 0 ? 12 : undefined,
-              background: 'rgba(239,68,68,0.9)',
-              backdropFilter: 'blur(8px)', WebkitBackdropFilter: 'blur(8px)',
-              color: '#fff',
-              fontSize: '0.65rem', fontWeight: 800,
-              padding: '4px 10px', borderRadius: 999,
-              letterSpacing: '0.15em', textTransform: 'uppercase',
-              boxShadow: '0 4px 12px rgba(239,68,68,0.4)',
-              zIndex: 2,
-            }}>
-              Out of Stock
-            </div>
-          )}
-
-          {/* Hover overlay with quick action */}
-          <div style={{
-            position: 'absolute', bottom: 0, left: 0, right: 0,
-            padding: '16px',
-            background: isDark 
-              ? 'linear-gradient(to top, rgba(10,10,15,0.85), transparent)'
-              : 'linear-gradient(to top, rgba(26,17,24,0.6), transparent)',
-            display: 'flex', justifyContent: 'flex-end', alignItems: 'flex-end',
-            opacity: 0, transition: 'opacity 0.3s ease',
-            zIndex: 2,
-          }} className="group-hover:!opacity-100">
-            <div style={{
-              width: 40, height: 40, borderRadius: '50%',
-              background: 'rgba(255,255,255,0.95)',
-              display: 'flex', alignItems: 'center', justifyContent: 'center',
-              color: '#1A1118',
-              boxShadow: '0 4px 16px rgba(0,0,0,0.15)',
-              transition: 'transform 0.2s',
-            }}>
-              <ShoppingBag size={16} />
-            </div>
-          </div>
-        </div>
-        
-        <div>
-          <h3 style={{
-            fontSize: '0.95rem', fontWeight: 600,
-            color: 'var(--text)',
-            display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden',
-            lineHeight: '1.3', minHeight: '2.6em',
-            transition: 'color 0.2s',
-            margin: 0,
-          }}>
-            {product.name}
-          </h3>
-          <p style={{
-            fontSize: '0.75rem', color: 'var(--text-muted)',
-            marginTop: 6, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis',
-            letterSpacing: '0.08em', textTransform: 'uppercase', fontWeight: 500,
-          }}>
-            {product.subcategoryId?.name || product.category}
-          </p>
-          <div style={{ marginTop: 8, display: 'flex', alignItems: 'center', gap: 8 }}>
-            <span style={{ fontSize: '1.05rem', fontWeight: 700, color: 'var(--text)', fontFamily: 'Outfit, sans-serif' }}>
-              ₹{product.price}
-            </span>
-            {product.originalPrice && (
-              <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)', textDecoration: 'line-through' }}>
-                ₹{product.originalPrice}
+          {/* Badges */}
+          <div style={{ position: 'absolute', top: 6, left: 6, display: 'flex', flexDirection: 'column', gap: 4, zIndex: 2 }}>
+            {discountPercent > 0 && (
+              <span style={{
+                background: 'linear-gradient(135deg, #EC168C, #9B3DFF)',
+                color: '#FFF', fontSize: '10px', fontWeight: 700,
+                padding: '4px 7px', borderRadius: 999,
+              }}>
+                {discountPercent}% OFF
+              </span>
+            )}
+            {product.isFlagship && !discountPercent && (
+              <span style={{
+                background: 'rgba(255,255,255,0.9)', color: '#000',
+                fontSize: '9px', fontWeight: 800, padding: '3px 6px',
+                borderRadius: 999, letterSpacing: '0.05em', textTransform: 'uppercase'
+              }}>
+                Flagship
+              </span>
+            )}
+            {!product.inStock && (
+              <span style={{
+                background: '#ef4444', color: '#FFF',
+                fontSize: '9px', fontWeight: 800, padding: '3px 6px',
+                borderRadius: 999, letterSpacing: '0.05em', textTransform: 'uppercase'
+              }}>
+                Sold Out
               </span>
             )}
           </div>
         </div>
-      </Link>
-    </motion.div>
+        
+        {/* Content */}
+        <div style={{ display: 'flex', flexDirection: 'column', flex: 1, padding: '0 4px' }}>
+          <span style={{
+            fontSize: '0.65rem', color: isHovered ? '#D51B86' : 'var(--text-muted)',
+            marginBottom: 4, textTransform: 'uppercase', fontWeight: 600,
+            whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis',
+            transition: 'color 0.15s ease'
+          }}>
+            {product.subcategoryId?.name || product.category}
+          </span>
+          
+          <h3 style={{
+            fontSize: '0.85rem', fontWeight: 600, color: isHovered ? '#D51B86' : 'var(--text)',
+            display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical',
+            overflow: 'hidden', lineHeight: '1.3', marginBottom: 8,
+            transition: 'color 0.15s ease', flex: 1
+          }}>
+            {product.name}
+          </h3>
+          
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginTop: 'auto' }}>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 0 }}>
+              <span style={{ fontSize: '1rem', fontWeight: 700, color: 'var(--text)', fontFamily: 'Outfit, sans-serif', lineHeight: 1.1 }}>
+                ₹{product.price}
+              </span>
+              {product.originalPrice && (
+                <span style={{ fontSize: '0.7rem', color: 'var(--text-muted)', textDecoration: 'line-through', marginTop: 2 }}>
+                  ₹{product.originalPrice}
+                </span>
+              )}
+            </div>
+            
+            <button 
+              style={{
+                background: isHovered ? 'var(--text)' : 'var(--bg-secondary)',
+                color: isHovered ? 'var(--bg)' : 'var(--text)',
+                border: `1px solid ${isHovered ? 'var(--text)' : 'var(--border)'}`,
+                width: 32, height: 32, borderRadius: 8,
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                cursor: 'pointer', transition: 'all 0.2s ease', flexShrink: 0
+              }}
+              onClick={(e) => {
+                e.preventDefault();
+                // Future cart logic
+              }}
+            >
+              <ShoppingBag size={14} />
+            </button>
+          </div>
+        </div>
+      </div>
+    </Link>
   );
 };
 

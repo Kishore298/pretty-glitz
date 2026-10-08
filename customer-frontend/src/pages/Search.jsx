@@ -63,7 +63,7 @@ const Search = () => {
         {loading ? (
           <div className="product-grid-4">
             {Array.from({ length: 8 }).map((_, i) => (
-              <div key={i} className="skeleton" style={{ height: 350 }} />
+              <div key={i} className="skeleton product-skeleton" />
             ))}
           </div>
         ) : results.length === 0 && query ? (

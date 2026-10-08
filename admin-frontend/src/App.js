@@ -8,6 +8,7 @@ import Products from './pages/Products';
 import Categories from './pages/Categories';
 import Subcategories from './pages/Subcategories';
 import Offers from './pages/Offers';
+import AdminLayout from './components/AdminLayout';
 
 const ProtectedRoute = ({ children }) => {
   const { admin, loading } = useContext(AuthContext);
@@ -15,7 +16,7 @@ const ProtectedRoute = ({ children }) => {
   if (loading) return <div className="flex h-screen items-center justify-center">Loading...</div>;
   if (!admin) return <Navigate to="/login" />;
   
-  return children;
+  return <AdminLayout>{children}</AdminLayout>;
 };
 
 function App() {
@@ -24,9 +25,9 @@ function App() {
       <Router>
         <Toaster position="top-right" toastOptions={{
           style: {
-            background: '#141419',
-            color: '#f0f0f5',
-            border: '1px solid #1e1e28'
+            background: 'var(--surface-elevated)',
+            color: 'var(--text-primary)',
+            border: '1px solid var(--card-border)'
           }
         }} />
         <Routes>

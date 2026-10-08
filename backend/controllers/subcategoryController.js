@@ -28,4 +28,25 @@ const deleteSubcategory = async (req, res) => {
   }
 };
 
-module.exports = { createSubcategory, getSubcategories, deleteSubcategory };
+const updateSubcategory = async (req, res) => {
+  try {
+    const updated = await Subcategory.findByIdAndUpdate(req.params.id, req.body, { new: true });
+    res.json(updated);
+  } catch (error) {
+    res.status(500).json({ message: 'Server error' });
+  }
+};
+
+const reorderSubcategories = async (req, res) => {
+  try {
+    const { items } = req.body;
+    for (const item of items) {
+      await Subcategory.findByIdAndUpdate(item.id, { order: item.order });
+    }
+    res.json({ message: 'Subcategories reordered successfully' });
+  } catch (error) {
+    res.status(500).json({ message: 'Server error' });
+  }
+};
+
+module.exports = { createSubcategory, getSubcategories, deleteSubcategory, updateSubcategory, reorderSubcategories };
