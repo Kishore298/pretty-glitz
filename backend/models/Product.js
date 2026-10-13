@@ -18,6 +18,7 @@ const productSchema = new mongoose.Schema({
   subcategoryId: { type: mongoose.Schema.Types.ObjectId, ref: 'Subcategory' },
   
   isOffer: { type: Boolean, default: false },
+  isBestseller: { type: Boolean, default: false },
   
   // Cloudinary image storage
   images: [{
@@ -31,7 +32,13 @@ const productSchema = new mongoose.Schema({
     order: Number
   }],
   
-  isFlagship: { type: Boolean, default: false },
+  // Bangle piece counts with individual pricing
+  pieceCounts: [{
+    count: Number,
+    price: Number,
+    originalPrice: Number
+  }],
+  
   isActive: { type: Boolean, default: true },
   inStock: { type: Boolean, default: true },
   order: { type: Number, default: 0 }

@@ -1,11 +1,22 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" data-theme="light">
   <head>
     <meta charset="utf-8" />
     <link rel="icon" href="%PUBLIC_URL%/favicon.ico" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <meta name="theme-color" content="#0A0A0F" media="(prefers-color-scheme: dark)" />
-    <meta name="theme-color" content="#FDFBF7" media="(prefers-color-scheme: light)" />
+    <meta name="theme-color" content="#FDFBF7" />
+    <script>
+      (function() {
+        try {
+          var saved = localStorage.getItem('pg-theme');
+          if (saved === 'dark') {
+            document.documentElement.setAttribute('data-theme', 'dark');
+          } else {
+            document.documentElement.setAttribute('data-theme', 'light');
+          }
+        } catch (e) {}
+      })();
+    </script>
     <meta
       name="description"
       content="PrettyGlitz — Discover exquisite bangles, everlasting artificial flowers, premium jumkhas, and elegant jewels. Handcrafted accessories for your most precious moments."

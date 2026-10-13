@@ -5,11 +5,13 @@ import { CartProvider } from './context/CartContext';
 import { ThemeProvider } from './context/ThemeContext';
 import Navbar from './components/Navbar';
 import Footer from './components/Footer';
+import BottomNav from './components/BottomNav';
 import ScrollToTop from './components/ScrollToTop';
 
 // Lazy loaded pages for performance optimization
 const Home = lazy(() => import('./pages/Home'));
 const CategoryPage = lazy(() => import('./pages/CategoryPage'));
+const Categories = lazy(() => import('./pages/Categories'));
 const ProductDetail = lazy(() => import('./pages/ProductDetail'));
 const Search = lazy(() => import('./pages/Search'));
 const Cart = lazy(() => import('./pages/Cart'));
@@ -38,6 +40,7 @@ function App() {
                   <Routes>
                     <Route path="/" element={<Home />} />
                     <Route path="/products" element={<AllProducts />} />
+                    <Route path="/categories" element={<Categories />} />
                     <Route path="/category/:categoryName" element={<CategoryPage />} />
                     <Route path="/product/:id" element={<ProductDetail />} />
                     <Route path="/search" element={<Search />} />
@@ -48,6 +51,7 @@ function App() {
                 </Suspense>
               </main>
               <Footer />
+              <BottomNav />
             </div>
           </Router>
         </CartProvider>

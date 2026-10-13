@@ -4,7 +4,7 @@ import api from '../utils/api';
 import { motion, AnimatePresence } from 'framer-motion';
 import { CartContext } from '../context/CartContext';
 import { optimizeImageUrl } from '../utils/cloudinary';
-import { Check, ChevronRight, Share2, ZoomIn } from 'lucide-react';
+import { Check, ChevronRight, Share2, ZoomIn, Plus, Minus, ShoppingBag } from 'lucide-react';
 import ProductCard from '../components/ProductCard';
 
 const ProductDetail = () => {
@@ -12,14 +12,14 @@ const ProductDetail = () => {
   const [product, setProduct] = useState(null);
   const [relatedProducts, setRelatedProducts] = useState([]);
   const [selectedSize, setSelectedSize] = useState(null);
-  const [quantity, setQuantity] = useState(1);
+  const [selectedPieceCount, setSelectedPieceCount] = useState(null);
   const [error, setError] = useState('');
   const [activeImage, setActiveImage] = useState(0);
   const [addedFeedback, setAddedFeedback] = useState(false);
   const [isZoomed, setIsZoomed] = useState(false);
   const [mousePos, setMousePos] = useState({ x: 0, y: 0 });
 
-  const { addToCart } = useContext(CartContext);
+  const { addToCart, updateQuantity, removeFromCart, getCartItemQuantity, isInCart } = useContext(CartContext);
 
   useEffect(() => {
     fetchProduct();
@@ -31,8 +31,14 @@ const ProductDetail = () => {
     try {
       const { data } = await api.get(`/products/${id}`);
       setProduct(data);
-      
-      // Fetch related products from same category
+
+      // Auto-select lowest piece count
+      if (data.pieceCounts?.length > 0) {
+        const sorted = [...data.pieceCounts].sort((a, b) => a.count - b.count);
+        setSelectedPieceCount(sorted[0]);
+      }
+
+      // Fetch related products
       if (data.category) {
         const rel = await api.get(`/products?category=${encodeURIComponent(data.category)}`);
         setRelatedProducts(rel.data.filter(p => p._id !== data._id).slice(0, 4));
@@ -40,16 +46,49 @@ const ProductDetail = () => {
     } catch (err) { console.error(err); }
   };
 
-  const handleAddToCart = () => {
+  // Resolved price (piece count price overrides product price)
+  const resolvedPrice = selectedPieceCount ? selectedPieceCount.price : product?.price;
+  const resolvedOriginalPrice = selectedPieceCount ? selectedPieceCount.originalPrice : product?.originalPrice;
+
+  // Cart state for current variant
+  const cartVariantQty = product ? getCartItemQuantity(product._id, selectedSize, selectedPieceCount?.count ?? null) : 0;
+  const variantInCart = product ? isInCart(product._id, selectedSize, selectedPieceCount?.count ?? null) : false;
+
+  const validate = () => {
     if ((product.category || '').toLowerCase().includes('bangles') && product.sizes?.length > 0 && !selectedSize) {
       setError('Please select a size to continue');
-      return;
+      return false;
+    }
+    if (product.pieceCounts?.length > 0 && !selectedPieceCount) {
+      setError('Please select a piece count to continue');
+      return false;
     }
     setError('');
-    addToCart(product, selectedSize, quantity);
-    
+    return true;
+  };
+
+  const handleAddToCart = () => {
+    if (!validate()) return;
+    addToCart(product, selectedSize, 1, selectedPieceCount?.count ?? null, resolvedPrice);
     setAddedFeedback(true);
     setTimeout(() => setAddedFeedback(false), 2000);
+  };
+
+  const handleIncrease = () => {
+    if (!validate()) return;
+    if (variantInCart) {
+      updateQuantity(product._id, selectedSize, cartVariantQty + 1, selectedPieceCount?.count ?? null);
+    } else {
+      addToCart(product, selectedSize, 1, selectedPieceCount?.count ?? null, resolvedPrice);
+    }
+  };
+
+  const handleDecrease = () => {
+    if (cartVariantQty <= 1) {
+      removeFromCart(product._id, selectedSize, selectedPieceCount?.count ?? null);
+    } else {
+      updateQuantity(product._id, selectedSize, cartVariantQty - 1, selectedPieceCount?.count ?? null);
+    }
   };
 
   const handleShare = () => {
@@ -71,12 +110,14 @@ const ProductDetail = () => {
     </div>
   );
 
+  const hasPieceCounts = product.pieceCounts?.length > 0;
+
   return (
-    <div style={{ minHeight: '100vh', paddingTop: 100, paddingBottom: 100 }}>
-      <div style={{ maxWidth: 1280, margin: '0 auto', padding: '0 24px' }}>
-        
+    <div className="product-detail-page">
+      <div className="product-detail-container">
+
         {/* ── Breadcrumb ─────────────────────────────────────── */}
-        <div className="breadcrumb">
+        <div className="product-detail-breadcrumb">
           <Link to="/">Home</Link>
           <ChevronRight size={14} className="separator" />
           <Link to={`/category/${product.category}`}>{product.category}</Link>
@@ -84,103 +125,100 @@ const ProductDetail = () => {
           <span style={{ color: 'var(--text)', fontWeight: 600 }}>{product.name}</span>
         </div>
 
-        <div className="flex flex-col lg:flex-row gap-8 lg:gap-16 mt-8">
-          
+        <div className="product-detail-layout">
+
           {/* ── Image Gallery ──────────────────────────────────── */}
-          <div className="w-full lg:w-1/2 flex flex-col-reverse md:flex-row gap-4">
-            
+          <div className="product-gallery-wrapper">
+
             {/* Thumbnails */}
-            <div className="flex flex-row md:flex-col gap-4 overflow-x-auto md:overflow-y-auto no-scrollbar pb-2 md:pb-0" style={{ maxWidth: '100%' }}>
-              {product.images?.map((img, idx) => (
-                <button 
-                  key={idx}
-                  onClick={() => setActiveImage(idx)}
-                  style={{
-                    flexShrink: 0, width: 80, height: 100, borderRadius: 12,
-                    background: 'var(--bg-secondary)', border: `2px solid ${activeImage === idx ? 'var(--accent)' : 'transparent'}`,
-                    overflow: 'hidden', cursor: 'pointer', padding: 0,
-                    opacity: activeImage === idx ? 1 : 0.6,
-                    transition: 'all 0.2s',
-                  }}
-                  onMouseEnter={e => e.currentTarget.style.opacity = 1}
-                  onMouseLeave={e => { if (activeImage !== idx) e.currentTarget.style.opacity = 0.6; }}
-                >
-                  <img src={optimizeImageUrl(img.url, 150)} alt="" loading="lazy" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-                </button>
-              ))}
-            </div>
+            {product.images?.length > 1 && (
+              <div className="product-gallery-thumbs no-scrollbar">
+                {product.images.map((img, idx) => (
+                  <button
+                    key={idx}
+                    onClick={() => setActiveImage(idx)}
+                    className="product-gallery-thumb-btn"
+                    style={{
+                      border: `2px solid ${activeImage === idx ? 'var(--accent)' : 'transparent'}`,
+                      opacity: activeImage === idx ? 1 : 0.6,
+                    }}
+                    onMouseEnter={e => e.currentTarget.style.opacity = 1}
+                    onMouseLeave={e => { if (activeImage !== idx) e.currentTarget.style.opacity = 0.6; }}
+                  >
+                    <img src={optimizeImageUrl(img.url, 150)} alt="" loading="lazy" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                  </button>
+                ))}
+              </div>
+            )}
 
             {/* Main Image with Zoom */}
-            <div 
-              className="flex-1 w-full" 
-              style={{ aspectRatio: '4/5', background: 'var(--bg-secondary)', borderRadius: 20, overflow: 'hidden', position: 'relative', cursor: 'crosshair' }}
+            <div
+              className="product-gallery-main"
               onMouseEnter={() => setIsZoomed(true)}
               onMouseLeave={() => setIsZoomed(false)}
               onMouseMove={handleMouseMove}
             >
               <AnimatePresence mode="wait">
-                <motion.div 
+                <motion.div
                   key={activeImage}
                   initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.3 }}
                   style={{ width: '100%', height: '100%' }}
                 >
-                  <img 
-                    src={optimizeImageUrl(product.images?.[activeImage]?.url, 1000)} 
-                    alt={product.name} 
-                    style={{ 
-                      width: '100%', height: '100%', objectFit: 'cover',
+                  <img
+                    src={optimizeImageUrl(product.images?.[activeImage]?.url, 1000)}
+                    alt={product.name}
+                    style={{
+                      width: '100%', height: '100%', objectFit: 'contain',
                       transform: isZoomed ? 'scale(2)' : 'scale(1)',
                       transformOrigin: `${mousePos.x}% ${mousePos.y}%`,
                       transition: isZoomed ? 'none' : 'transform 0.3s ease-out'
-                    }} 
+                    }}
                   />
                 </motion.div>
               </AnimatePresence>
-              
+
               {!isZoomed && (
-                <div style={{ position: 'absolute', top: 16, right: 16, background: 'rgba(255,255,255,0.9)', color: '#000', padding: 8, borderRadius: '50%', boxShadow: '0 4px 12px rgba(0,0,0,0.1)' }}>
-                  <ZoomIn size={18} />
+                <div className="product-gallery-zoom-badge">
+                  <ZoomIn size={16} />
                 </div>
               )}
             </div>
           </div>
 
           {/* ── Product Info ───────────────────────────────────── */}
-          <div className="w-full lg:w-1/2 lg:pt-5">
+          <div className="product-info-wrapper">
             <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5 }}>
-              
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-                <p style={{ fontSize: '0.75rem', color: 'var(--accent)', textTransform: 'uppercase', letterSpacing: '0.2em', fontWeight: 700, marginBottom: 12 }}>
+
+              <div className="product-detail-header-row">
+                <p className="product-detail-category">
                   {product.category}
                 </p>
-                
-                <button 
+
+                <button
                   onClick={handleShare}
-                  style={{ background: 'var(--bg-secondary)', border: 'none', width: 40, height: 40, borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', color: 'var(--text)' }}
+                  className="product-detail-share-btn"
                   title="Share to WhatsApp"
                 >
-                  <Share2 size={18} />
+                  <Share2 size={16} />
                 </button>
               </div>
 
-              <h1 style={{ fontFamily: '"Cormorant Garamond", Georgia, serif', fontSize: 'clamp(1.5rem, 4vw, 3rem)', fontWeight: 600, color: 'var(--text)', margin: '0 0 24px', lineHeight: 1.1 }}>
+              <h1 className="product-detail-title">
                 {product.name}
               </h1>
-              
-              <div style={{ display: 'flex', alignItems: 'flex-end', gap: 16, marginBottom: 40 }}>
-                <span style={{ fontSize: '2rem', fontWeight: 700, color: 'var(--text)', fontFamily: 'Outfit, sans-serif' }}>
-                  ₹{product.price}
+
+              {/* Dynamic Price Display */}
+              <div className="product-detail-price-row">
+                <span className="product-detail-price">
+                  ₹{resolvedPrice}
                 </span>
-                {product.originalPrice && (
-                  <span style={{ fontSize: '1.2rem', color: 'var(--text-muted)', textDecoration: 'line-through', marginBottom: 4 }}>
-                    ₹{product.originalPrice}
+                {resolvedOriginalPrice && (
+                  <span className="product-detail-original-price">
+                    ₹{resolvedOriginalPrice}
                   </span>
                 )}
                 {!product.inStock && (
-                  <span style={{
-                    background: 'rgba(239,68,68,0.1)', color: '#ef4444', border: '1px solid rgba(239,68,68,0.2)',
-                    padding: '4px 12px', borderRadius: 999, fontSize: '0.8rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.05em'
-                  }}>
+                  <span className="product-detail-stock-badge">
                     Out of Stock
                   </span>
                 )}
@@ -188,92 +226,133 @@ const ProductDetail = () => {
 
               {/* Bangle Size Selector */}
               {(product.category || '').toLowerCase().includes('bangles') && product.sizes?.length > 0 && (
-                <div style={{ marginBottom: 40 }}>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
-                    <span style={{ fontSize: '0.85rem', fontWeight: 700, letterSpacing: '0.1em', textTransform: 'uppercase', color: 'var(--text)' }}>
-                      Select Size
-                    </span>
-                  </div>
-                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: 12 }}>
+                <div className="product-detail-section">
+                  <span className="product-detail-label">
+                    Select Size
+                  </span>
+                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
                     {product.sizes.map((s, idx) => (
                       <button
                         key={idx}
                         onClick={() => { setSelectedSize(s.size); setError(''); }}
+                        className="product-size-btn"
                         style={{
-                          width: 56, height: 56, borderRadius: '50%',
-                          display: 'flex', alignItems: 'center', justifyContent: 'center',
-                          fontSize: '0.9rem', fontWeight: 600, cursor: 'pointer',
                           background: selectedSize === s.size ? 'var(--accent-gradient)' : 'var(--bg-secondary)',
                           color: selectedSize === s.size ? 'white' : 'var(--text)',
                           border: selectedSize === s.size ? 'none' : `1px solid var(--border)`,
                           boxShadow: selectedSize === s.size ? '0 8px 20px rgba(196,56,108,0.4)' : 'none',
-                          transition: 'all 0.2s',
                         }}
                       >
                         {s.size}
                       </button>
                     ))}
                   </div>
-                  {error && <motion.p initial={{ opacity: 0 }} animate={{ opacity: 1 }} style={{ color: '#ef4444', fontSize: '0.85rem', fontWeight: 500, marginTop: 12 }}>{error}</motion.p>}
                 </div>
               )}
 
-              {/* Quantity & Add to Cart Row */}
-              <div style={{ display: 'flex', gap: 16, marginBottom: 48, flexWrap: 'wrap' }}>
-                <div style={{
-                  display: 'flex', alignItems: 'center', border: `1px solid var(--border-strong)`,
-                  borderRadius: 12, width: 140, height: 56, background: 'var(--bg-secondary)'
-                }}>
-                  <button onClick={() => setQuantity(Math.max(1, quantity - 1))} style={{ flex: 1, height: '100%', background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-secondary)', fontSize: '1.4rem' }}>-</button>
-                  <span style={{ flex: 1, textAlign: 'center', fontSize: '1.1rem', fontWeight: 600, color: 'var(--text)', fontFamily: 'Outfit, sans-serif' }}>{quantity}</span>
-                  <button onClick={() => setQuantity(quantity + 1)} style={{ flex: 1, height: '100%', background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-secondary)', fontSize: '1.2rem' }}>+</button>
+              {/* Piece Count Selector */}
+              {hasPieceCounts && (
+                <div className="product-detail-section">
+                  <span className="product-detail-label">
+                    Piece Count
+                  </span>
+                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
+                    {[...product.pieceCounts].sort((a, b) => a.count - b.count).map((pc, idx) => {
+                      const isSelected = selectedPieceCount?.count === pc.count;
+                      return (
+                        <button
+                          key={idx}
+                          onClick={() => { setSelectedPieceCount(pc); setError(''); }}
+                          className="product-piece-btn"
+                          style={{
+                            background: isSelected ? 'var(--accent-gradient)' : 'var(--bg-secondary)',
+                            color: isSelected ? 'white' : 'var(--text)',
+                            border: isSelected ? 'none' : `1px solid var(--border)`,
+                            boxShadow: isSelected ? '0 8px 20px rgba(196,56,108,0.4)' : 'none',
+                          }}
+                        >
+                          <span style={{ fontWeight: 700 }}>{pc.count} pcs</span>
+                          <span style={{ opacity: isSelected ? 0.85 : 0.7 }}>₹{pc.price}</span>
+                        </button>
+                      );
+                    })}
+                  </div>
                 </div>
-                
-                <button 
-                  onClick={handleAddToCart}
-                  disabled={!product.inStock}
-                  style={{
-                    flex: 1, height: 56, minWidth: 200,
-                    background: !product.inStock ? 'var(--input-bg)' : 'var(--accent-gradient)',
-                    color: !product.inStock ? 'var(--text-muted)' : 'white',
-                    border: 'none', borderRadius: 12,
-                    fontSize: '0.9rem', fontWeight: 700, letterSpacing: '0.1em', textTransform: 'uppercase',
-                    cursor: !product.inStock ? 'not-allowed' : 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 10,
-                    transition: 'transform 0.2s, box-shadow 0.2s',
-                    boxShadow: (!product.inStock) ? 'none' : '0 8px 30px rgba(196,56,108,0.3)',
-                  }}
-                  onMouseEnter={e => { if(product.inStock) { e.currentTarget.style.transform = 'translateY(-2px)'; e.currentTarget.style.boxShadow = '0 12px 40px rgba(196,56,108,0.4)'; } }}
-                  onMouseLeave={e => { if(product.inStock) { e.currentTarget.style.transform = 'none'; e.currentTarget.style.boxShadow = '0 8px 30px rgba(196,56,108,0.3)'; } }}
-                >
-                  {!product.inStock ? 'Out of Stock' : (addedFeedback ? <><Check size={18} /> Added to Cart</> : 'Add to Cart')}
-                </button>
-              </div>
+              )}
+
+              {error && <motion.p initial={{ opacity: 0 }} animate={{ opacity: 1 }} style={{ color: '#ef4444', fontSize: '0.85rem', fontWeight: 500, marginBottom: 12 }}>{error}</motion.p>}
+
+              {/* Cart Controls */}
+              {product.inStock && (
+                <div className="product-cart-section">
+                  {variantInCart ? (
+                    /* Quantity Stepper when variant is in cart */
+                    <div style={{ display: 'flex', gap: 12, alignItems: 'center', flexWrap: 'wrap' }}>
+                      <div className="product-cart-stepper">
+                        <button onClick={handleDecrease} className="product-cart-stepper-btn">
+                          <Minus size={16} />
+                        </button>
+                        <span className="product-cart-stepper-qty">
+                          {cartVariantQty}
+                        </span>
+                        <button onClick={handleIncrease} className="product-cart-stepper-btn">
+                          <Plus size={16} />
+                        </button>
+                      </div>
+                      <Link to="/cart" className="product-view-cart-btn">
+                        <ShoppingBag size={16} /> View Cart
+                      </Link>
+                    </div>
+                  ) : (
+                    /* Add to Cart */
+                    <button
+                      onClick={handleAddToCart}
+                      className="product-add-cart-btn"
+                      onMouseEnter={e => { e.currentTarget.style.transform = 'translateY(-2px)'; e.currentTarget.style.boxShadow = '0 12px 40px rgba(196,56,108,0.4)'; }}
+                      onMouseLeave={e => { e.currentTarget.style.transform = 'none'; e.currentTarget.style.boxShadow = '0 8px 30px rgba(196,56,108,0.3)'; }}
+                    >
+                      {addedFeedback ? <><Check size={18} /> Added to Cart</> : 'Add to Cart'}
+                    </button>
+                  )}
+                </div>
+              )}
+
+              {!product.inStock && (
+                <div className="product-cart-section">
+                  <button disabled className="product-add-cart-btn" style={{
+                    background: 'var(--input-bg)', color: 'var(--text-muted)',
+                    cursor: 'not-allowed', boxShadow: 'none'
+                  }}>
+                    Out of Stock
+                  </button>
+                </div>
+              )}
 
               {/* Product Details Section */}
-              <div style={{ borderTop: `1px solid var(--border)`, paddingTop: 32 }}>
-                <h3 style={{ fontSize: '0.85rem', fontWeight: 700, color: 'var(--text)', textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: 16 }}>
+              <div className="product-details-accordion">
+                <h3 className="product-details-heading">
                   Product Details
                 </h3>
-                <p style={{ whiteSpace: 'pre-wrap', fontSize: '0.95rem', color: 'var(--text-secondary)', lineHeight: 1.8, margin: 0 }}>
+                <p className="product-details-body">
                   {product.description}
                 </p>
                 {product.category?.toLowerCase() === 'gift box combo' && product.giftBoxDetails && (
                   <>
-                    <h3 style={{ fontSize: '0.85rem', fontWeight: 700, color: 'var(--text)', textTransform: 'uppercase', letterSpacing: '0.1em', marginTop: 32, marginBottom: 16 }}>
+                    <h3 className="product-details-heading" style={{ marginTop: 20 }}>
                       Included Items
                     </h3>
-                    <p style={{ whiteSpace: 'pre-wrap', fontSize: '0.95rem', color: 'var(--text-secondary)', lineHeight: 1.8, margin: 0 }}>
+                    <p className="product-details-body">
                       {product.giftBoxDetails}
                     </p>
                   </>
                 )}
-                
+
                 {/* Shipping info */}
-                <div style={{ marginTop: 32, padding: 20, borderRadius: 12, background: 'var(--bg-secondary)', border: `1px solid var(--border)` }}>
-                  <h4 style={{ fontSize: '0.85rem', fontWeight: 700, color: 'var(--text)', margin: '0 0 8px', display: 'flex', alignItems: 'center', gap: 8 }}>
-                    <span style={{ color: 'var(--accent-gold)' }}>🚚</span> Shipping & Returns
+                <div className="product-shipping-card">
+                  <h4 className="product-shipping-title">
+                    <span>🚚</span> Shipping & Returns
                   </h4>
-                  <p style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', margin: 0, lineHeight: 1.6 }}>
+                  <p className="product-shipping-text">
                     All-India delivery available. We take extreme care in packaging your products to ensure they arrive in perfect condition.
                   </p>
                 </div>
@@ -285,19 +364,16 @@ const ProductDetail = () => {
 
         {/* ── Related Products ─────────────────────────────────── */}
         {relatedProducts.length > 0 && (
-          <div style={{ marginTop: 100, borderTop: `1px solid var(--border)`, paddingTop: 80 }}>
-            <div style={{ textAlign: 'center', marginBottom: 48 }}>
-              <h2 style={{
-                fontFamily: '"Cormorant Garamond", Georgia, serif', fontWeight: 600,
-                fontSize: 'clamp(1.5rem, 4vw, 2.5rem)', color: 'var(--text)', margin: 0,
-              }}>
+          <div className="product-related-section">
+            <div className="product-related-header">
+              <h2 className="product-related-title">
                 You May Also Like
               </h2>
-              <p style={{ color: 'var(--text-secondary)', marginTop: 12, fontSize: '0.95rem' }}>
+              <p className="product-related-subtitle">
                 Explore more from the {product.category} collection
               </p>
             </div>
-            
+
             <div className="product-grid-4">
               {relatedProducts.map((relProduct, idx) => (
                 <motion.div key={relProduct._id} initial={{ opacity: 0, y: 30 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ delay: idx * 0.1 }}>

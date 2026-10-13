@@ -26,6 +26,8 @@ app.use('/api/products', require('./routes/productRoutes'));
 app.use('/api/categories', require('./routes/categoryRoutes'));
 app.use('/api/subcategories', require('./routes/subcategoryRoutes'));
 app.use('/api/upload', require('./routes/uploadRoutes'));
+app.use('/api/banners', require('./routes/bannerRoutes'));
+app.use('/api/testimonials', require('./routes/testimonialRoutes'));
 
 // Basic Route
 app.get('/api', (req, res) => {

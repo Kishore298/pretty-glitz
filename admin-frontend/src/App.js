@@ -8,6 +8,7 @@ import Products from './pages/Products';
 import Categories from './pages/Categories';
 import Subcategories from './pages/Subcategories';
 import Offers from './pages/Offers';
+import Testimonials from './pages/Testimonials';
 import AdminLayout from './components/AdminLayout';
 
 const ProtectedRoute = ({ children }) => {
@@ -37,6 +38,7 @@ function App() {
           <Route path="/categories" element={<ProtectedRoute><Categories /></ProtectedRoute>} />
           <Route path="/subcategories" element={<ProtectedRoute><Subcategories /></ProtectedRoute>} />
           <Route path="/offers" element={<ProtectedRoute><Offers /></ProtectedRoute>} />
+          <Route path="/testimonials" element={<ProtectedRoute><Testimonials /></ProtectedRoute>} />
           <Route path="*" element={<Navigate to="/dashboard" />} />
         </Routes>
       </Router>

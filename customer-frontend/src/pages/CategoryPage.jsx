@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import api from '../utils/api';
 import ProductCard from '../components/ProductCard';
+import ProductCardSkeleton from '../components/ProductCardSkeleton';
 import { motion, AnimatePresence } from 'framer-motion';
 import { ChevronRight, Filter } from 'lucide-react';
 
@@ -102,7 +103,7 @@ const CategoryPage = () => {
         {loading ? (
           <div className="product-grid-4">
             {Array.from({ length: 8 }).map((_, i) => (
-              <div key={i} className="skeleton product-skeleton" />
+              <ProductCardSkeleton key={i} />
             ))}
           </div>
         ) : products.length === 0 ? (

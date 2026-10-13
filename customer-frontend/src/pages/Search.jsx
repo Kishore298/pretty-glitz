@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import api from '../utils/api';
 import ProductCard from '../components/ProductCard';
+import ProductCardSkeleton from '../components/ProductCardSkeleton';
 import { motion } from 'framer-motion';
 import { Search as SearchIcon } from 'lucide-react';
 
@@ -63,7 +64,7 @@ const Search = () => {
         {loading ? (
           <div className="product-grid-4">
             {Array.from({ length: 8 }).map((_, i) => (
-              <div key={i} className="skeleton product-skeleton" />
+              <ProductCardSkeleton key={i} />
             ))}
           </div>
         ) : results.length === 0 && query ? (

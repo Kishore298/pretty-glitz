@@ -7,7 +7,8 @@ import {
   Layers,
   LayoutGrid,
   LogOut,
-  Sparkles
+  Sparkles,
+  MessageSquareQuote
 } from 'lucide-react';
 
 const navGroups = [
@@ -29,6 +30,7 @@ const navGroups = [
     label: 'Marketing',
     items: [
       { to: '/offers', label: 'Offers', Icon: Sparkles },
+      { to: '/testimonials', label: 'Testimonials', Icon: MessageSquareQuote },
     ]
   }
 ];

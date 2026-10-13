@@ -151,7 +151,7 @@ const Navbar = () => {
     background: isDark ? 'rgba(245,240,234,0.07)' : 'rgba(26,17,24,0.05)',
     border: `1px solid ${isDark ? 'rgba(245,240,234,0.1)' : 'rgba(26,17,24,0.1)'}`,
     display: 'flex', alignItems: 'center', justifyContent: 'center',
-    cursor: 'pointer', transition: 'all 0.2s',
+    cursor: 'pointer', transition: 'all 0.35s ease',
     color: 'var(--text)',
   };
 
@@ -163,7 +163,7 @@ const Navbar = () => {
         backdropFilter: 'blur(16px)',
         WebkitBackdropFilter: 'blur(16px)',
         borderBottom: `1px solid var(--border)`,
-        transition: 'all 0.3s ease',
+        transition: 'background 0.35s ease, border-color 0.35s ease, box-shadow 0.35s ease',
       }}>
         <div style={{ maxWidth: 1280, margin: '0 auto', padding: '0 24px' }}>
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', height: 72 }}>
