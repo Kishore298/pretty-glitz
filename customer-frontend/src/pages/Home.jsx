@@ -81,9 +81,27 @@ const Home = () => {
     setLoadingBestsellers(true);
     try {
       const { data } = await api.get('/products?isBestseller=true');
-      setBestsellers(Array.isArray(data) ? data : []);
+      if (Array.isArray(data) && data.length > 0) {
+        setBestsellers(data);
+      } else {
+        // Fallback to active products if none are explicitly tagged as bestseller
+        const fallback = await api.get('/products');
+        if (Array.isArray(fallback.data) && fallback.data.length > 0) {
+          setBestsellers(fallback.data.slice(0, 8));
+        } else {
+          setBestsellers([]);
+        }
+      }
     } catch (err) {
-      console.error(err);
+      console.error('Error fetching bestsellers:', err);
+      try {
+        const fallback = await api.get('/products');
+        if (Array.isArray(fallback.data)) {
+          setBestsellers(fallback.data.slice(0, 8));
+        }
+      } catch (fallbackErr) {
+        setBestsellers([]);
+      }
     } finally {
       setLoadingBestsellers(false);
     }
@@ -155,87 +173,64 @@ const Home = () => {
 
     const viewport = bestsellersViewportRef.current;
     const firstGroup = bestsellersGroupRef.current;
-    if (!viewport || !firstGroup) return undefined;
+    if (!viewport) return undefined;
 
-    // Helper: calculate the scrollLeft needed to center any card in the viewport
-    const getCardCenterScroll = (card) => {
-      if (!card || !viewport) return 0;
-      const cardCenter = card.offsetLeft + card.offsetWidth / 2;
-      return cardCenter - viewport.clientWidth / 2;
-    };
-
-    // Helper: get Card 0 of the middle group (Group 1)
-    const getGroup1Card0 = () => {
-      const groups = viewport.querySelectorAll('.best-sellers-group');
-      const group1 = groups[1] || firstGroup;
-      return group1?.querySelector('.best-sellers-card');
-    };
-
-    // Base scroll position where Card 0 of Group 1 is centered
-    const getBaseCenterScroll = () => {
-      const card0 = getGroup1Card0();
-      if (!card0) return firstGroup.offsetWidth;
-      return getCardCenterScroll(card0);
-    };
-
-    // Helper: get exact pixel distance between adjacent cards
     const getCardStep = () => {
-      const groups = viewport.querySelectorAll('.best-sellers-group');
-      const group1 = groups[1] || firstGroup;
-      const cards = group1?.querySelectorAll('.best-sellers-card');
-      if (cards && cards.length >= 2) {
-        return cards[1].offsetLeft - cards[0].offsetLeft;
-      }
-      const firstCard = viewport.querySelector('.best-sellers-card');
-      const cardWidth = firstCard?.offsetWidth || 280;
-      const gap = window.innerWidth <= 648 ? 16 : 24;
-      return cardWidth + gap;
+      const card = viewport.querySelector('.best-sellers-card');
+      const w = card ? card.offsetWidth : 280;
+      const isMobile = window.innerWidth <= 648;
+      const gap = isMobile ? 16 : 24;
+      return w + gap;
     };
 
-    // 1. Initial positioning: center Card 0 of Group 1
-    const initScrollPosition = () => {
-      const target = getBaseCenterScroll();
+    const getGroupWidth = () => {
+      if (firstGroup && firstGroup.offsetWidth > 0) {
+        return firstGroup.offsetWidth;
+      }
+      return (carouselProducts.length || 10) * getCardStep();
+    };
+
+    // Center Card 0 of Group 1
+    const initPosition = () => {
+      if (!viewport) return;
+      const W = getGroupWidth();
+      const card = viewport.querySelector('.best-sellers-card');
+      const w = card ? card.offsetWidth : 280;
+      const target = W - (viewport.clientWidth - w) / 2;
       if (target > 0) {
         viewport.scrollLeft = target;
       }
     };
-    initScrollPosition();
-    const initTimer1 = setTimeout(initScrollPosition, 60);
-    const initTimer2 = setTimeout(initScrollPosition, 250);
 
-    // 2. Seamless infinite loop: when scrolling moves outside Group 1,
-    // normalize position instantaneously while keeping the active card centered.
-    let scrollDebounce = null;
-    const handleScrollEnd = () => {
-      if (!firstGroup || !viewport) return;
-      const W = firstGroup.offsetWidth;
-      if (!W) return;
+    initPosition();
+    const t1 = setTimeout(initPosition, 80);
+    const t2 = setTimeout(initPosition, 250);
 
-      const baseCenter = getBaseCenterScroll();
+    // Auto-scroll every 2 seconds
+    const intervalId = setInterval(() => {
+      if (!viewport) return;
+      if (document.hidden) return;
+      if (Date.now() < carouselPauseUntilRef.current) return;
+      if (carouselHoveringRef.current || carouselTouchingRef.current) return;
 
-      // Normalize if scrolled into Group 2 (forward)
-      while (viewport.scrollLeft >= baseCenter + W - 20) {
+      const step = getCardStep();
+      const W = getGroupWidth();
+
+      // If scrolled near the end of Group 2, wrap seamlessly back into Group 1
+      if (viewport.scrollLeft >= 2 * W - viewport.clientWidth) {
         viewport.scrollLeft -= W;
       }
-      // Normalize if scrolled into Group 0 (backward)
-      while (viewport.scrollLeft <= baseCenter - 20) {
-        viewport.scrollLeft += W;
-      }
-    };
 
-    const onScroll = () => {
-      clearTimeout(scrollDebounce);
-      scrollDebounce = setTimeout(handleScrollEnd, 120);
-    };
+      viewport.scrollBy({ left: step, behavior: 'smooth' });
+    }, 2000);
 
-    // 3. User interaction tracking (touch on mobile, hover on desktop)
     const onPointerDown = () => {
       carouselTouchingRef.current = true;
-      carouselPauseUntilRef.current = Date.now() + 3000;
+      carouselPauseUntilRef.current = Date.now() + 3500;
     };
     const onPointerUp = () => {
       carouselTouchingRef.current = false;
-      carouselPauseUntilRef.current = Date.now() + 3000;
+      carouselPauseUntilRef.current = Date.now() + 3500;
     };
     const onMouseEnter = () => {
       carouselHoveringRef.current = true;
@@ -244,48 +239,16 @@ const Home = () => {
       carouselHoveringRef.current = false;
     };
 
-    viewport.addEventListener('scroll', onScroll, { passive: true });
-    viewport.addEventListener('scrollend', handleScrollEnd, { passive: true });
     viewport.addEventListener('pointerdown', onPointerDown, { passive: true });
     window.addEventListener('pointerup', onPointerUp, { passive: true });
     window.addEventListener('pointercancel', onPointerUp, { passive: true });
     viewport.addEventListener('mouseenter', onMouseEnter);
     viewport.addEventListener('mouseleave', onMouseLeave);
 
-    // 4. Auto-scroll every 2 seconds
-    let timerId = null;
-    const stepNext = () => {
-      clearTimeout(timerId);
-      timerId = setTimeout(() => {
-        if (
-          document.hidden ||
-          carouselHoveringRef.current ||
-          carouselTouchingRef.current ||
-          Date.now() < carouselPauseUntilRef.current
-        ) {
-          stepNext();
-          return;
-        }
-
-        const step = getCardStep();
-        viewport.scrollBy({
-          left: step,
-          behavior: 'smooth',
-        });
-
-        stepNext();
-      }, 2000);
-    };
-
-    stepNext();
-
     return () => {
-      clearTimeout(initTimer1);
-      clearTimeout(initTimer2);
-      clearTimeout(scrollDebounce);
-      clearTimeout(timerId);
-      viewport.removeEventListener('scroll', onScroll);
-      viewport.removeEventListener('scrollend', handleScrollEnd);
+      clearInterval(intervalId);
+      clearTimeout(t1);
+      clearTimeout(t2);
       viewport.removeEventListener('pointerdown', onPointerDown);
       window.removeEventListener('pointerup', onPointerUp);
       window.removeEventListener('pointercancel', onPointerUp);
@@ -294,30 +257,32 @@ const Home = () => {
       carouselTouchingRef.current = false;
       carouselHoveringRef.current = false;
     };
-  }, [loadingBestsellers, bestsellers.length, viewportWidth]);
+  }, [loadingBestsellers, bestsellers.length, carouselProducts.length]);
 
   const navigateBestsellers = (direction) => {
     const viewport = bestsellersViewportRef.current;
+    const firstGroup = bestsellersGroupRef.current;
     if (!viewport) return;
     carouselPauseUntilRef.current = Date.now() + 3500;
 
-    const groups = viewport.querySelectorAll('.best-sellers-group');
-    const group1 = groups[1] || groups[0];
-    const cards = group1?.querySelectorAll('.best-sellers-card');
-    let step = 304;
-    if (cards && cards.length >= 2) {
-      step = cards[1].offsetLeft - cards[0].offsetLeft;
-    } else {
-      const firstCard = viewport.querySelector('.best-sellers-card');
-      const cardWidth = firstCard?.offsetWidth || 280;
-      const gap = window.innerWidth <= 648 ? 16 : 24;
-      step = cardWidth + gap;
-    }
+    const card = viewport.querySelector('.best-sellers-card');
+    const w = card ? card.offsetWidth : 280;
+    const isMobile = window.innerWidth <= 648;
+    const gap = isMobile ? 16 : 24;
+    const step = w + gap;
+    const W = firstGroup && firstGroup.offsetWidth > 0 ? firstGroup.offsetWidth : (carouselProducts.length || 10) * step;
 
-    viewport.scrollBy({
-      left: direction * step,
-      behavior: 'smooth',
-    });
+    if (direction > 0) {
+      if (viewport.scrollLeft >= 2 * W - viewport.clientWidth) {
+        viewport.scrollLeft -= W;
+      }
+      viewport.scrollBy({ left: step, behavior: 'smooth' });
+    } else {
+      if (viewport.scrollLeft <= W / 2) {
+        viewport.scrollLeft += W;
+      }
+      viewport.scrollBy({ left: -step, behavior: 'smooth' });
+    }
   };
 
   const activeBanner = banners.length > 0 ? banners[0] : null;
@@ -757,95 +722,97 @@ const Home = () => {
           className="section-py"
           style={{ background: 'var(--bg-secondary)', borderTop: '1px solid var(--border)' }}
         >
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true }}
-            className="section-padding"
-            style={{ textAlign: 'center', marginBottom: 32 }}
-          >
-            <p
-              style={{
-                color: 'var(--accent)',
-                fontSize: '0.75rem',
-                fontWeight: 700,
-                letterSpacing: '0.2em',
-                textTransform: 'uppercase',
-                marginBottom: 12,
-              }}
+          <div style={{ maxWidth: 1280, margin: '0 auto', width: '100%' }}>
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true }}
+              className="section-padding"
+              style={{ textAlign: 'center', marginBottom: 32 }}
             >
-              Customer Favourites
-            </p>
-            <h2
-              style={{
-                fontFamily: '"Cormorant Garamond", Georgia, serif',
-                fontWeight: 600,
-                fontSize: 'clamp(1.8rem, 4vw, 2.8rem)',
-                color: 'var(--text)',
-                margin: 0,
-              }}
-            >
-              Best Sellers
-            </h2>
-          </motion.div>
+              <p
+                style={{
+                  color: 'var(--accent)',
+                  fontSize: '0.75rem',
+                  fontWeight: 700,
+                  letterSpacing: '0.2em',
+                  textTransform: 'uppercase',
+                  marginBottom: 12,
+                }}
+              >
+                Customer Favourites
+              </p>
+              <h2
+                style={{
+                  fontFamily: '"Cormorant Garamond", Georgia, serif',
+                  fontWeight: 600,
+                  fontSize: 'clamp(1.8rem, 4vw, 2.8rem)',
+                  color: 'var(--text)',
+                  margin: 0,
+                }}
+              >
+                Best Sellers
+              </h2>
+            </motion.div>
 
-          <div className="best-sellers-carousel-layout">
-            {!loadingBestsellers && (
-              <div className="best-sellers-controls" aria-label="Best Sellers carousel navigation">
-                <button
-                  type="button"
-                  className="best-sellers-nav-button"
-                  aria-label="Scroll to previous best sellers"
-                  onClick={() => navigateBestsellers(-1)}
-                >
-                  <ChevronLeft size={20} />
-                </button>
-                <button
-                  type="button"
-                  className="best-sellers-nav-button"
-                  aria-label="Scroll to next best sellers"
-                  onClick={() => navigateBestsellers(1)}
-                >
-                  <ChevronRight size={20} />
-                </button>
-              </div>
-            )}
-
-            <div
-              className="best-sellers-viewport"
-              ref={bestsellersViewportRef}
-              aria-label="Best-selling products"
-              tabIndex={0}
-            >
-              {loadingBestsellers ? (
-                <div className="best-sellers-track">
-                  <div className="best-sellers-group">
-                    {Array.from({ length: 6 }).map((_, index) => (
-                      <div className="best-sellers-card" key={`bestseller-skel-${index}`}>
-                        <ProductCardSkeleton />
-                      </div>
-                    ))}
-                  </div>
-                </div>
-              ) : (
-                <div className="best-sellers-track">
-                  {[0, 1, 2].map((groupIndex) => (
-                    <div
-                      className="best-sellers-group"
-                      key={`best-sellers-group-${groupIndex}`}
-                      ref={groupIndex === 0 ? bestsellersGroupRef : null}
-                      aria-hidden={groupIndex !== 1}
-                    >
-                      {carouselProducts.map((product, productIndex) => (
-                        <div
-                          className="best-sellers-card"
-                          key={`${groupIndex}-${product._id || productIndex}-${productIndex}`}
-                        >
-                          <ProductCard product={product} />
+            <div className="best-sellers-carousel-layout">
+              <div
+                className="best-sellers-viewport"
+                ref={bestsellersViewportRef}
+                aria-label="Best-selling products"
+                tabIndex={0}
+              >
+                {loadingBestsellers ? (
+                  <div className="best-sellers-track">
+                    <div className="best-sellers-group">
+                      {Array.from({ length: 6 }).map((_, index) => (
+                        <div className="best-sellers-card" key={`bestseller-skel-${index}`}>
+                          <ProductCardSkeleton />
                         </div>
                       ))}
                     </div>
-                  ))}
+                  </div>
+                ) : (
+                  <div className="best-sellers-track">
+                    {[0, 1, 2].map((groupIndex) => (
+                      <div
+                        className="best-sellers-group"
+                        key={`best-sellers-group-${groupIndex}`}
+                        ref={groupIndex === 0 ? bestsellersGroupRef : null}
+                        aria-hidden={groupIndex !== 1}
+                      >
+                        {carouselProducts.map((product, productIndex) => (
+                          <div
+                            className="best-sellers-card"
+                            key={`${groupIndex}-${product._id || productIndex}-${productIndex}`}
+                          >
+                            <ProductCard product={product} />
+                          </div>
+                        ))}
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+
+              {!loadingBestsellers && (
+                <div className="best-sellers-controls" aria-label="Best Sellers carousel navigation">
+                  <button
+                    type="button"
+                    className="best-sellers-nav-button"
+                    aria-label="Scroll to previous best sellers"
+                    onClick={() => navigateBestsellers(-1)}
+                  >
+                    <ChevronLeft size={18} />
+                  </button>
+                  <button
+                    type="button"
+                    className="best-sellers-nav-button"
+                    aria-label="Scroll to next best sellers"
+                    onClick={() => navigateBestsellers(1)}
+                  >
+                    <ChevronRight size={18} />
+                  </button>
                 </div>
               )}
             </div>

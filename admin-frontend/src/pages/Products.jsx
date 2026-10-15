@@ -214,7 +214,7 @@ const Products = () => {
                                         )}
                                       </div>
                                       <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
-                                        {product.isFlagship && <span style={{ background: 'rgba(214,168,95,0.1)', border: '1px solid rgba(214,168,95,0.2)', color: 'var(--accent-gold)', borderRadius: 999, padding: '2px 8px', fontSize: '0.7rem', fontWeight: 600 }}>★ Flag</span>}
+                                        {(product.isBestseller || product.isFlagship) && <span style={{ background: 'rgba(214,168,95,0.1)', border: '1px solid rgba(214,168,95,0.2)', color: 'var(--accent-gold)', borderRadius: 999, padding: '2px 8px', fontSize: '0.7rem', fontWeight: 600 }}>★ Best Seller</span>}
                                         <span style={{
                                           background: product.isActive ? 'rgba(16,185,129,0.1)' : 'rgba(239,68,68,0.1)',
                                           border: `1px solid ${product.isActive ? 'rgba(16,185,129,0.2)' : 'rgba(239,68,68,0.2)'}`,
@@ -389,7 +389,7 @@ const Products = () => {
                                   </div>
                                   {/* Status */}
                                   <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
-                                    {product.isFlagship && <span style={{ background: 'rgba(214,168,95,0.1)', border: '1px solid rgba(214,168,95,0.2)', color: 'var(--accent-gold)', borderRadius: 999, padding: '2px 8px', fontSize: '0.7rem', fontWeight: 600 }}>★ Flag</span>}
+                                    {(product.isBestseller || product.isFlagship) && <span style={{ background: 'rgba(214,168,95,0.1)', border: '1px solid rgba(214,168,95,0.2)', color: 'var(--accent-gold)', borderRadius: 999, padding: '2px 8px', fontSize: '0.7rem', fontWeight: 600 }}>★ Best Seller</span>}
                                     <span style={{
                                       background: product.isActive ? 'rgba(16,185,129,0.1)' : 'rgba(239,68,68,0.1)',
                                       border: `1px solid ${product.isActive ? 'rgba(16,185,129,0.2)' : 'rgba(239,68,68,0.2)'}`,
@@ -564,7 +564,7 @@ const Products = () => {
                                   </div>
                                   {/* Status */}
                                   <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
-                                    {product.isFlagship && <span style={{ background: 'rgba(214,168,95,0.1)', border: '1px solid rgba(214,168,95,0.2)', color: 'var(--accent-gold)', borderRadius: 999, padding: '2px 8px', fontSize: '0.7rem', fontWeight: 600 }}>★ Flag</span>}
+                                    {(product.isBestseller || product.isFlagship) && <span style={{ background: 'rgba(214,168,95,0.1)', border: '1px solid rgba(214,168,95,0.2)', color: 'var(--accent-gold)', borderRadius: 999, padding: '2px 8px', fontSize: '0.7rem', fontWeight: 600 }}>★ Best Seller</span>}
                                     <span style={{
                                       background: product.isActive ? 'rgba(16,185,129,0.1)' : 'rgba(239,68,68,0.1)',
                                       border: `1px solid ${product.isActive ? 'rgba(16,185,129,0.2)' : 'rgba(239,68,68,0.2)'}`,

@@ -43,7 +43,7 @@
   --glitter-opacity: 0.3;
   --glitter-blend: normal;
   --accent: #B8305E;
-  --accent-gold: #A67D3D;
+  --accent-gold: #B8860B;
   --accent-gradient: linear-gradient(135deg, #C4386C, #8A2BE2);
 }
 
@@ -63,7 +63,7 @@
   --glitter-opacity: 0.55;
   --glitter-blend: screen;
   --accent: #C4386C;
-  --accent-gold: #C9A84C;
+  --accent-gold: #D4AF37;
   --accent-gradient: linear-gradient(135deg, #C4386C, #8A2BE2);
 }
 
@@ -544,42 +544,44 @@ section,
   display: flex;
   flex-direction: column;
   width: 100%;
+  max-width: 1280px;
+  margin: 0 auto;
+  padding: 0 24px;
   min-width: 0;
 }
 
 .best-sellers-controls {
-  order: 0;
+  order: 2;
   display: flex;
-  justify-content: flex-end;
+  justify-content: center;
   align-items: center;
-  gap: 10px;
-  max-width: 1280px;
+  gap: 12px;
   width: 100%;
-  margin: 0 auto 12px;
-  padding: 0 24px;
+  margin: 8px auto 0;
+  padding: 0;
 }
 
 .best-sellers-nav-button {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 42px;
-  height: 42px;
-  flex: 0 0 42px;
+  width: 38px;
+  height: 38px;
+  flex: 0 0 38px;
   border: 1px solid var(--border);
   border-radius: 50%;
   background: var(--bg-card);
   color: var(--text);
   cursor: pointer;
-  transition: background-color 180ms ease, color 180ms ease, border-color 180ms ease,
-    transform 180ms ease;
+  transition: all 180ms ease;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.05);
 }
 
 .best-sellers-nav-button:hover {
   background: var(--accent);
   border-color: var(--accent);
   color: #fff;
-  transform: translateY(-1px);
+  transform: scale(1.06);
 }
 
 .best-sellers-nav-button:focus-visible {
@@ -621,7 +623,7 @@ section,
   flex: 0 0 auto;
   gap: 24px;
   width: max-content;
-  padding: 16px 12px;
+  padding: 10px 12px 4px;
 }
 
 .best-sellers-card {
@@ -631,13 +633,20 @@ section,
 }
 
 @media (max-width: 648px) {
+  .best-sellers-carousel-layout {
+    padding: 0 12px;
+  }
+
   .best-sellers-controls {
-    display: none !important;
+    display: flex !important;
+    justify-content: center;
+    margin: 8px auto 0;
+    gap: 12px;
   }
 
   .best-sellers-viewport {
     order: 1;
-    scroll-snap-type: x mandatory;
+    scroll-snap-type: none;
     scroll-padding-inline: 0;
   }
 
@@ -645,17 +654,11 @@ section,
     width: min(78vw, 280px);
     min-width: min(78vw, 280px);
     flex-basis: min(78vw, 280px);
-    scroll-snap-align: center;
-    scroll-snap-stop: normal;
   }
 
   .best-sellers-group {
     gap: 16px;
-    padding: 16px 8px;
-  }
-
-  .best-sellers-controls {
-    gap: 14px;
+    padding: 8px 8px 4px;
   }
 }
 
@@ -1253,5 +1256,103 @@ section,
   .product-related-subtitle {
     font-size: 0.78rem;
     margin-top: 4px;
+  }
+}
+
+/* ─── Glittering Cloudy Luxury Footer ──────────────────── */
+.glitter-cloud-footer {
+  position: relative;
+  background-color: #F8F4EE;
+  background-image: 
+    radial-gradient(ellipse at 85% 25%, rgba(255, 245, 220, 0.5) 0%, transparent 60%),
+    url('./assets/footer-glitter-bg.jpg');
+  background-size: cover;
+  background-position: right center;
+  background-repeat: no-repeat;
+  border-top: 1px solid rgba(212, 175, 55, 0.35);
+  padding: 64px 24px 32px;
+  overflow: hidden;
+  transition: background 0.4s ease, border-color 0.4s ease;
+  text-shadow: 0 1px 1px rgba(255, 255, 255, 0.4);
+}
+
+[data-theme="dark"] .glitter-cloud-footer {
+  background-color: #0A0A0F;
+  background-image: 
+    linear-gradient(to right, rgba(10, 10, 15, 0.65) 0%, rgba(10, 10, 15, 0.35) 60%, rgba(10, 10, 15, 0.2) 100%),
+    radial-gradient(ellipse at 85% 25%, rgba(212, 175, 55, 0.15) 0%, transparent 60%),
+    url('./assets/footer-glitter-dark-bg.jpg');
+  background-size: cover;
+  background-position: right center;
+  border-top: 1px solid rgba(212, 175, 55, 0.25);
+  text-shadow: 0 1px 4px rgba(0, 0, 0, 0.85);
+}
+
+/* Subtle soft top glow blend */
+.glitter-cloud-footer::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 80px;
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.45) 0%, transparent 100%);
+  pointer-events: none;
+}
+
+[data-theme="dark"] .glitter-cloud-footer::before {
+  background: linear-gradient(180deg, rgba(10, 10, 15, 0.5) 0%, transparent 100%);
+}
+
+/* Floating stardust / glitter sparkle overlay */
+.footer-glitter-sparkles {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background-image: 
+    radial-gradient(1.5px 1.5px at 15% 25%, rgba(255, 220, 120, 0.8), transparent),
+    radial-gradient(2px 2px at 35% 65%, rgba(255, 235, 170, 0.85), transparent),
+    radial-gradient(1.5px 1.5px at 60% 30%, rgba(255, 215, 100, 0.75), transparent),
+    radial-gradient(2.5px 2.5px at 78% 45%, rgba(255, 245, 190, 0.9), transparent),
+    radial-gradient(1.5px 1.5px at 88% 75%, rgba(255, 225, 130, 0.8), transparent),
+    radial-gradient(2px 2px at 94% 20%, rgba(255, 255, 255, 0.95), transparent);
+  animation: footerSparkleFloat 7s ease-in-out infinite alternate;
+}
+
+@keyframes footerSparkleFloat {
+  0% {
+    opacity: 0.45;
+    transform: translateY(0px) scale(1);
+  }
+  50% {
+    opacity: 0.85;
+    transform: translateY(-5px) scale(1.02);
+  }
+  100% {
+    opacity: 0.55;
+    transform: translateY(-10px) scale(1);
+  }
+}
+
+/* Responsive tuning for tablets and mobile devices */
+@media (max-width: 900px) {
+  .glitter-cloud-footer {
+    background-position: 85% top;
+    background-size: cover;
+    padding: 48px 20px 32px;
+  }
+}
+
+@media (max-width: 640px) {
+  .glitter-cloud-footer {
+    background-position: 80% 0%;
+    background-size: cover;
+    padding: 42px 18px 88px;
+  }
+  [data-theme="dark"] .glitter-cloud-footer {
+    background-image: 
+      linear-gradient(180deg, rgba(10, 10, 15, 0.7) 0%, rgba(10, 10, 15, 0.45) 50%, rgba(10, 10, 15, 0.75) 100%),
+      url('./assets/footer-glitter-dark-bg.jpg');
+    background-position: right center;
   }
 }

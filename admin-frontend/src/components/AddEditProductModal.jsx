@@ -18,7 +18,7 @@ const AddEditProductModal = ({ isOpen, onClose, productId, onSuccess, isOfferPre
 
   const [formData, setFormData] = useState({
     name: '', description: '', price: '', originalPrice: '',
-    category: '', subcategoryId: '', isFlagship: false, isOffer: isOfferPreset,
+    category: '', subcategoryId: '', isBestseller: false, isFlagship: false, isOffer: isOfferPreset,
     isActive: true, inStock: true, sizes: [], images: [], giftBoxDetails: ''
   });
   const [categories, setCategories] = useState([]);
@@ -34,7 +34,7 @@ const AddEditProductModal = ({ isOpen, onClose, productId, onSuccess, isOfferPre
       if (isEdit) fetchProduct();
       else setFormData({
         name: '', description: '', price: '', originalPrice: '',
-        category: categories.length > 0 ? categories[0].name : '', subcategoryId: '', isFlagship: false, isOffer: isOfferPreset,
+        category: categories.length > 0 ? categories[0].name : '', subcategoryId: '', isBestseller: false, isFlagship: false, isOffer: isOfferPreset,
         isActive: true, inStock: true, sizes: [], images: [], giftBoxDetails: ''
       });
     }
@@ -58,7 +58,10 @@ const AddEditProductModal = ({ isOpen, onClose, productId, onSuccess, isOfferPre
 
   const fetchProduct = async () => {
     const { data } = await api.get(`/products/${productId}`);
-    setFormData(data);
+    setFormData({
+      ...data,
+      isBestseller: Boolean(data.isBestseller || data.isFlagship)
+    });
   };
 
   const handleChange = (e) => {
@@ -259,7 +262,7 @@ const AddEditProductModal = ({ isOpen, onClose, productId, onSuccess, isOfferPre
             </h3>
             <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
               {[
-                { name: 'isFlagship', label: '★ Flagship Product', desc: 'Showcases in the homepage carousel' },
+                { name: 'isBestseller', label: '★ Best Seller', desc: 'Displays in the Best Sellers section on homepage' },
                 { name: 'isOffer', label: '🎁 Special Offer', desc: 'Displays in the special offers section' },
                 { name: 'isActive', label: '● Active (Visible on store)', desc: 'Hidden products won\'t appear to customers' },
                 { name: 'inStock', label: '✓ In Stock', desc: 'If turned off, shows as Out of Stock and disables Add to Cart' },
