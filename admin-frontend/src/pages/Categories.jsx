@@ -1,10 +1,12 @@
 import React, { useEffect, useState } from 'react';
 import { DragDropContext, Droppable, Draggable } from '@hello-pangea/dnd';
-import { motion } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
 import api from '../utils/api';
-import { Pencil, Trash2, Plus, Sparkles, Gem, Star, Heart, Flower2, Gift, Crown, MoreHorizontal } from 'lucide-react';
+import { Pencil, Trash2, Plus, Sparkles, Gem, Star, Heart, Flower2, Gift, Crown, MoreHorizontal, X } from 'lucide-react';
 import ImageUpload from '../components/ImageUpload';
 import ConfirmModal from '../components/ConfirmModal';
+import PageWrapper from '../components/PageWrapper';
+import PageHeader from '../components/PageHeader';
 import toast from 'react-hot-toast';
 
 const catGradients = [
@@ -133,28 +135,39 @@ const Categories = () => {
   };
 
   return (
-    <div>
-      <div style={{ marginBottom: 36, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-        <div>
-          <h1 style={{ fontFamily: 'Outfit, sans-serif', fontSize: '1.8rem', fontWeight: 800, color: 'var(--text-primary)', margin: 0 }}>
-            Categories
-          </h1>
-          <p style={{ color: 'var(--text-muted)', fontSize: '0.85rem', marginTop: 6 }}>
-            Drag and drop to control the order collections appear on the customer storefront.
-          </p>
-        </div>
-        <button onClick={() => setIsModalOpen(true)} className="btn-primary" style={{ border: 'none', cursor: 'pointer' }}>
-          <Plus size={16} /> Add Category
-        </button>
-      </div>
+    <PageWrapper>
+      <PageHeader
+        title="Categories"
+        subtitle="Drag and drop cards horizontally to arrange the collection sequence on your customer storefront."
+        badge={`${categories.length} Collections`}
+        actions={
+          <button
+            onClick={() => setIsModalOpen(true)}
+            className="btn-primary"
+          >
+            <Plus size={16} />
+            <span>Add Category</span>
+          </button>
+        }
+      />
 
       <div>
-        <div style={{
-          marginBottom: 24, padding: '16px 20px',
-          background: 'rgba(255,140,0,0.05)', border: '1px solid rgba(255,140,0,0.15)',
-          borderRadius: 10, fontSize: '0.8rem', color: '#4a4a60',
-        }}>
-          💡 Changes take effect immediately on the customer storefront.
+        <div
+          style={{
+            marginBottom: 28,
+            padding: '14px 18px',
+            background: 'rgba(236, 22, 140, 0.06)',
+            border: '1px solid rgba(236, 22, 140, 0.16)',
+            borderRadius: 12,
+            fontSize: '0.84rem',
+            color: 'var(--text-secondary)',
+            display: 'flex',
+            alignItems: 'center',
+            gap: 10,
+          }}
+        >
+          <Sparkles size={16} color="var(--accent-pink)" />
+          <span>Collection ordering is saved automatically and synced immediately with the live website.</span>
         </div>
         <DragDropContext onDragEnd={onDragEnd}>
           <Droppable droppableId="categories-list" direction="horizontal">
@@ -293,54 +306,124 @@ const Categories = () => {
       </div>
 
       {/* Modal Overlay */}
-      {isModalOpen && (
-        <div style={{
-          position: 'fixed', top: 0, left: 0, right: 0, bottom: 0,
-          background: 'rgba(0,0,0,0.7)', backdropFilter: 'blur(4px)',
-          display: 'flex', alignItems: 'center', justifyContent: 'center',
-          zIndex: 100, padding: 24
-        }}>
-          <div style={{
-            background: 'var(--surface-elevated)', border: '1px solid var(--card-border)',
-            borderRadius: 16, padding: 32, width: '100%', maxWidth: 440,
-            boxShadow: '0 20px 40px rgba(0,0,0,0.5)'
-          }}>
-            <h3 style={{ margin: '0 0 24px', color: 'var(--text-primary)', fontSize: '1.2rem' }}>
-              {editId ? 'Edit Category' : 'Create Category'}
-            </h3>
-            <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
-              <div>
-                <label style={{ display: 'block', fontSize: '0.8rem', color: 'var(--text-secondary)', marginBottom: 8, fontWeight: 500 }}>Name</label>
-                <input type="text" value={name} onChange={e => setName(e.target.value)} required className="admin-input" placeholder="e.g. Glass Bangles" />
-              </div>
+      <AnimatePresence>
+        {isModalOpen && (
+          <div
+            style={{
+              position: 'fixed',
+              inset: 0,
+              background: 'rgba(7, 6, 11, 0.75)',
+              backdropFilter: 'blur(8px)',
+              WebkitBackdropFilter: 'blur(8px)',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              zIndex: 1000,
+              padding: 24,
+            }}
+            onClick={closeModal}
+          >
+            <motion.div
+              initial={{ opacity: 0, scale: 0.94, y: 12 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.95, y: 8 }}
+              transition={{ duration: 0.2 }}
+              onClick={(e) => e.stopPropagation()}
+              style={{
+                background: 'linear-gradient(180deg, #181622 0%, #12111A 100%)',
+                border: '1px solid var(--card-border)',
+                borderRadius: 20,
+                padding: '32px 28px',
+                width: '100%',
+                maxWidth: 460,
+                boxShadow: '0 24px 60px rgba(0,0,0,0.65)',
+                position: 'relative',
+              }}
+            >
+              <button
+                onClick={closeModal}
+                style={{
+                  position: 'absolute',
+                  top: 18,
+                  right: 18,
+                  background: 'rgba(255, 255, 255, 0.05)',
+                  border: '1px solid var(--card-border)',
+                  color: 'var(--text-secondary)',
+                  cursor: 'pointer',
+                  width: 32,
+                  height: 32,
+                  borderRadius: 10,
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                }}
+              >
+                <X size={16} />
+              </button>
 
-              <div>
-                <label style={{ display: 'block', fontSize: '0.8rem', color: 'var(--text-secondary)', marginBottom: 8, fontWeight: 500 }}>Banner Image</label>
-                <ImageUpload value={bannerImage} onChange={setBannerImage} placeholder="Upload Banner Image" />
-              </div>
-              <div style={{ display: 'flex', gap: 12, marginTop: 8 }}>
-                <button type="button" onClick={closeModal} className="btn-secondary" style={{ flex: 1 }}>
-                  Cancel
-                </button>
-                <button type="submit" className="btn-primary" style={{ flex: 2, justifyContent: 'center' }}>
-                  {editId ? '💾 Save Changes' : <><Plus size={16} /> Create Category</>}
-                </button>
-              </div>
-            </form>
+              <h3
+                style={{
+                  margin: '0 0 8px',
+                  fontFamily: 'Outfit, sans-serif',
+                  color: 'var(--text-primary)',
+                  fontSize: '1.35rem',
+                  fontWeight: 700,
+                }}
+              >
+                {editId ? 'Edit Category Collection' : 'Create New Collection'}
+              </h3>
+              <p style={{ margin: '0 0 24px', color: 'var(--text-secondary)', fontSize: '0.86rem' }}>
+                {editId ? 'Update category name or header showcase image.' : 'Add a brand new category to display on storefront.'}
+              </p>
+
+              <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: 18 }}>
+                <div>
+                  <label style={{ display: 'block', fontSize: '0.82rem', color: 'var(--text-secondary)', marginBottom: 8, fontWeight: 600 }}>
+                    Category Name
+                  </label>
+                  <input
+                    type="text"
+                    value={name}
+                    onChange={(e) => setName(e.target.value)}
+                    required
+                    className="admin-input"
+                    placeholder="e.g. Silk Thread Bangles"
+                  />
+                </div>
+
+                <div>
+                  <label style={{ display: 'block', fontSize: '0.82rem', color: 'var(--text-secondary)', marginBottom: 8, fontWeight: 600 }}>
+                    Banner Image (Optional)
+                  </label>
+                  <ImageUpload value={bannerImage} onChange={setBannerImage} placeholder="Upload Banner Image" />
+                </div>
+
+                <div style={{ display: 'flex', gap: 12, marginTop: 12 }}>
+                  <button type="button" onClick={closeModal} className="btn-secondary" style={{ flex: 1, justifyContent: 'center' }}>
+                    Cancel
+                  </button>
+                  <button type="submit" className="btn-primary" style={{ flex: 1.5, justifyContent: 'center' }}>
+                    {editId ? 'Save Changes' : <><Plus size={16} /> Create Category</>}
+                  </button>
+                </div>
+              </form>
+            </motion.div>
           </div>
-        </div>
-      )}
+        )}
+      </AnimatePresence>
 
       <ConfirmModal
         isOpen={!!deleteConfirm}
         onClose={() => setDeleteConfirm(null)}
         onConfirm={handleDelete}
-        title="Delete Category"
-        message="Are you sure you want to delete this category? This action cannot be undone."
-        confirmText="Delete"
+        title="Delete Category?"
+        message="Are you sure you want to delete this category? Any products inside this category will become unassigned."
+        itemName={categories.find((c) => c._id === deleteConfirm)?.name}
+        confirmText="Delete Category"
+        cancelText="Keep Category"
         type="danger"
       />
-    </div>
+    </PageWrapper>
   );
 };
 

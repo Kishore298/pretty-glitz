@@ -1259,33 +1259,26 @@ section,
   }
 }
 
-/* ─── Glittering Cloudy Luxury Footer ──────────────────── */
+/* ─── Light Gold Luxury Footer ─────────────────────────── */
 .glitter-cloud-footer {
   position: relative;
-  background-color: #F8F4EE;
-  background-image: 
-    radial-gradient(ellipse at 85% 25%, rgba(255, 245, 220, 0.5) 0%, transparent 60%),
-    url('./assets/footer-glitter-bg.jpg');
+  background-color: var(--bg);
+  background-image: url('./assets/footer-glitter-bg.jpg');
   background-size: cover;
-  background-position: right center;
+  background-position: center;
   background-repeat: no-repeat;
-  border-top: 1px solid rgba(212, 175, 55, 0.35);
+  border-top: 1px solid var(--border);
   padding: 64px 24px 32px;
   overflow: hidden;
   transition: background 0.4s ease, border-color 0.4s ease;
-  text-shadow: 0 1px 1px rgba(255, 255, 255, 0.4);
 }
 
 [data-theme="dark"] .glitter-cloud-footer {
-  background-color: #0A0A0F;
-  background-image: 
-    linear-gradient(to right, rgba(10, 10, 15, 0.65) 0%, rgba(10, 10, 15, 0.35) 60%, rgba(10, 10, 15, 0.2) 100%),
-    radial-gradient(ellipse at 85% 25%, rgba(212, 175, 55, 0.15) 0%, transparent 60%),
-    url('./assets/footer-glitter-dark-bg.jpg');
+  background-color: var(--bg);
+  background-image: url('./assets/footer-glitter-dark-bg.jpg');
   background-size: cover;
-  background-position: right center;
-  border-top: 1px solid rgba(212, 175, 55, 0.25);
-  text-shadow: 0 1px 4px rgba(0, 0, 0, 0.85);
+  background-position: center;
+  border-top: 1px solid var(--border);
 }
 
 /* Subtle soft top glow blend */
@@ -1295,64 +1288,26 @@ section,
   top: 0;
   left: 0;
   right: 0;
-  height: 80px;
-  background: linear-gradient(180deg, rgba(255, 255, 255, 0.45) 0%, transparent 100%);
+  height: 50px;
+  background: linear-gradient(180deg, var(--bg) 0%, transparent 100%);
   pointer-events: none;
 }
 
-[data-theme="dark"] .glitter-cloud-footer::before {
-  background: linear-gradient(180deg, rgba(10, 10, 15, 0.5) 0%, transparent 100%);
-}
-
-/* Floating stardust / glitter sparkle overlay */
+/* Hidden overlay to keep background pristine & text 100% clean */
 .footer-glitter-sparkles {
-  position: absolute;
-  inset: 0;
-  pointer-events: none;
-  background-image: 
-    radial-gradient(1.5px 1.5px at 15% 25%, rgba(255, 220, 120, 0.8), transparent),
-    radial-gradient(2px 2px at 35% 65%, rgba(255, 235, 170, 0.85), transparent),
-    radial-gradient(1.5px 1.5px at 60% 30%, rgba(255, 215, 100, 0.75), transparent),
-    radial-gradient(2.5px 2.5px at 78% 45%, rgba(255, 245, 190, 0.9), transparent),
-    radial-gradient(1.5px 1.5px at 88% 75%, rgba(255, 225, 130, 0.8), transparent),
-    radial-gradient(2px 2px at 94% 20%, rgba(255, 255, 255, 0.95), transparent);
-  animation: footerSparkleFloat 7s ease-in-out infinite alternate;
-}
-
-@keyframes footerSparkleFloat {
-  0% {
-    opacity: 0.45;
-    transform: translateY(0px) scale(1);
-  }
-  50% {
-    opacity: 0.85;
-    transform: translateY(-5px) scale(1.02);
-  }
-  100% {
-    opacity: 0.55;
-    transform: translateY(-10px) scale(1);
-  }
+  display: none;
 }
 
 /* Responsive tuning for tablets and mobile devices */
 @media (max-width: 900px) {
   .glitter-cloud-footer {
-    background-position: 85% top;
-    background-size: cover;
     padding: 48px 20px 32px;
   }
 }
 
 @media (max-width: 640px) {
   .glitter-cloud-footer {
-    background-position: 80% 0%;
-    background-size: cover;
     padding: 42px 18px 88px;
-  }
-  [data-theme="dark"] .glitter-cloud-footer {
-    background-image: 
-      linear-gradient(180deg, rgba(10, 10, 15, 0.7) 0%, rgba(10, 10, 15, 0.45) 50%, rgba(10, 10, 15, 0.75) 100%),
-      url('./assets/footer-glitter-dark-bg.jpg');
-    background-position: right center;
+    background-position: center;
   }
 }

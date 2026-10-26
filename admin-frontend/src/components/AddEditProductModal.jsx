@@ -1,15 +1,15 @@
 import React, { useState, useEffect } from 'react';
-import { X, Plus, Trash2 } from 'lucide-react';
+import { X, Plus, Trash2, Sparkles } from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
 import api from '../utils/api';
-
 
 const field = (label, children, hint) => (
   <div>
-    <label style={{ display: 'block', fontSize: '0.75rem', color: '#8a8aa0', fontWeight: 600, marginBottom: 4, letterSpacing: '0.05em', textTransform: 'uppercase' }}>
+    <label style={{ display: 'block', fontSize: '0.78rem', color: 'var(--text-secondary)', fontWeight: 600, marginBottom: 6, letterSpacing: '0.04em', textTransform: 'uppercase' }}>
       {label}
     </label>
     {children}
-    {hint && <p style={{ fontSize: '0.7rem', color: '#4a4a60', marginTop: 2 }}>{hint}</p>}
+    {hint && <p style={{ fontSize: '0.74rem', color: 'var(--text-muted)', marginTop: 4, marginBottom: 0 }}>{hint}</p>}
   </div>
 );
 
@@ -120,30 +120,102 @@ const AddEditProductModal = ({ isOpen, onClose, productId, onSuccess, isOfferPre
 
 
   const sectionStyle = {
-    background: '#141419', border: '1px solid #1e1e28',
-    borderRadius: 12, padding: '16px 20px', marginBottom: 12,
+    background: 'var(--surface-primary, #13121A)',
+    border: '1px solid var(--card-border, rgba(255, 255, 255, 0.08))',
+    borderRadius: 14,
+    padding: '20px 22px',
+    marginBottom: 16,
   };
 
-  if (!isOpen) return null;
-
   return (
-    <div style={{ position: 'fixed', top: 0, left: 0, width: '100%', height: '100%', background: 'rgba(0,0,0,0.7)', backdropFilter: 'blur(4px)', zIndex: 1000, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 24 }}>
-      <div style={{ background: '#0b0b0e', width: '100%', maxWidth: 800, maxHeight: '90vh', overflowY: 'auto', borderRadius: 16, border: '1px solid #1e1e28', padding: '32px 40px', position: 'relative' }} className="no-scrollbar">
-        <button type="button" onClick={onClose} style={{ position: 'absolute', top: 24, right: 24, background: 'transparent', border: 'none', color: '#8a8aa0', cursor: 'pointer' }}><X size={24} /></button>
-        <div style={{ marginBottom: 16 }}>
-          <h1 style={{ fontFamily: 'Outfit, sans-serif', fontSize: '1.4rem', fontWeight: 800, color: '#f0f0f5', margin: 0 }}>
-            {isEdit ? 'Edit Product' : 'Add New Product'}
-          </h1>
-          <p style={{ color: '#4a4a60', fontSize: '0.75rem', marginTop: 4 }}>
-            {isEdit ? 'Update product details and variations' : 'List a new item in your store'}
-          </p>
-        </div>
+    <AnimatePresence>
+      {isOpen && (
+        <div
+          style={{
+            position: 'fixed',
+            inset: 0,
+            background: 'rgba(7, 6, 11, 0.75)',
+            backdropFilter: 'blur(8px)',
+            WebkitBackdropFilter: 'blur(8px)',
+            zIndex: 1000,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            padding: 24,
+          }}
+          onClick={onClose}
+        >
+          <motion.div
+            initial={{ opacity: 0, scale: 0.94, y: 16 }}
+            animate={{ opacity: 1, scale: 1, y: 0 }}
+            exit={{ opacity: 0, scale: 0.95, y: 8 }}
+            transition={{ duration: 0.22, ease: [0.16, 1, 0.3, 1] }}
+            onClick={(e) => e.stopPropagation()}
+            style={{
+              background: 'linear-gradient(180deg, #181622 0%, #111018 100%)',
+              width: '100%',
+              maxWidth: 820,
+              maxHeight: '88vh',
+              overflowY: 'auto',
+              borderRadius: 22,
+              border: '1px solid var(--card-border)',
+              padding: '36px 38px',
+              position: 'relative',
+              boxShadow: '0 24px 60px rgba(0, 0, 0, 0.7)',
+            }}
+            className="no-scrollbar"
+          >
+            <button
+              type="button"
+              onClick={onClose}
+              style={{
+                position: 'absolute',
+                top: 22,
+                right: 22,
+                background: 'rgba(255, 255, 255, 0.05)',
+                border: '1px solid var(--card-border)',
+                color: 'var(--text-secondary)',
+                cursor: 'pointer',
+                width: 34,
+                height: 34,
+                borderRadius: 10,
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                transition: 'all 0.15s ease',
+              }}
+              onMouseEnter={(e) => (e.currentTarget.style.color = '#FFFFFF')}
+              onMouseLeave={(e) => (e.currentTarget.style.color = 'var(--text-secondary)')}
+            >
+              <X size={18} />
+            </button>
 
-        {error && (
-          <div style={{ background: 'rgba(239,68,68,0.1)', border: '1px solid rgba(239,68,68,0.2)', color: '#f87171', padding: '12px 16px', borderRadius: 8, marginBottom: 20, fontSize: '0.875rem' }}>
-            {error}
-          </div>
-        )}
+            <div style={{ marginBottom: 24 }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 4 }}>
+                <Sparkles size={18} color="var(--accent-pink)" />
+                <h2
+                  style={{
+                    fontFamily: 'Outfit, sans-serif',
+                    fontSize: '1.5rem',
+                    fontWeight: 800,
+                    color: 'var(--text-primary)',
+                    margin: 0,
+                    letterSpacing: '-0.01em',
+                  }}
+                >
+                  {isEdit ? 'Edit Catalog Product' : 'Add New Catalog Product'}
+                </h2>
+              </div>
+              <p style={{ color: 'var(--text-secondary)', fontSize: '0.86rem', margin: 0 }}>
+                {isEdit ? 'Update product pricing, images, category variations, and storefront visibility' : 'List a new item with sizes, prices, and photo gallery'}
+              </p>
+            </div>
+
+            {error && (
+              <div style={{ background: 'rgba(239,68,68,0.1)', border: '1px solid rgba(239,68,68,0.25)', color: '#f87171', padding: '12px 16px', borderRadius: 10, marginBottom: 20, fontSize: '0.88rem' }}>
+                {error}
+              </div>
+            )}
 
         <form onSubmit={handleSubmit}>
           {/* Basic Info */}
@@ -303,8 +375,10 @@ const AddEditProductModal = ({ isOpen, onClose, productId, onSuccess, isOfferPre
             </button>
           </div>
         </form>
-      </div>
+      </motion.div>
     </div>
+  )}
+</AnimatePresence>
   );
 };
 

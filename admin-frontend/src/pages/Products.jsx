@@ -3,8 +3,13 @@ import { useLocation, useNavigate } from 'react-router-dom';
 import { DragDropContext, Droppable, Draggable } from '@hello-pangea/dnd';
 import api from '../utils/api';
 import { optimizeImageUrl } from '../utils/cloudinary';
-import { Plus, GripVertical, Pencil, Trash2, ShoppingBag } from 'lucide-react';
+import { Plus, GripVertical, Pencil, Trash2, ShoppingBag, Search, X } from 'lucide-react';
 import AddEditProductModal from '../components/AddEditProductModal';
+import ConfirmModal from '../components/ConfirmModal';
+import PageWrapper from '../components/PageWrapper';
+import PageHeader from '../components/PageHeader';
+import EmptyState from '../components/EmptyState';
+import toast from 'react-hot-toast';
 
 const Products = () => {
   const [products, setProducts] = useState([]);
@@ -12,6 +17,9 @@ const Products = () => {
   const [subcategories, setSubcategories] = useState([]);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingProductId, setEditingProductId] = useState(null);
+  const [deleteTarget, setDeleteTarget] = useState(null);
+  const [isDeleting, setIsDeleting] = useState(false);
+  const [searchQuery, setSearchQuery] = useState('');
 
   const location = useLocation();
   const navigate = useNavigate();
@@ -56,33 +64,116 @@ const Products = () => {
     } catch (err) { console.error(err); }
   };
 
-  const handleDelete = async (id) => {
-    if (window.confirm('Are you sure you want to delete this product?')) {
-      try {
-        await api.delete(`/products/${id}`);
-        fetchProducts();
-      } catch (err) { console.error(err); }
+  const handleDelete = async () => {
+    if (!deleteTarget) return;
+    setIsDeleting(true);
+    try {
+      await api.delete(`/products/${deleteTarget.id}`);
+      toast.success(`"${deleteTarget.name}" deleted successfully`);
+      setDeleteTarget(null);
+      fetchProducts();
+    } catch (err) {
+      console.error(err);
+      toast.error('Failed to delete product. Please try again.');
+    } finally {
+      setIsDeleting(false);
     }
   };
 
 
 
   return (
-    <div>
-      {/* Header */}
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 32 }}>
-        <div>
-          <h1 style={{ fontFamily: 'Outfit, sans-serif', fontSize: '2rem', fontWeight: 800, color: 'var(--text-primary)', margin: 0, letterSpacing: '-0.02em' }}>
-            Products
-          </h1>
-          <p style={{ color: 'var(--text-muted)', fontSize: '0.9rem', marginTop: 6 }}>
-            {products.length} product{products.length !== 1 ? 's' : ''} total
-          </p>
+    <PageWrapper>
+      {/* Page Header */}
+      <PageHeader
+        title="Products"
+        subtitle={`${products.length} product${products.length !== 1 ? 's' : ''} total in catalog`}
+        badge="Inventory"
+        actions={
+          <button
+            onClick={() => { setEditingProductId(null); setIsModalOpen(true); }}
+            className="btn-primary"
+          >
+            <Plus size={16} />
+            <span>Add Product</span>
+          </button>
+        }
+      />
+
+      {/* Quick Search & Summary Bar */}
+      <div
+        className="products-search-bar"
+        style={{
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          flexWrap: 'wrap',
+          gap: 16,
+          background: 'var(--surface-primary)',
+          border: '1px solid var(--card-border)',
+          borderRadius: 16,
+          padding: '14px 20px',
+          marginBottom: 32,
+        }}
+      >
+        <div className="products-search-wrapper" style={{ position: 'relative', flex: 1, minWidth: 260, maxWidth: 440 }}>
+          <Search
+            size={18}
+            style={{
+              position: 'absolute',
+              left: 14,
+              top: '50%',
+              transform: 'translateY(-50%)',
+              color: 'var(--text-muted)',
+              pointerEvents: 'none',
+            }}
+          />
+          <input
+            type="text"
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            placeholder="Search by product name..."
+            className="admin-input"
+            style={{
+              paddingLeft: 42,
+              paddingRight: searchQuery ? 40 : 16,
+              height: 42,
+              fontSize: '0.88rem',
+            }}
+          />
+          {searchQuery && (
+            <button
+              onClick={() => setSearchQuery('')}
+              style={{
+                position: 'absolute',
+                right: 12,
+                top: '50%',
+                transform: 'translateY(-50%)',
+                background: 'none',
+                border: 'none',
+                color: 'var(--text-muted)',
+                cursor: 'pointer',
+                padding: 4,
+                display: 'flex',
+                alignItems: 'center',
+              }}
+            >
+              <X size={15} />
+            </button>
+          )}
         </div>
-        <button onClick={() => { setEditingProductId(null); setIsModalOpen(true); }} className="btn-primary">
-          <Plus size={16} />
-          Add Product
-        </button>
+
+        <div className="products-summary-pills" style={{ display: 'flex', alignItems: 'center', gap: 10, fontSize: '0.8rem', color: 'var(--text-secondary)' }}>
+          <span className="badge-pill badge-success">
+            {products.filter(p => p.isActive).length} Live
+          </span>
+          <span className="badge-pill badge-danger">
+            {products.filter(p => !p.inStock).length} Out of Stock
+          </span>
+          <span className="badge-pill badge-warning">
+            {products.filter(p => p.isOffer).length} Offers
+          </span>
+        </div>
       </div>
 
       {/* Categories / Products Lists */}
@@ -94,7 +185,8 @@ const Products = () => {
             return subcategories.map(subcat => {
               const catProducts = products.filter(p => {
                 const pSubcatId = typeof p.subcategoryId === 'object' && p.subcategoryId ? p.subcategoryId._id : p.subcategoryId;
-                return p.category === category.name && pSubcatId === subcat._id;
+                const matchesSearch = !searchQuery.trim() || p.name.toLowerCase().includes(searchQuery.toLowerCase());
+                return p.category === category.name && pSubcatId === subcat._id && matchesSearch;
               }).sort((a,b) => (a.order||0) - (b.order||0));
 
               if (catProducts.length === 0) return null;
@@ -240,7 +332,7 @@ const Products = () => {
                                         >
                                           <Pencil size={15} /> Edit
                                         </button>
-                                        <button onClick={() => handleDelete(product._id)}
+                                        <button onClick={() => setDeleteTarget({ id: product._id, name: product.name })}
                                           style={{ background: 'transparent', border: 'none', color: 'var(--text-secondary)', cursor: 'pointer', padding: '6px 12px', borderRadius: 8, display: 'flex', alignItems: 'center', gap: 6, transition: 'all 0.15s', fontSize: '0.85rem', fontWeight: 600 }}
                                           onMouseEnter={e => { e.currentTarget.style.color = '#ef4444'; e.currentTarget.style.background = 'rgba(239,68,68,0.1)'; }}
                                           onMouseLeave={e => { e.currentTarget.style.color = 'var(--text-secondary)'; e.currentTarget.style.background = 'transparent'; }}
@@ -264,7 +356,10 @@ const Products = () => {
             });
           }
 
-          const catProducts = products.filter(p => p.category === category.name).sort((a,b) => (a.order||0) - (b.order||0));
+          const catProducts = products.filter(p => {
+            const matchesSearch = !searchQuery.trim() || p.name.toLowerCase().includes(searchQuery.toLowerCase());
+            return p.category === category.name && matchesSearch;
+          }).sort((a,b) => (a.order||0) - (b.order||0));
           if (catProducts.length === 0) return null; // Only show categories that have products
 
           const onDragEndCategory = async (result) => {
@@ -416,7 +511,7 @@ const Products = () => {
                                     >
                                       <Pencil size={15} /> Edit
                                     </button>
-                                    <button onClick={() => handleDelete(product._id)}
+                                    <button onClick={() => setDeleteTarget({ id: product._id, name: product.name })}
                                       style={{ background: 'transparent', border: 'none', color: 'var(--text-secondary)', cursor: 'pointer', padding: '6px 12px', borderRadius: 8, display: 'flex', alignItems: 'center', gap: 6, transition: 'all 0.15s', fontSize: '0.85rem', fontWeight: 600 }}
                                       onMouseEnter={e => { e.currentTarget.style.color = '#ef4444'; e.currentTarget.style.background = 'rgba(239,68,68,0.1)'; }}
                                       onMouseLeave={e => { e.currentTarget.style.color = 'var(--text-secondary)'; e.currentTarget.style.background = 'transparent'; }}
@@ -440,7 +535,10 @@ const Products = () => {
         })}
 
         {(() => {
-          const catProducts = products.filter(p => !categories.find(c => c.name === p.category)).sort((a,b) => (a.order||0) - (b.order||0));
+          const catProducts = products.filter(p => {
+            const matchesSearch = !searchQuery.trim() || p.name.toLowerCase().includes(searchQuery.toLowerCase());
+            return !categories.find(c => c.name === p.category) && matchesSearch;
+          }).sort((a,b) => (a.order||0) - (b.order||0));
           if (catProducts.length === 0) return null;
 
           const onDragEndCategory = async (result) => {
@@ -591,7 +689,7 @@ const Products = () => {
                                     >
                                       <Pencil size={15} /> Edit
                                     </button>
-                                    <button onClick={() => handleDelete(product._id)}
+                                    <button onClick={() => setDeleteTarget({ id: product._id, name: product.name })}
                                       style={{ background: 'transparent', border: 'none', color: 'var(--text-secondary)', cursor: 'pointer', padding: '6px 12px', borderRadius: 8, display: 'flex', alignItems: 'center', gap: 6, transition: 'all 0.15s', fontSize: '0.85rem', fontWeight: 600 }}
                                       onMouseEnter={e => { e.currentTarget.style.color = '#ef4444'; e.currentTarget.style.background = 'rgba(239,68,68,0.1)'; }}
                                       onMouseLeave={e => { e.currentTarget.style.color = 'var(--text-secondary)'; e.currentTarget.style.background = 'transparent'; }}
@@ -615,13 +713,16 @@ const Products = () => {
         })()}
 
         {products.length === 0 && (
-          <div style={{ textAlign: 'center', padding: '80px 20px', color: 'var(--text-muted)' }}>
-            <ShoppingBag size={48} opacity={0.3} style={{ margin: '0 auto' }} />
-            <p style={{ marginTop: 12, fontSize: '0.95rem', fontWeight: 500 }}>No products found.</p>
-            <button onClick={() => { setEditingProductId(null); setIsModalOpen(true); }} className="btn-primary" style={{ display: 'inline-flex', marginTop: 16 }}>
-              <Plus size={16} /> Add your first product
-            </button>
-          </div>
+          <EmptyState
+            icon={ShoppingBag}
+            title="No Products in Catalog"
+            description="Start building your storefront by adding your first product to the catalog."
+            action={{
+              label: 'Add First Product',
+              onClick: () => { setEditingProductId(null); setIsModalOpen(true); },
+              icon: Plus,
+            }}
+          />
         )}
       </div>
       <AddEditProductModal
@@ -630,7 +731,20 @@ const Products = () => {
         productId={editingProductId}
         onSuccess={fetchProducts}
       />
-    </div>
+
+      <ConfirmModal
+        isOpen={!!deleteTarget}
+        onClose={() => setDeleteTarget(null)}
+        onConfirm={handleDelete}
+        title="Delete Product"
+        message="Are you sure you want to permanently delete this product? It will be removed immediately from your storefront."
+        itemName={deleteTarget?.name}
+        confirmText="Delete Product"
+        cancelText="Keep Product"
+        type="danger"
+        loading={isDeleting}
+      />
+    </PageWrapper>
   );
 };
 

@@ -5,6 +5,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { CartContext } from '../context/CartContext';
 import { useTheme } from '../context/ThemeContext';
 import api from '../utils/api';
+import logoImg from '../assets/pretty-glitz-logo.png';
 
 // Categories that appear as primary nav items
 const PRIMARY_CATEGORIES = ['Bangles', 'Artificial Flowers', 'Gift Box Combo', 'Jumkhas', 'Jewels'];
@@ -169,26 +170,40 @@ const Navbar = () => {
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', height: 72 }}>
 
             {/* Logo */}
-            <Link to="/" style={{ textDecoration: 'none', display: 'flex', alignItems: 'center', gap: 6 }}>
+            <Link to="/" style={{ textDecoration: 'none', display: 'flex', alignItems: 'center', gap: 10 }}>
               <div style={{
-                width: 28, height: 28, borderRadius: 7,
-                background: 'var(--accent-gradient)',
+                width: 40, height: 40, borderRadius: '50%',
+                background: 'linear-gradient(135deg, #C4386C, #8A2BE2, #C9A84C)',
+                padding: '2px',
                 display: 'flex', alignItems: 'center', justifyContent: 'center',
+                boxShadow: '0 4px 14px rgba(196, 56, 108, 0.35)',
                 flexShrink: 0,
+                overflow: 'hidden',
               }}>
-                <Sparkles size={14} color="white" />
+                <img
+                  src={logoImg}
+                  alt="PrettyGlitz Logo"
+                  style={{
+                    width: '100%',
+                    height: '100%',
+                    objectFit: 'cover',
+                    borderRadius: '50%',
+                  }}
+                />
               </div>
-              <span style={{
-                fontFamily: 'Outfit, sans-serif', fontWeight: 900,
-                fontSize: 'clamp(1rem, 3.5vw, 1.3rem)', letterSpacing: '0.05em',
-                color: 'var(--text)', transition: 'color 0.3s',
-              }}>PRETTY</span>
-              <span style={{
-                fontFamily: 'Outfit, sans-serif', fontWeight: 900,
-                fontSize: 'clamp(1rem, 3.5vw, 1.3rem)', letterSpacing: '0.05em',
-                background: 'linear-gradient(90deg, #C4386C, #8A2BE2, #C9A84C)',
-                WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', backgroundClip: 'text',
-              }}>GLITZ</span>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+                <span style={{
+                  fontFamily: 'Outfit, sans-serif', fontWeight: 900,
+                  fontSize: 'clamp(1rem, 3.5vw, 1.25rem)', letterSpacing: '0.04em',
+                  color: 'var(--text)', transition: 'color 0.3s',
+                }}>PRETTY</span>
+                <span style={{
+                  fontFamily: 'Outfit, sans-serif', fontWeight: 900,
+                  fontSize: 'clamp(1rem, 3.5vw, 1.25rem)', letterSpacing: '0.04em',
+                  background: 'linear-gradient(90deg, #C4386C, #8A2BE2, #C9A84C)',
+                  WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', backgroundClip: 'text',
+                }}>GLITZ</span>
+              </div>
             </Link>
 
             {/* Desktop Nav Links */}

@@ -1,7 +1,12 @@
 import React, { useState, useEffect } from 'react';
-import { Plus, Tag, ArrowRight } from 'lucide-react';
+import { Plus, Tag, ArrowRight, Sparkles } from 'lucide-react';
 import api from '../utils/api';
 import AddEditProductModal from '../components/AddEditProductModal';
+import ConfirmModal from '../components/ConfirmModal';
+import PageWrapper from '../components/PageWrapper';
+import PageHeader from '../components/PageHeader';
+import EmptyState from '../components/EmptyState';
+import toast from 'react-hot-toast';
 
 const Offers = () => {
   const [products, setProducts] = useState([]);
@@ -12,6 +17,8 @@ const Offers = () => {
 
   const [selectedProductId, setSelectedProductId] = useState('');
   const [discountPrice, setDiscountPrice] = useState('');
+  const [removeTarget, setRemoveTarget] = useState(null);
+  const [isRemoving, setIsRemoving] = useState(false);
 
   useEffect(() => {
     fetchProducts();
@@ -24,6 +31,7 @@ const Offers = () => {
       setOfferProducts(data.filter(p => p.isOffer));
     } catch (err) {
       console.error(err);
+      toast.error('Failed to load products');
     }
   };
 
@@ -40,67 +48,98 @@ const Offers = () => {
         originalPrice: product.price,
         isOffer: true
       });
+      toast.success(`Special offer created for "${product.name}"`);
       setSelectedProductId('');
       setDiscountPrice('');
       fetchProducts();
     } catch (err) {
       console.error(err);
+      toast.error('Failed to create offer');
     }
   };
 
-  const handleRemoveOffer = async (product) => {
+  const handleRemoveOffer = async () => {
+    if (!removeTarget) return;
+    setIsRemoving(true);
     try {
-      await api.put(`/products/${product._id}`, {
-        price: product.originalPrice || product.price,
+      await api.put(`/products/${removeTarget._id}`, {
+        price: removeTarget.originalPrice || removeTarget.price,
         originalPrice: 0,
         isOffer: false
       });
+      toast.success(`Offer removed for "${removeTarget.name}"`);
+      setRemoveTarget(null);
       fetchProducts();
     } catch (err) {
       console.error(err);
+      toast.error('Failed to remove offer');
+    } finally {
+      setIsRemoving(false);
     }
   };
 
   const nonOfferProducts = products.filter(p => !p.isOffer);
 
   return (
-    <div>
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 40 }}>
-        <div>
-          <h1 style={{ fontFamily: 'Outfit, sans-serif', fontSize: '2rem', fontWeight: 800, color: 'var(--text-primary)', margin: '0 0 8px' }}>
-            Special Offers
-          </h1>
-          <p style={{ color: 'var(--text-muted)', fontSize: '0.9rem', margin: 0 }}>
-            Manage discounted products and featured offers
-          </p>
-        </div>
-        <button 
-          onClick={() => { setEditingProductId(null); setIsModalOpen(true); }}
-          className="btn-primary"
-        >
-          <Plus size={16} /> Add Custom Offer
-        </button>
-      </div>
+    <PageWrapper>
+      <PageHeader
+        title="Special Offers & Deals"
+        subtitle="Manage promotional discounts, festive prices, and highlighted deals on storefront."
+        badge={`${offerProducts.length} Active Deals`}
+        actions={
+          <button 
+            onClick={() => { setEditingProductId(null); setIsModalOpen(true); }}
+            className="btn-primary"
+          >
+            <Plus size={16} />
+            <span>Add Custom Offer</span>
+          </button>
+        }
+      />
 
-      <div style={{ background: 'var(--surface-elevated)', border: '1px solid var(--card-border)', borderRadius: 16, padding: 32, marginBottom: 40 }}>
-        <h3 style={{ margin: '0 0 20px', color: 'var(--text-primary)', fontSize: '1.2rem', fontWeight: 700 }}>Convert Existing Product to Offer</h3>
+      {/* Convert Existing Product into Offer */}
+      <div
+        style={{
+          background: 'linear-gradient(135deg, rgba(236, 22, 140, 0.05) 0%, rgba(229, 178, 93, 0.05) 100%)',
+          border: '1px solid var(--card-border)',
+          borderRadius: 20,
+          padding: '28px 32px',
+          marginBottom: 40,
+          boxShadow: '0 8px 30px rgba(0, 0, 0, 0.25)',
+        }}
+      >
+        <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 8 }}>
+          <Tag size={20} color="var(--accent-pink)" />
+          <h3 style={{ margin: 0, color: 'var(--text-primary)', fontSize: '1.25rem', fontWeight: 700 }}>
+            Convert Existing Product to Offer
+          </h3>
+        </div>
+        <p style={{ margin: '0 0 20px', color: 'var(--text-secondary)', fontSize: '0.86rem' }}>
+          Select any live product from catalog and assign a discounted sale price.
+        </p>
+
         <form onSubmit={handleMakeOffer} style={{ display: 'flex', gap: 16, alignItems: 'flex-end', flexWrap: 'wrap' }}>
-          <div style={{ flex: 2, minWidth: 250 }}>
-            <label style={{ display: 'block', fontSize: '0.8rem', color: 'var(--text-secondary)', marginBottom: 8, fontWeight: 500 }}>Select Product</label>
+          <div style={{ flex: 2, minWidth: 260 }}>
+            <label style={{ display: 'block', fontSize: '0.82rem', color: 'var(--text-secondary)', marginBottom: 8, fontWeight: 600 }}>
+              Select Product
+            </label>
             <select
               value={selectedProductId}
               onChange={(e) => setSelectedProductId(e.target.value)}
               className="admin-input"
               required
+              style={{ height: 44 }}
             >
-              <option value="">-- Choose a product --</option>
+              <option value="">-- Choose a product from catalog --</option>
               {nonOfferProducts.map(p => (
-                <option key={p._id} value={p._id}>{p.name} (₹{p.price})</option>
+                <option key={p._id} value={p._id}>{p.name} (Current: ₹{p.price})</option>
               ))}
             </select>
           </div>
-          <div style={{ flex: 1, minWidth: 150 }}>
-            <label style={{ display: 'block', fontSize: '0.8rem', color: 'var(--text-secondary)', marginBottom: 8, fontWeight: 500 }}>Offer Price (₹)</label>
+          <div style={{ flex: 1, minWidth: 160 }}>
+            <label style={{ display: 'block', fontSize: '0.82rem', color: 'var(--text-secondary)', marginBottom: 8, fontWeight: 600 }}>
+              Promotional Offer Price (₹)
+            </label>
             <input
               type="number"
               value={discountPrice}
@@ -109,55 +148,105 @@ const Offers = () => {
               className="admin-input"
               required
               min="0"
+              style={{ height: 44 }}
             />
           </div>
-          <button type="submit" className="btn-primary" style={{ height: 40 }}>
-            Create Offer <ArrowRight size={16} />
+          <button type="submit" className="btn-primary" style={{ height: 44, padding: '0 24px' }}>
+            <span>Apply Deal</span>
+            <ArrowRight size={16} />
           </button>
         </form>
       </div>
 
-      <h2 style={{ fontFamily: 'Outfit, sans-serif', fontSize: '1.5rem', fontWeight: 700, color: 'var(--text-primary)', marginBottom: 24 }}>
-        Active Offers
-      </h2>
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))', gap: 20 }}>
-        {offerProducts.map(product => (
-          <div key={product._id} style={{ 
-            background: 'var(--card-bg)', border: '1px solid var(--card-border)', borderRadius: 16, padding: 24,
-            transition: 'transform 0.2s, box-shadow 0.2s'
-          }}
-          onMouseEnter={e => { e.currentTarget.style.transform = 'translateY(-2px)'; e.currentTarget.style.boxShadow = '0 8px 24px rgba(0,0,0,0.2)'; }}
-          onMouseLeave={e => { e.currentTarget.style.transform = 'none'; e.currentTarget.style.boxShadow = 'none'; }}
-          >
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 16 }}>
-              <div style={{ width: 48, height: 48, borderRadius: 12, background: 'rgba(236,22,140,0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--accent-pink)' }}>
-                <Tag size={24} />
-              </div>
-              <button onClick={() => handleRemoveOffer(product)} style={{ 
-                background: 'rgba(239,68,68,0.1)', color: '#ef4444', border: 'none', padding: '6px 12px', borderRadius: 8, cursor: 'pointer', fontSize: '0.75rem', fontWeight: 600,
-                transition: 'background 0.2s'
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 20 }}>
+        <h2 style={{ fontFamily: 'Outfit, sans-serif', fontSize: '1.4rem', fontWeight: 700, color: 'var(--text-primary)', margin: 0 }}>
+          Active Storefront Deals
+        </h2>
+        <span style={{ fontSize: '0.82rem', color: 'var(--text-muted)' }}>
+          {offerProducts.length} deal{offerProducts.length !== 1 ? 's' : ''} currently live
+        </span>
+      </div>
+
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 1fr))', gap: 20 }}>
+        {offerProducts.map(product => {
+          const discountPct = product.originalPrice && product.originalPrice > product.price
+            ? Math.round(((product.originalPrice - product.price) / product.originalPrice) * 100)
+            : null;
+
+          return (
+            <div
+              key={product._id}
+              className="stat-card"
+              style={{ 
+                padding: 24,
+                display: 'flex',
+                flexDirection: 'column',
+                justifyContent: 'space-between',
               }}
-              onMouseEnter={e => e.currentTarget.style.background = 'rgba(239,68,68,0.2)'}
-              onMouseLeave={e => e.currentTarget.style.background = 'rgba(239,68,68,0.1)'}
-              >
-                Remove Offer
-              </button>
+            >
+              <div>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 16 }}>
+                  <div
+                    style={{
+                      width: 44,
+                      height: 44,
+                      borderRadius: 12,
+                      background: 'rgba(236,22,140,0.1)',
+                      border: '1px solid rgba(236,22,140,0.2)',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      color: 'var(--accent-pink)',
+                    }}
+                  >
+                    <Tag size={22} />
+                  </div>
+
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                    {discountPct && (
+                      <span className="badge-pill badge-danger" style={{ fontSize: '0.72rem' }}>
+                        {discountPct}% OFF
+                      </span>
+                    )}
+                    <button
+                      onClick={() => setRemoveTarget(product)}
+                      className="btn-danger"
+                      style={{ padding: '6px 12px', fontSize: '0.76rem' }}
+                    >
+                      Remove
+                    </button>
+                  </div>
+                </div>
+                
+                <h3 style={{ margin: '0 0 10px', color: 'var(--text-primary)', fontSize: '1.15rem', fontWeight: 700 }}>
+                  {product.name}
+                </h3>
+              </div>
+
+              <div style={{ display: 'flex', alignItems: 'baseline', gap: 12, paddingTop: 14, borderTop: '1px solid var(--card-border)' }}>
+                <span style={{ fontSize: '1.45rem', fontWeight: 800, color: 'var(--accent-pink)', fontFamily: 'Outfit, sans-serif' }}>
+                  ₹{product.price}
+                </span>
+                {product.originalPrice && (
+                  <span style={{ fontSize: '0.92rem', color: 'var(--text-muted)', textDecoration: 'line-through', fontWeight: 500 }}>
+                    ₹{product.originalPrice}
+                  </span>
+                )}
+                <span style={{ marginLeft: 'auto', fontSize: '0.75rem', color: 'var(--text-muted)' }}>
+                  {product.category}
+                </span>
+              </div>
             </div>
-            
-            <h3 style={{ margin: '0 0 8px', color: 'var(--text-primary)', fontSize: '1.1rem', fontWeight: 600, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-              {product.name}
-            </h3>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-              <span style={{ fontSize: '1.25rem', fontWeight: 800, color: 'var(--accent-pink)' }}>₹{product.price}</span>
-              {product.originalPrice && (
-                <span style={{ fontSize: '0.9rem', color: 'var(--text-muted)', textDecoration: 'line-through', fontWeight: 500 }}>₹{product.originalPrice}</span>
-              )}
-            </div>
-          </div>
-        ))}
+          );
+        })}
+
         {offerProducts.length === 0 && (
-          <div style={{ color: 'var(--text-muted)', gridColumn: '1 / -1', padding: 60, textAlign: 'center', background: 'var(--surface-secondary)', borderRadius: 16, border: '1px dashed var(--card-border)', fontWeight: 500 }}>
-            No active offers found.
+          <div style={{ gridColumn: '1 / -1' }}>
+            <EmptyState
+              icon={Sparkles}
+              title="No Active Offers Found"
+              description="Convert existing products into promotional deals using the form above."
+            />
           </div>
         )}
       </div>
@@ -169,7 +258,20 @@ const Offers = () => {
         onSuccess={fetchProducts}
         isOfferPreset={true}
       />
-    </div>
+
+      <ConfirmModal
+        isOpen={!!removeTarget}
+        onClose={() => setRemoveTarget(null)}
+        onConfirm={handleRemoveOffer}
+        title="Remove Special Offer?"
+        message="This will restore the product to its original price and remove the offer tag from storefront."
+        itemName={removeTarget?.name}
+        confirmText="Remove Offer"
+        cancelText="Keep Offer"
+        type="warning"
+        loading={isRemoving}
+      />
+    </PageWrapper>
   );
 };
 

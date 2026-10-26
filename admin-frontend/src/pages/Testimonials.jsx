@@ -21,6 +21,7 @@ import {
 import api from '../utils/api';
 import ImageUpload from '../components/ImageUpload';
 import ConfirmModal from '../components/ConfirmModal';
+import PageWrapper from '../components/PageWrapper';
 import toast from 'react-hot-toast';
 
 const Testimonials = () => {
@@ -200,8 +201,7 @@ const Testimonials = () => {
     : '5.0';
 
   return (
-    <div className="admin-content-area" style={{ padding: '40px 48px', maxWidth: 1400, margin: '0 auto' }}>
-      
+    <PageWrapper>
       {/* ── Top Header ────────────────────────────────────────── */}
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: 20, marginBottom: 32 }}>
         <div>
@@ -782,13 +782,15 @@ const Testimonials = () => {
         isOpen={!!deleteTarget}
         onClose={() => setDeleteTarget(null)}
         onConfirm={handleDelete}
-        title="Delete Testimonial"
-        message={`Are you sure you want to delete the testimonial from "${deleteTarget?.customerName}"? This action cannot be undone.`}
-        confirmText="Delete"
+        title="Delete Testimonial?"
+        message="Are you sure you want to delete this customer testimonial? This review will be permanently removed from storefront."
+        itemName={deleteTarget?.customerName}
+        confirmText="Delete Testimonial"
+        cancelText="Keep Review"
         type="danger"
       />
 
-    </div>
+    </PageWrapper>
   );
 };
 

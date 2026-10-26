@@ -1,8 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { useTheme } from '../context/ThemeContext';
-import { Sparkles, MapPin, Mail, Phone, Send } from 'lucide-react';
+import { MapPin, Mail, Phone, Send } from 'lucide-react';
 import api from '../utils/api';
+import logoImg from '../assets/pretty-glitz-logo.png';
 
 const Footer = () => {
   const { isDark } = useTheme();
@@ -51,18 +52,30 @@ const Footer = () => {
         }}>
           {/* Brand */}
           <div>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 16 }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 16 }}>
               <div style={{
-                width: 28, height: 28, borderRadius: 7,
-                background: 'var(--accent-gradient)',
+                width: 36, height: 36, borderRadius: '50%',
+                background: 'linear-gradient(135deg, #C4386C, #8A2BE2, #C9A84C)',
+                padding: '2px',
                 display: 'flex', alignItems: 'center', justifyContent: 'center',
-                boxShadow: '0 4px 12px rgba(196, 56, 108, 0.25)',
+                boxShadow: '0 4px 14px rgba(196, 56, 108, 0.35)',
+                overflow: 'hidden',
+                flexShrink: 0,
               }}>
-                <Sparkles size={14} color="white" />
+                <img
+                  src={logoImg}
+                  alt="PrettyGlitz Logo"
+                  style={{
+                    width: '100%',
+                    height: '100%',
+                    objectFit: 'cover',
+                    borderRadius: '50%',
+                  }}
+                />
               </div>
               <span style={{
                 fontFamily: 'Outfit, sans-serif', fontWeight: 800,
-                letterSpacing: '0.05em', fontSize: '1rem',
+                letterSpacing: '0.04em', fontSize: '1.2rem',
                 background: 'linear-gradient(90deg, #C4386C, #8A2BE2, #C9A84C)',
                 WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', backgroundClip: 'text',
               }}>
