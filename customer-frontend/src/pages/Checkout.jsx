@@ -3,6 +3,7 @@ import { useNavigate, Navigate, Link } from 'react-router-dom';
 import { CartContext } from '../context/CartContext';
 import { motion } from 'framer-motion';
 import { optimizeImageUrl } from '../utils/cloudinary';
+import logoImg from '../assets/pretty-glitz-logo.png';
 import { ChevronRight, ShieldCheck, CheckCircle2 } from 'lucide-react';
 
 const Checkout = () => {
@@ -177,14 +178,24 @@ const Checkout = () => {
               <ul style={{ listStyle: 'none', padding: 0, margin: '0 0 24px', maxHeight: '40vh', overflowY: 'auto' }} className="no-scrollbar">
                 {cartItems.map((item, idx) => (
                   <li key={idx} style={{ display: 'flex', gap: 16, padding: '16px 0', borderBottom: idx === cartItems.length - 1 ? 'none' : `1px solid var(--border)` }}>
-                    <div style={{ width: 64, height: 64, borderRadius: 8, background: 'var(--bg-secondary)', overflow: 'hidden', flexShrink: 0 }}>
-                      {item.product.images?.[0] ? (
-                        <img src={optimizeImageUrl(item.product.images[0].url, 150)} alt={item.product.name} loading="lazy" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-                      ) : (
-                        <div className="no-image-placeholder">
-                          <div className="pg-monogram" style={{ width: 24, height: 24, borderRadius: 4, fontSize: '0.5rem' }}>PG</div>
-                        </div>
-                      )}
+                    <div style={{ width: 64, height: 64, borderRadius: 8, background: 'var(--bg-secondary)', overflow: 'hidden', flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                      <img
+                        src={item.product.images?.[0] ? optimizeImageUrl(item.product.images[0].url, 150) : logoImg}
+                        alt={item.product.name}
+                        loading="lazy"
+                        onError={(e) => {
+                          e.currentTarget.onerror = null;
+                          e.currentTarget.src = logoImg;
+                          e.currentTarget.style.objectFit = 'contain';
+                          e.currentTarget.style.padding = '8px';
+                        }}
+                        style={{
+                          width: '100%',
+                          height: '100%',
+                          objectFit: item.product.images?.[0] ? 'cover' : 'contain',
+                          padding: item.product.images?.[0] ? 0 : '8px',
+                        }}
+                      />
                     </div>
                     <div style={{ flex: 1 }}>
                       <h4 style={{ fontSize: '0.9rem', fontWeight: 600, color: 'var(--text)', margin: '0 0 4px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{item.product.name}</h4>

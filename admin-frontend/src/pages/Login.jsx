@@ -112,32 +112,31 @@ const Login = () => {
         <div style={{ textAlign: 'center', marginBottom: 32 }}>
           <div
             style={{
-              width: 84,
-              height: 84,
+              width: 120,
+              height: 120,
               borderRadius: '50%',
-              background: 'linear-gradient(135deg, rgba(236, 22, 140, 0.6), rgba(155, 61, 255, 0.8))',
-              padding: '2px',
+              background: 'linear-gradient(135deg, #C4386C, #8A2BE2, #C9A84C)',
+              padding: '3px',
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
-              margin: '0 auto 18px',
-              boxShadow: '0 8px 30px rgba(236, 22, 140, 0.35)',
+              margin: '0 auto 20px',
+              boxShadow: '0 12px 42px rgba(196, 56, 108, 0.45)',
               overflow: 'hidden',
               backgroundColor: '#FFFFFF',
             }}
           >
             <img
-              src="/pretty-glitz-logo.png"
+              src="/pritty-glitz-logo1.png"
               alt="PrettyGlitz Logo"
               style={{
                 width: '100%',
                 height: '100%',
                 objectFit: 'cover',
-                transform: 'scale(1.08)',
-                transformOrigin: 'center 38%',
+                objectPosition: 'center 25%',
                 borderRadius: '50%',
                 imageRendering: '-webkit-optimize-contrast',
-                filter: 'contrast(1.06) brightness(1.02)',
+                filter: 'contrast(1.04) brightness(1.02)',
               }}
             />
           </div>
@@ -146,7 +145,7 @@ const Login = () => {
             style={{
               fontFamily: 'Outfit, sans-serif',
               fontWeight: 800,
-              fontSize: '1.75rem',
+              fontSize: '1.95rem',
               color: '#FAF9FC',
               margin: 0,
               letterSpacing: '-0.02em',

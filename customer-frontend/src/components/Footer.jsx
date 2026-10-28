@@ -4,6 +4,7 @@ import { useTheme } from '../context/ThemeContext';
 import { MapPin, Mail, Phone, Send } from 'lucide-react';
 import api from '../utils/api';
 import logoImg from '../assets/pretty-glitz-logo.png';
+import primaryLogoImg from '../assets/pritty-glitz-logo1.png';
 
 const Footer = () => {
   const { isDark } = useTheme();
@@ -52,35 +53,34 @@ const Footer = () => {
         }}>
           {/* Brand */}
           <div>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 14, marginBottom: 18 }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 16, marginBottom: 18 }}>
               <div style={{
-                width: 48, height: 48, borderRadius: '50%',
-                background: 'linear-gradient(135deg, rgba(196, 56, 108, 0.35), rgba(201, 168, 76, 0.65))',
-                padding: '1.5px',
+                width: 84, height: 84, borderRadius: '50%',
+                background: 'linear-gradient(135deg, #C4386C, #8A2BE2, #C9A84C)',
+                padding: '2.5px',
                 display: 'flex', alignItems: 'center', justifyContent: 'center',
-                boxShadow: '0 2px 10px rgba(201, 168, 76, 0.16)',
+                boxShadow: '0 6px 24px rgba(196, 56, 108, 0.35)',
                 overflow: 'hidden',
                 flexShrink: 0,
                 backgroundColor: '#FFFFFF',
               }}>
                 <img
-                  src={logoImg}
+                  src={primaryLogoImg}
                   alt="PrettyGlitz Logo"
                   style={{
                     width: '100%',
                     height: '100%',
                     objectFit: 'cover',
-                    transform: 'scale(1.08)',
-                    transformOrigin: 'center 38%',
+                    objectPosition: 'center 25%',
                     borderRadius: '50%',
                     imageRendering: '-webkit-optimize-contrast',
-                    filter: 'contrast(1.06) brightness(1.02)',
+                    filter: 'contrast(1.04) brightness(1.02)',
                   }}
                 />
               </div>
               <span style={{
                 fontFamily: 'Outfit, sans-serif', fontWeight: 800,
-                letterSpacing: '0.04em', fontSize: '1.35rem',
+                letterSpacing: '0.04em', fontSize: '1.65rem',
                 background: 'linear-gradient(90deg, #C4386C, #8A2BE2, #C9A84C)',
                 WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', backgroundClip: 'text',
               }}>

@@ -1,16 +1,19 @@
 import React, { useContext, useEffect, useState } from 'react';
 import { AuthContext } from '../context/AuthContext';
 import {
-  TrendingUp,
+  Gem,
   ArrowUpRight,
   Plus,
-  LayoutGrid,
-  Sparkles,
+  Layers,
+  Flower2,
+  Tag,
   MessageSquareQuote,
   CheckCircle2,
-  AlertTriangle,
+  AlertCircle,
+  ExternalLink,
+  Sparkles,
   ShoppingBag,
-  ExternalLink
+  TrendingUp
 } from 'lucide-react';
 import api from '../utils/api';
 import { Link } from 'react-router-dom';
@@ -22,15 +25,29 @@ const StatCard = ({ label, value, subtext, icon: Icon, color, to, badge }) => (
     <div
       className="stat-card"
       style={{
-        padding: '22px 24px',
+        padding: '24px 26px',
         display: 'flex',
         flexDirection: 'column',
         justifyContent: 'space-between',
         height: '100%',
         boxSizing: 'border-box',
+        background: 'var(--surface-primary, #14131E)',
+        border: '1px solid var(--card-border, rgba(201, 168, 76, 0.12))',
+        borderRadius: 18,
+        transition: 'all 0.25s cubic-bezier(0.16, 1, 0.3, 1)',
+      }}
+      onMouseEnter={(e) => {
+        e.currentTarget.style.borderColor = 'rgba(201, 168, 76, 0.35)';
+        e.currentTarget.style.transform = 'translateY(-3px)';
+        e.currentTarget.style.boxShadow = '0 12px 30px rgba(0, 0, 0, 0.35), 0 0 20px rgba(201, 168, 76, 0.08)';
+      }}
+      onMouseLeave={(e) => {
+        e.currentTarget.style.borderColor = 'var(--card-border, rgba(201, 168, 76, 0.12))';
+        e.currentTarget.style.transform = 'none';
+        e.currentTarget.style.boxShadow = 'none';
       }}
     >
-      <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: 14 }}>
+      <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', marginBottom: 16 }}>
         <div style={{ minWidth: 0 }}>
           <p
             className="stat-card-label"
@@ -48,7 +65,7 @@ const StatCard = ({ label, value, subtext, icon: Icon, color, to, badge }) => (
           <div
             className="stat-card-val"
             style={{
-              fontSize: '2.3rem',
+              fontSize: '2.4rem',
               fontWeight: 800,
               color: 'var(--text-primary, #FAF9FC)',
               fontFamily: 'Outfit, sans-serif',
@@ -61,8 +78,8 @@ const StatCard = ({ label, value, subtext, icon: Icon, color, to, badge }) => (
         <div
           className="stat-card-icon"
           style={{
-            width: 46,
-            height: 46,
+            width: 48,
+            height: 48,
             borderRadius: 14,
             background: color,
             display: 'flex',
@@ -83,13 +100,13 @@ const StatCard = ({ label, value, subtext, icon: Icon, color, to, badge }) => (
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'space-between',
-          paddingTop: 12,
-          borderTop: '1px solid var(--card-border)',
+          paddingTop: 14,
+          borderTop: '1px solid rgba(255, 255, 255, 0.06)',
           gap: 8,
           flexWrap: 'wrap',
         }}
       >
-        <span className="stat-card-subtext" style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>
+        <span className="stat-card-subtext" style={{ fontSize: '0.82rem', color: 'var(--text-secondary)' }}>
           {subtext}
         </span>
         {badge && (
@@ -111,14 +128,16 @@ const Dashboard = () => {
     outOfStock: 0,
     offers: 0,
     categories: 0,
+    subcategories: 0,
   });
 
   useEffect(() => {
     const fetchStats = async () => {
       try {
-        const [prodRes, catRes] = await Promise.all([
+        const [prodRes, catRes, subcatRes] = await Promise.all([
           api.get('/products'),
           api.get('/categories').catch(() => ({ data: [] })),
+          api.get('/subcategories').catch(() => ({ data: [] })),
         ]);
         const data = prodRes.data || [];
         setStats({
@@ -127,6 +146,7 @@ const Dashboard = () => {
           outOfStock: data.filter((p) => !p.inStock).length,
           offers: data.filter((p) => p.isOffer).length,
           categories: (catRes.data || []).length,
+          subcategories: (subcatRes.data || []).length,
         });
       } catch (e) {
         console.error(e);
@@ -148,7 +168,7 @@ const Dashboard = () => {
 
   return (
     <PageWrapper>
-      {/* Welcome Banner */}
+      {/* Editorial Luxury Welcome Banner */}
       <div
         className="dashboard-banner"
         style={{
@@ -156,62 +176,81 @@ const Dashboard = () => {
           alignItems: 'center',
           justifyContent: 'space-between',
           flexWrap: 'wrap',
-          gap: 20,
+          gap: 24,
           marginBottom: 36,
-          padding: '28px 32px',
-          background: 'linear-gradient(135deg, rgba(236, 22, 140, 0.08) 0%, rgba(155, 61, 255, 0.04) 50%, rgba(19, 18, 26, 0.8) 100%)',
-          border: '1px solid rgba(236, 22, 140, 0.18)',
-          borderRadius: 20,
-          boxShadow: '0 8px 32px rgba(0, 0, 0, 0.3)',
+          padding: '30px 36px',
+          background: 'linear-gradient(135deg, rgba(196, 56, 108, 0.12) 0%, rgba(138, 43, 226, 0.08) 50%, rgba(20, 19, 30, 0.85) 100%)',
+          border: '1px solid rgba(201, 168, 76, 0.22)',
+          borderRadius: 22,
+          boxShadow: '0 10px 36px rgba(0, 0, 0, 0.35)',
+          position: 'relative',
+          overflow: 'hidden',
         }}
       >
-        <div style={{ minWidth: 0, flex: '1 1 300px' }}>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 8, flexWrap: 'wrap' }}>
+        {/* Ambient Subtle Accent Light */}
+        <div
+          style={{
+            position: 'absolute',
+            top: '-50%',
+            right: '-10%',
+            width: 300,
+            height: 300,
+            background: 'radial-gradient(circle, rgba(201, 168, 76, 0.12) 0%, transparent 70%)',
+            filter: 'blur(40px)',
+            pointerEvents: 'none',
+          }}
+        />
+
+        <div style={{ minWidth: 0, flex: '1 1 320px', position: 'relative', zIndex: 1 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 10, flexWrap: 'wrap' }}>
             <span style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', fontWeight: 600 }}>
               {greeting}, {admin?.username || 'Administrator'}
             </span>
             <span
               style={{
-                background: 'rgba(236, 22, 140, 0.12)',
-                border: '1px solid rgba(236, 22, 140, 0.25)',
-                color: 'var(--accent-pink)',
+                background: 'rgba(201, 168, 76, 0.14)',
+                border: '1px solid rgba(201, 168, 76, 0.35)',
+                color: 'var(--accent-gold-light, #E8CE8A)',
                 padding: '2px 10px',
                 borderRadius: 999,
-                fontSize: '0.74rem',
+                fontSize: '0.72rem',
                 fontWeight: 700,
-                letterSpacing: '0.04em',
+                letterSpacing: '0.06em',
                 textTransform: 'uppercase',
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: 4,
               }}
             >
-              Manager
+              <Sparkles size={11} /> Atelier Controller
             </span>
           </div>
 
           <h1
             className="dashboard-banner-title"
             style={{
-              fontFamily: 'Outfit, sans-serif',
-              fontSize: '2.2rem',
-              fontWeight: 800,
+              fontFamily: 'Cormorant Garamond, serif',
+              fontSize: '2.5rem',
+              fontWeight: 600,
               color: 'var(--text-primary)',
               margin: 0,
-              letterSpacing: '-0.02em',
+              letterSpacing: '-0.01em',
               lineHeight: 1.15,
             }}
           >
-            Welcome to <span className="glitz-text">PrettyGlitz Control</span>
+            Welcome to <span className="glitz-text" style={{ fontFamily: 'Outfit, sans-serif', fontWeight: 800 }}>PrettyGlitz</span> Control
           </h1>
 
-          <p className="dashboard-banner-subtitle" style={{ color: 'var(--text-secondary)', marginTop: 8, marginBottom: 0, fontSize: '0.92rem' }}>
-            Storefront status is healthy and accepting orders across India.
+          <p className="dashboard-banner-subtitle" style={{ color: 'var(--text-secondary)', marginTop: 8, marginBottom: 0, fontSize: '0.92rem', maxWidth: 640 }}>
+            Catalog operations, collection reordering, and customer storefront management are synchronized in real-time.
           </p>
         </div>
 
-        <div className="dashboard-banner-date" style={{ textAlign: 'right' }}>
-          <div className="date-label" style={{ fontSize: '0.8rem', color: 'var(--text-muted)', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.06em' }}>
-            Current Date
+        <div className="dashboard-banner-date" style={{ textAlign: 'right', position: 'relative', zIndex: 1 }}>
+          <div className="date-label" style={{ fontSize: '0.75rem', color: 'var(--accent-gold)', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.08em' }}>
+            Live Calendar
           </div>
-          <div className="date-val" style={{ fontSize: '1rem', fontWeight: 700, color: 'var(--text-primary)', marginTop: 4 }}>
+          <div className="date-val" style={{ fontSize: '1.05rem', fontWeight: 700, color: 'var(--text-primary)', marginTop: 4 }}>
             {currentDate}
           </div>
         </div>
@@ -219,7 +258,7 @@ const Dashboard = () => {
 
       {/* Stat Cards Section */}
       {loading ? (
-        <SkeletonStatCards />
+        <SkeletonStatCards count={4} />
       ) : (
         <div
           className="dashboard-stats-grid"
@@ -234,27 +273,27 @@ const Dashboard = () => {
             label="Total Products"
             value={stats.total}
             subtext={`${stats.categories} Collections listed`}
-            icon={TrendingUp}
-            color="linear-gradient(135deg, var(--accent-pink), var(--accent-purple))"
+            icon={Gem}
+            color="linear-gradient(135deg, #C4386C, #8A2BE2)"
             to="/products"
-            badge={{ text: 'Catalog', className: 'badge-info' }}
+            badge={{ text: 'Inventory', className: 'badge-info' }}
           />
 
           <StatCard
             label="Active Products"
             value={stats.active}
-            subtext="Visible on customer site"
+            subtext="Live on customer storefront"
             icon={CheckCircle2}
             color="linear-gradient(135deg, #10B981, #059669)"
             to="/products"
-            badge={{ text: 'Live Now', className: 'badge-success' }}
+            badge={{ text: 'Active', className: 'badge-success' }}
           />
 
           <StatCard
             label="Out of Stock"
             value={stats.outOfStock}
             subtext={stats.outOfStock > 0 ? 'Requires restocking' : 'All items in stock'}
-            icon={AlertTriangle}
+            icon={AlertCircle}
             color={stats.outOfStock > 0 ? 'linear-gradient(135deg, #EF4444, #DC2626)' : 'linear-gradient(135deg, #6E687A, #4B4656)'}
             to="/products"
             badge={{
@@ -266,23 +305,23 @@ const Dashboard = () => {
           <StatCard
             label="Special Offers"
             value={stats.offers}
-            subtext="Discounted price tags"
-            icon={Sparkles}
-            color="linear-gradient(135deg, #E5B25D, #D97706)"
+            subtext="Discounted price campaigns"
+            icon={Tag}
+            color="linear-gradient(135deg, #C9A84C, #9E7D2D)"
             to="/offers"
-            badge={{ text: 'Deals', className: 'badge-warning' }}
+            badge={{ text: 'Promotions', className: 'badge-warning' }}
           />
         </div>
       )}
 
       {/* Quick Actions Header */}
-      <div style={{ marginBottom: 18, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+      <div style={{ marginBottom: 20, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
         <div>
-          <h2 className="dashboard-section-title" style={{ fontFamily: 'Outfit, sans-serif', fontSize: '1.3rem', fontWeight: 700, margin: 0, color: 'var(--text-primary)' }}>
-            Quick Management Actions
+          <h2 className="dashboard-section-title" style={{ fontFamily: 'Outfit, sans-serif', fontSize: '1.35rem', fontWeight: 800, margin: 0, color: 'var(--text-primary)' }}>
+            Quick Management Operations
           </h2>
-          <p className="dashboard-section-subtitle" style={{ color: 'var(--text-muted)', fontSize: '0.82rem', margin: '4px 0 0' }}>
-            Frequently used operations to update your storefront.
+          <p className="dashboard-section-subtitle" style={{ color: 'var(--text-muted)', fontSize: '0.84rem', margin: '4px 0 0' }}>
+            Frequently used tools to keep your jewellery collections updated.
           </p>
         </div>
       </div>
@@ -292,58 +331,67 @@ const Dashboard = () => {
         className="dashboard-actions-grid"
         style={{
           display: 'grid',
-          gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))',
-          gap: 18,
+          gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))',
+          gap: 20,
           marginBottom: 44,
         }}
       >
         {[
           {
             label: 'Add New Product',
-            desc: 'Upload photo, assign price and category',
+            desc: 'Upload multi-angle photos, set price, sizes, and stock',
             to: '/products?action=new',
             icon: Plus,
             color: 'var(--accent-pink)',
-            bg: 'rgba(236, 22, 140, 0.08)',
-            border: 'rgba(236, 22, 140, 0.2)',
+            bg: 'rgba(196, 56, 108, 0.1)',
+            border: 'rgba(196, 56, 108, 0.22)',
           },
           {
-            label: 'Manage Categories',
-            desc: 'Organize collection sequence on homepage',
+            label: 'Organize Categories',
+            desc: `Arrange ${stats.categories} main collection displays`,
             to: '/categories',
-            icon: LayoutGrid,
+            icon: Layers,
             color: 'var(--accent-purple)',
-            bg: 'rgba(155, 61, 255, 0.08)',
-            border: 'rgba(155, 61, 255, 0.2)',
+            bg: 'rgba(138, 43, 226, 0.1)',
+            border: 'rgba(138, 43, 226, 0.22)',
           },
           {
-            label: 'Create Special Offer',
-            desc: 'Discount prices for festive seasons',
+            label: 'Flower Subcategories',
+            desc: `Organize artificial flower varieties and garlands`,
+            to: '/subcategories',
+            icon: Flower2,
+            color: '#EC4899',
+            bg: 'rgba(236, 72, 153, 0.1)',
+            border: 'rgba(236, 72, 153, 0.22)',
+          },
+          {
+            label: 'Special Offer Pricing',
+            desc: 'Create festive discounts and sale ribbon tags',
             to: '/offers',
-            icon: Sparkles,
-            color: '#E5B25D',
-            bg: 'rgba(229, 178, 93, 0.08)',
-            border: 'rgba(229, 178, 93, 0.2)',
+            icon: Tag,
+            color: 'var(--accent-gold)',
+            bg: 'rgba(201, 168, 76, 0.1)',
+            border: 'rgba(201, 168, 76, 0.25)',
           },
           {
-            label: 'Moderate Reviews',
-            desc: 'Approve authentic customer testimonials',
+            label: 'Moderate Testimonials',
+            desc: 'Approve authentic verified customer reviews',
             to: '/testimonials',
             icon: MessageSquareQuote,
             color: '#34D399',
-            bg: 'rgba(16, 185, 129, 0.08)',
-            border: 'rgba(16, 185, 129, 0.2)',
+            bg: 'rgba(16, 185, 129, 0.1)',
+            border: 'rgba(16, 185, 129, 0.22)',
           },
         ].map(({ label, desc, to, icon: Icon, color, bg, border }) => (
           <Link key={to} to={to} style={{ textDecoration: 'none' }}>
             <div
               className="action-card"
               style={{
-                background: 'var(--surface-primary)',
+                background: 'var(--surface-primary, #14131E)',
                 border: `1px solid ${border}`,
-                borderRadius: 16,
-                padding: '22px 24px',
-                transition: 'all 0.2s cubic-bezier(0.16, 1, 0.3, 1)',
+                borderRadius: 18,
+                padding: '24px',
+                transition: 'all 0.22s cubic-bezier(0.16, 1, 0.3, 1)',
                 cursor: 'pointer',
                 height: '100%',
                 boxSizing: 'border-box',
@@ -353,7 +401,7 @@ const Dashboard = () => {
               }}
               onMouseEnter={(e) => {
                 e.currentTarget.style.transform = 'translateY(-3px)';
-                e.currentTarget.style.boxShadow = `0 12px 30px rgba(0, 0, 0, 0.3), 0 0 20px ${bg}`;
+                e.currentTarget.style.boxShadow = `0 14px 32px rgba(0, 0, 0, 0.35), 0 0 24px ${bg}`;
                 e.currentTarget.style.borderColor = color;
               }}
               onMouseLeave={(e) => {
@@ -363,12 +411,12 @@ const Dashboard = () => {
               }}
             >
               <div>
-                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 14 }}>
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16 }}>
                   <div
                     style={{
-                      width: 40,
-                      height: 40,
-                      borderRadius: 12,
+                      width: 44,
+                      height: 44,
+                      borderRadius: 14,
                       background: bg,
                       display: 'flex',
                       alignItems: 'center',
@@ -380,10 +428,10 @@ const Dashboard = () => {
                   </div>
                   <ArrowUpRight size={18} style={{ color }} />
                 </div>
-                <div className="action-card-title" style={{ color: 'var(--text-primary)', fontWeight: 700, fontSize: '1rem', marginBottom: 6 }}>
+                <div className="action-card-title" style={{ color: 'var(--text-primary)', fontWeight: 700, fontSize: '1.02rem', marginBottom: 6 }}>
                   {label}
                 </div>
-                <p className="action-card-desc" style={{ color: 'var(--text-secondary)', fontSize: '0.84rem', margin: 0, lineHeight: 1.45 }}>
+                <p className="action-card-desc" style={{ color: 'var(--text-secondary)', fontSize: '0.84rem', margin: 0, lineHeight: 1.5 }}>
                   {desc}
                 </p>
               </div>
@@ -392,45 +440,45 @@ const Dashboard = () => {
         ))}
       </div>
 
-      {/* Storefront Overview Card */}
+      {/* Storefront Overview Preview Banner */}
       <div
         className="dashboard-preview-card"
         style={{
-          background: 'var(--surface-primary)',
-          border: '1px solid var(--card-border)',
-          borderRadius: 18,
-          padding: '24px 28px',
+          background: 'var(--surface-primary, #14131E)',
+          border: '1px solid var(--card-border, rgba(201, 168, 76, 0.12))',
+          borderRadius: 20,
+          padding: '26px 32px',
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'space-between',
           flexWrap: 'wrap',
-          gap: 16,
+          gap: 18,
         }}
       >
-        <div style={{ display: 'flex', alignItems: 'center', gap: 16, minWidth: 0, flex: '1 1 280px' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 18, minWidth: 0, flex: '1 1 300px' }}>
           <div
             className="preview-icon-wrap"
             style={{
-              width: 48,
-              height: 48,
-              borderRadius: 14,
-              background: 'rgba(236, 22, 140, 0.1)',
-              border: '1px solid rgba(236, 22, 140, 0.2)',
+              width: 52,
+              height: 52,
+              borderRadius: 16,
+              background: 'rgba(201, 168, 76, 0.1)',
+              border: '1px solid rgba(201, 168, 76, 0.25)',
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
-              color: 'var(--accent-pink)',
+              color: 'var(--accent-gold)',
               flexShrink: 0,
             }}
           >
             <ShoppingBag size={24} />
           </div>
           <div style={{ minWidth: 0 }}>
-            <div className="dashboard-preview-card-title" style={{ fontSize: '1rem', fontWeight: 700, color: 'var(--text-primary)' }}>
-              Looking for client preview?
+            <div className="dashboard-preview-card-title" style={{ fontSize: '1.05rem', fontWeight: 700, color: 'var(--text-primary)' }}>
+              Looking for client storefront preview?
             </div>
-            <div className="dashboard-preview-card-desc" style={{ fontSize: '0.84rem', color: 'var(--text-secondary)', marginTop: 2 }}>
-              Inspect newly saved products, categories and glittering footer directly on the storefront.
+            <div className="dashboard-preview-card-desc" style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', marginTop: 3 }}>
+              Inspect newly saved products, category order, and festive discount ribbons directly on the customer storefront.
             </div>
           </div>
         </div>
@@ -439,10 +487,30 @@ const Dashboard = () => {
           href="http://localhost:3000"
           target="_blank"
           rel="noopener noreferrer"
-          className="btn-primary dashboard-preview-btn"
-          style={{ textDecoration: 'none' }}
+          style={{
+            padding: '10px 20px',
+            fontSize: '0.88rem',
+            fontWeight: 700,
+            borderRadius: 12,
+            textDecoration: 'none',
+            display: 'flex',
+            alignItems: 'center',
+            gap: 8,
+            background: 'linear-gradient(135deg, var(--accent-pink), var(--accent-purple))',
+            color: '#FFFFFF',
+            boxShadow: '0 4px 16px rgba(196, 56, 108, 0.35)',
+            transition: 'all 0.2s ease',
+          }}
+          onMouseEnter={(e) => {
+            e.currentTarget.style.transform = 'translateY(-2px)';
+            e.currentTarget.style.boxShadow = '0 8px 24px rgba(196, 56, 108, 0.5)';
+          }}
+          onMouseLeave={(e) => {
+            e.currentTarget.style.transform = 'none';
+            e.currentTarget.style.boxShadow = '0 4px 16px rgba(196, 56, 108, 0.35)';
+          }}
         >
-          <span>Open Storefront</span>
+          <span>Open Live Storefront</span>
           <ExternalLink size={16} />
         </a>
       </div>

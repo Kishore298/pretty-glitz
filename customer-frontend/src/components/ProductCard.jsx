@@ -3,7 +3,8 @@ import { Link, useNavigate } from 'react-router-dom';
 import { useTheme } from '../context/ThemeContext';
 import { CartContext } from '../context/CartContext';
 import { optimizeImageUrl } from '../utils/cloudinary';
-import { ShoppingBag, Plus, Minus } from 'lucide-react';
+import { ShoppingBag, Plus, Minus, Sparkles } from 'lucide-react';
+import logoImg from '../assets/pretty-glitz-logo.png';
 
 const ProductCard = ({ product }) => {
   const { isDark } = useTheme();
@@ -86,6 +87,12 @@ const ProductCard = ({ product }) => {
               src={optimizeImageUrl(product.images[0].url, 400)}
               alt={product.name}
               loading="lazy"
+              onError={(e) => {
+                e.currentTarget.onerror = null;
+                e.currentTarget.src = logoImg;
+                e.currentTarget.style.objectFit = 'contain';
+                e.currentTarget.style.padding = '20px';
+              }}
               style={{
                 width: '100%', height: '100%',
                 objectFit: 'cover',
@@ -94,9 +101,22 @@ const ProductCard = ({ product }) => {
               }}
             />
           ) : (
-            <div className="no-image-placeholder">
-              <div className="pg-monogram">PG</div>
-              <span style={{ fontSize: '0.7rem' }}>Coming Soon</span>
+            <div style={{
+              width: '100%', height: '100%',
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+              padding: 20,
+              background: isDark ? 'rgba(255,255,255,0.02)' : '#FBF9F6',
+            }}>
+              <img
+                src={logoImg}
+                alt="PrettyGlitz"
+                style={{
+                  width: '100%', height: '100%',
+                  objectFit: 'contain',
+                  opacity: 0.9,
+                  filter: 'contrast(1.04)',
+                }}
+              />
             </div>
           )}
 
@@ -117,11 +137,14 @@ const ProductCard = ({ product }) => {
               <span style={{
                 background: 'linear-gradient(135deg, #B8860B, #E5C158)',
                 color: '#2A1800',
-                fontSize: '8px', fontWeight: 800, padding: '3px 6px',
+                fontSize: '8px', fontWeight: 800, padding: '3px 7px',
                 borderRadius: 999, letterSpacing: '0.06em', textTransform: 'uppercase',
                 boxShadow: '0 2px 6px rgba(184,134,11,0.3)',
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: 3,
               }}>
-                ★ Best Seller
+                <Sparkles size={9} /> Bestseller
               </span>
             )}
             {!product.inStock && (

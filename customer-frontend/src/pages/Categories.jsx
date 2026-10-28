@@ -4,6 +4,7 @@ import api from '../utils/api';
 import { motion } from 'framer-motion';
 import { ChevronRight, Sparkles, Gem, Star, Heart, Flower2, Gift, Crown } from 'lucide-react';
 import { optimizeImageUrl } from '../utils/cloudinary';
+import logoImg from '../assets/pretty-glitz-logo.png';
 
 const catIcons = {
   'Bangles': <Sparkles size={28} />,
@@ -112,23 +113,24 @@ const Categories = () => {
                       }}
                     >
                       {/* Image */}
-                      <div style={{ aspectRatio: '16/9', overflow: 'hidden', background: `linear-gradient(135deg, ${gradient.from}, ${gradient.to})`, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                        {cat.bannerImage ? (
-                          <img
-                            src={optimizeImageUrl(cat.bannerImage, { width: 400, height: 225, crop: 'fill' })}
-                            alt={cat.name}
-                            style={{ width: '100%', height: '100%', objectFit: 'cover' }}
-                          />
-                        ) : (
-                          <div style={{
-                            width: 56, height: 56, borderRadius: 14,
-                            background: `linear-gradient(135deg, ${gradient.accent}, ${gradient.accent}80)`,
-                            display: 'flex', alignItems: 'center', justifyContent: 'center',
-                            color: 'white',
-                          }}>
-                            {catIcons[cat.name] || <Sparkles size={28} />}
-                          </div>
-                        )}
+                      <div style={{ aspectRatio: '16/9', overflow: 'hidden', background: `linear-gradient(135deg, ${gradient.from}, ${gradient.to})`, display: 'flex', alignItems: 'center', justifyContent: 'center', position: 'relative' }}>
+                        <img
+                          src={cat.bannerImage ? optimizeImageUrl(cat.bannerImage, { width: 500, height: 280, crop: 'fill' }) : logoImg}
+                          alt={cat.name}
+                          onError={(e) => {
+                            e.currentTarget.onerror = null;
+                            e.currentTarget.src = logoImg;
+                            e.currentTarget.style.objectFit = 'contain';
+                            e.currentTarget.style.padding = '18px';
+                          }}
+                          style={{
+                            width: '100%',
+                            height: '100%',
+                            objectFit: cat.bannerImage ? 'cover' : 'contain',
+                            padding: cat.bannerImage ? 0 : '18px',
+                            transition: 'transform 0.4s ease',
+                          }}
+                        />
                       </div>
 
                       {/* Label */}

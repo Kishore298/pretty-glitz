@@ -22,6 +22,7 @@ import api from '../utils/api';
 import ImageUpload from '../components/ImageUpload';
 import ConfirmModal from '../components/ConfirmModal';
 import PageWrapper from '../components/PageWrapper';
+import { SkeletonTestimonials } from '../components/SkeletonLoader';
 import toast from 'react-hot-toast';
 
 const Testimonials = () => {
@@ -205,24 +206,30 @@ const Testimonials = () => {
       {/* ── Top Header ────────────────────────────────────────── */}
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: 20, marginBottom: 32 }}>
         <div>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 6 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 6 }}>
             <div style={{
-              width: 32, height: 32, borderRadius: 8,
-              background: 'linear-gradient(135deg, var(--accent-pink), var(--accent-purple))',
+              width: 38, height: 38, borderRadius: 12,
+              background: 'linear-gradient(135deg, rgba(196, 56, 108, 0.2), rgba(138, 43, 226, 0.2))',
+              border: '1px solid var(--card-border)',
               display: 'flex', alignItems: 'center', justifyContent: 'center'
             }}>
-              <MessageSquareQuote size={18} color="white" />
+              <MessageSquareQuote size={20} color="var(--accent-gold)" />
             </div>
-            <h1 style={{ fontFamily: 'Outfit, sans-serif', fontSize: '2rem', fontWeight: 800, color: 'var(--text-primary)', margin: 0 }}>
-              Customer Testimonials
-            </h1>
+            <div>
+              <span style={{ fontSize: '0.72rem', fontWeight: 600, color: 'var(--accent-gold)', textTransform: 'uppercase', letterSpacing: '0.12em' }}>
+                Social Proof & Reviews
+              </span>
+              <h1 style={{ fontFamily: 'Cormorant Garamond, serif', fontSize: '2.2rem', fontWeight: 700, color: 'var(--text-primary)', margin: 0, lineHeight: 1.15 }}>
+                Customer Testimonials
+              </h1>
+            </div>
           </div>
-          <p style={{ color: 'var(--text-muted)', fontSize: '0.9rem', margin: 0 }}>
-            Manage customer feedback, ratings, and featured reviews displayed on your storefront
+          <p style={{ color: 'var(--text-muted)', fontSize: '0.9rem', margin: '4px 0 0 50px' }}>
+            Curate customer experiences, ratings, and featured stories showcased across your luxury storefront
           </p>
         </div>
 
-        <button onClick={openAddModal} className="btn-primary" style={{ padding: '10px 20px' }}>
+        <button onClick={openAddModal} className="btn-primary" style={{ padding: '10px 22px' }}>
           <Plus size={18} /> Add Testimonial
         </button>
       </div>
@@ -322,11 +329,7 @@ const Testimonials = () => {
 
       {/* ── Drag & Drop Testimonial List ──────────────────────── */}
       {loading ? (
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 1fr))', gap: 20 }}>
-          {Array.from({ length: 4 }).map((_, idx) => (
-            <div key={idx} className="skeleton" style={{ height: 200, borderRadius: 14 }} />
-          ))}
-        </div>
+        <SkeletonTestimonials count={6} />
       ) : filteredTestimonials.length === 0 ? (
         <div style={{
           background: 'var(--surface-primary)',
@@ -682,7 +685,7 @@ const Testimonials = () => {
                       })}
                     </div>
                     <span style={{ fontSize: '0.85rem', fontWeight: 700, color: 'var(--accent-gold)', marginLeft: 8 }}>
-                      {rating === 5 ? '5.0 ★ Excellent' : `${rating}.0 ★`}
+                      {rating === 5 ? '5.0 / 5.0 (Exceptional)' : `${rating}.0 / 5.0 Stars`}
                     </span>
                   </div>
                 </div>

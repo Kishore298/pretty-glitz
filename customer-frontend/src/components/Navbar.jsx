@@ -6,6 +6,7 @@ import { CartContext } from '../context/CartContext';
 import { useTheme } from '../context/ThemeContext';
 import api from '../utils/api';
 import logoImg from '../assets/pretty-glitz-logo.png';
+import primaryLogoImg from '../assets/pritty-glitz-logo1.png';
 
 // Categories that appear as primary nav items
 const PRIMARY_CATEGORIES = ['Bangles', 'Artificial Flowers', 'Gift Box Combo', 'Jumkhas', 'Jewels'];
@@ -173,7 +174,7 @@ const Navbar = () => {
             <Link to="/" className="navbar-brand-link">
               <div className="navbar-logo-badge">
                 <img
-                  src={logoImg}
+                  src={primaryLogoImg}
                   alt="PrettyGlitz Logo"
                   className="navbar-logo-img"
                 />
@@ -283,7 +284,7 @@ const Navbar = () => {
                   @media (max-width: 768px) {
                     .desktop-search-dropdown {
                       position: fixed;
-                      top: 70px; /* Navbar height */
+                      top: 76px; /* Navbar height */
                       right: 24px;
                       width: calc(100vw - 48px);
                     }
@@ -382,11 +383,21 @@ const Navbar = () => {
                               onMouseEnter={e => e.currentTarget.style.background = 'var(--bg-secondary)'}
                               onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
                               >
-                                <div style={{ width: 40, height: 40, borderRadius: 6, background: 'var(--bg-secondary)', overflow: 'hidden', flexShrink: 0 }}>
+                                <div style={{ width: 40, height: 40, borderRadius: 6, background: 'var(--bg-secondary)', overflow: 'hidden', flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                                   {product.images && product.images[0] ? (
-                                    <img src={product.images[0].url} alt={product.name} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                                    <img
+                                      src={product.images[0].url}
+                                      alt={product.name}
+                                      onError={(e) => {
+                                        e.currentTarget.onerror = null;
+                                        e.currentTarget.src = logoImg;
+                                        e.currentTarget.style.objectFit = 'contain';
+                                        e.currentTarget.style.padding = '5px';
+                                      }}
+                                      style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                                    />
                                   ) : (
-                                    <div style={{ width: '100%', height: '100%', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--text-muted)', fontSize: '10px' }}>PG</div>
+                                    <img src={logoImg} alt="PrettyGlitz" style={{ width: '100%', height: '100%', objectFit: 'contain', padding: '5px' }} />
                                   )}
                                 </div>
                                 <div style={{ flex: 1, minWidth: 0 }}>

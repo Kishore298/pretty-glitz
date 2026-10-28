@@ -4,6 +4,7 @@ import { CartContext } from '../context/CartContext';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Trash2, ArrowRight, ChevronRight, Lock } from 'lucide-react';
 import { optimizeImageUrl } from '../utils/cloudinary';
+import logoImg from '../assets/pretty-glitz-logo.png';
 
 const Cart = () => {
   const { cartItems, updateQuantity, removeFromCart, getCartTotal } = useContext(CartContext);
@@ -84,14 +85,24 @@ const Cart = () => {
                           borderBottom: isLast ? 'none' : `1px solid var(--border)`
                         }}
                       >
-                        <div style={{ width: 100, height: 120, borderRadius: 12, background: 'var(--bg-secondary)', overflow: 'hidden', flexShrink: 0 }}>
-                          {item.product.images?.[0] ? (
-                            <img src={optimizeImageUrl(item.product.images[0].url, 200)} alt="" loading="lazy" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-                          ) : (
-                            <div className="no-image-placeholder">
-                              <div className="pg-monogram" style={{ width: 32, height: 32, fontSize: '0.6rem', borderRadius: 6 }}>PG</div>
-                            </div>
-                          )}
+                        <div style={{ width: 100, height: 120, borderRadius: 12, background: 'var(--bg-secondary)', overflow: 'hidden', flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                          <img
+                            src={item.product.images?.[0] ? optimizeImageUrl(item.product.images[0].url, 200) : logoImg}
+                            alt={item.product.name}
+                            loading="lazy"
+                            onError={(e) => {
+                              e.currentTarget.onerror = null;
+                              e.currentTarget.src = logoImg;
+                              e.currentTarget.style.objectFit = 'contain';
+                              e.currentTarget.style.padding = '12px';
+                            }}
+                            style={{
+                              width: '100%',
+                              height: '100%',
+                              objectFit: item.product.images?.[0] ? 'cover' : 'contain',
+                              padding: item.product.images?.[0] ? 0 : '12px',
+                            }}
+                          />
                         </div>
 
                         <div style={{ flex: '1 1 200px' }}>

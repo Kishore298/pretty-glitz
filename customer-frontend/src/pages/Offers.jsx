@@ -27,7 +27,7 @@ const Offers = () => {
   };
 
   return (
-    <div style={{ minHeight: '100vh', paddingTop: 72, paddingBottom: 100 }}>
+    <div style={{ minHeight: '100vh', paddingTop: 104, paddingBottom: 100 }}>
       {/* ── Banner ────────────────────────────────────────────── */}
       <div className="page-banner" style={{ 
         background: 'var(--bg-secondary)',

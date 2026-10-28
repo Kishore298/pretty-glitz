@@ -1,17 +1,20 @@
 import React, { useState, useEffect } from 'react';
-import { Plus, Tag, ArrowRight, Sparkles } from 'lucide-react';
+import { Plus, Tag, ArrowRight, Sparkles, Percent, Pencil, Trash2 } from 'lucide-react';
 import api from '../utils/api';
+import { optimizeImageUrl } from '../utils/cloudinary';
 import AddEditProductModal from '../components/AddEditProductModal';
 import ConfirmModal from '../components/ConfirmModal';
 import PageWrapper from '../components/PageWrapper';
 import PageHeader from '../components/PageHeader';
 import EmptyState from '../components/EmptyState';
+import { SkeletonGrid } from '../components/SkeletonLoader';
 import toast from 'react-hot-toast';
 
 const Offers = () => {
   const [products, setProducts] = useState([]);
   const [offerProducts, setOfferProducts] = useState([]);
-  
+  const [loading, setLoading] = useState(true);
+
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingProductId, setEditingProductId] = useState(null);
 
@@ -25,28 +28,32 @@ const Offers = () => {
   }, []);
 
   const fetchProducts = async () => {
+    setLoading(true);
     try {
       const { data } = await api.get('/products');
-      setProducts(data);
-      setOfferProducts(data.filter(p => p.isOffer));
+      const prodList = Array.isArray(data) ? data : [];
+      setProducts(prodList);
+      setOfferProducts(prodList.filter((p) => p.isOffer));
     } catch (err) {
       console.error(err);
       toast.error('Failed to load products');
+    } finally {
+      setLoading(false);
     }
   };
 
   const handleMakeOffer = async (e) => {
     e.preventDefault();
     if (!selectedProductId || !discountPrice) return;
-    
-    const product = products.find(p => p._id === selectedProductId);
+
+    const product = products.find((p) => p._id === selectedProductId);
     if (!product) return;
 
     try {
       await api.put(`/products/${selectedProductId}`, {
         price: Number(discountPrice),
         originalPrice: product.price,
-        isOffer: true
+        isOffer: true,
       });
       toast.success(`Special offer created for "${product.name}"`);
       setSelectedProductId('');
@@ -65,7 +72,7 @@ const Offers = () => {
       await api.put(`/products/${removeTarget._id}`, {
         price: removeTarget.originalPrice || removeTarget.price,
         originalPrice: 0,
-        isOffer: false
+        isOffer: false,
       });
       toast.success(`Offer removed for "${removeTarget.name}"`);
       setRemoveTarget(null);
@@ -78,21 +85,33 @@ const Offers = () => {
     }
   };
 
-  const nonOfferProducts = products.filter(p => !p.isOffer);
+  const nonOfferProducts = products.filter((p) => !p.isOffer);
 
   return (
     <PageWrapper>
       <PageHeader
-        title="Special Offers & Deals"
-        subtitle="Manage promotional discounts, festive prices, and highlighted deals on storefront."
+        title="Special Offers & Discounts"
+        subtitle="Manage promotional festive discounts, strikethrough pricing, and highlighted deals on the storefront."
         badge={`${offerProducts.length} Active Deals`}
         actions={
-          <button 
-            onClick={() => { setEditingProductId(null); setIsModalOpen(true); }}
+          <button
+            onClick={() => {
+              setEditingProductId(null);
+              setIsModalOpen(true);
+            }}
             className="btn-primary"
+            style={{
+              padding: '10px 18px',
+              borderRadius: 12,
+              display: 'flex',
+              alignItems: 'center',
+              gap: 8,
+              fontSize: '0.88rem',
+              fontWeight: 700,
+            }}
           >
             <Plus size={16} />
-            <span>Add Custom Offer</span>
+            <span>Create New Offer Piece</span>
           </button>
         }
       />
@@ -100,8 +119,8 @@ const Offers = () => {
       {/* Convert Existing Product into Offer */}
       <div
         style={{
-          background: 'linear-gradient(135deg, rgba(236, 22, 140, 0.05) 0%, rgba(229, 178, 93, 0.05) 100%)',
-          border: '1px solid var(--card-border)',
+          background: 'linear-gradient(135deg, rgba(196, 56, 108, 0.08) 0%, rgba(201, 168, 76, 0.08) 100%)',
+          border: '1px solid rgba(201, 168, 76, 0.22)',
           borderRadius: 20,
           padding: '28px 32px',
           marginBottom: 40,
@@ -109,34 +128,49 @@ const Offers = () => {
         }}
       >
         <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 8 }}>
-          <Tag size={20} color="var(--accent-pink)" />
+          <div
+            style={{
+              width: 36,
+              height: 36,
+              borderRadius: 10,
+              background: 'rgba(201, 168, 76, 0.15)',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              color: 'var(--accent-gold)',
+            }}
+          >
+            <Tag size={18} />
+          </div>
           <h3 style={{ margin: 0, color: 'var(--text-primary)', fontSize: '1.25rem', fontWeight: 700 }}>
-            Convert Existing Product to Offer
+            Quickly Promote an Existing Product
           </h3>
         </div>
-        <p style={{ margin: '0 0 20px', color: 'var(--text-secondary)', fontSize: '0.86rem' }}>
-          Select any live product from catalog and assign a discounted sale price.
+        <p style={{ margin: '0 0 22px', color: 'var(--text-secondary)', fontSize: '0.86rem' }}>
+          Select an active product from the catalog to mark down with a discounted sale price and offer banner.
         </p>
 
         <form onSubmit={handleMakeOffer} style={{ display: 'flex', gap: 16, alignItems: 'flex-end', flexWrap: 'wrap' }}>
           <div style={{ flex: 2, minWidth: 260 }}>
             <label style={{ display: 'block', fontSize: '0.82rem', color: 'var(--text-secondary)', marginBottom: 8, fontWeight: 600 }}>
-              Select Product
+              Select Catalog Product
             </label>
             <select
               value={selectedProductId}
               onChange={(e) => setSelectedProductId(e.target.value)}
               className="admin-input"
               required
-              style={{ height: 44 }}
+              style={{ height: 44, borderRadius: 12 }}
             >
               <option value="">-- Choose a product from catalog --</option>
-              {nonOfferProducts.map(p => (
-                <option key={p._id} value={p._id}>{p.name} (Current: ₹{p.price})</option>
+              {nonOfferProducts.map((p) => (
+                <option key={p._id} value={p._id}>
+                  {p.name} (Current Price: ₹{p.price})
+                </option>
               ))}
             </select>
           </div>
-          <div style={{ flex: 1, minWidth: 160 }}>
+          <div style={{ flex: 1, minWidth: 180 }}>
             <label style={{ display: 'block', fontSize: '0.82rem', color: 'var(--text-secondary)', marginBottom: 8, fontWeight: 600 }}>
               Promotional Offer Price (₹)
             </label>
@@ -144,22 +178,23 @@ const Offers = () => {
               type="number"
               value={discountPrice}
               onChange={(e) => setDiscountPrice(e.target.value)}
-              placeholder="e.g. 499"
+              placeholder="e.g. 799"
               className="admin-input"
               required
               min="0"
-              style={{ height: 44 }}
+              style={{ height: 44, borderRadius: 12 }}
             />
           </div>
-          <button type="submit" className="btn-primary" style={{ height: 44, padding: '0 24px' }}>
-            <span>Apply Deal</span>
+          <button type="submit" className="btn-primary" style={{ height: 44, padding: '0 24px', borderRadius: 12, gap: 8 }}>
+            <span>Activate Offer</span>
             <ArrowRight size={16} />
           </button>
         </form>
       </div>
 
+      {/* Header */}
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 20 }}>
-        <h2 style={{ fontFamily: 'Outfit, sans-serif', fontSize: '1.4rem', fontWeight: 700, color: 'var(--text-primary)', margin: 0 }}>
+        <h2 style={{ fontFamily: 'Outfit, sans-serif', fontSize: '1.35rem', fontWeight: 800, color: 'var(--text-primary)', margin: 0 }}>
           Active Storefront Deals
         </h2>
         <span style={{ fontSize: '0.82rem', color: 'var(--text-muted)' }}>
@@ -167,91 +202,262 @@ const Offers = () => {
         </span>
       </div>
 
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 1fr))', gap: 20 }}>
-        {offerProducts.map(product => {
-          const discountPct = product.originalPrice && product.originalPrice > product.price
-            ? Math.round(((product.originalPrice - product.price) / product.originalPrice) * 100)
-            : null;
+      {/* Content: Skeleton vs Grid */}
+      {loading ? (
+        <SkeletonGrid count={4} />
+      ) : offerProducts.length === 0 ? (
+        <EmptyState
+          icon={Tag}
+          title="No Active Offers"
+          description="Convert an existing product to an offer or create a promotional item using the form above."
+        />
+      ) : (
+        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))', gap: 24 }}>
+          {offerProducts.map((product) => {
+            const discountPct =
+              product.originalPrice && product.originalPrice > product.price
+                ? Math.round(((product.originalPrice - product.price) / product.originalPrice) * 100)
+                : null;
+            const savings =
+              product.originalPrice && product.originalPrice > product.price
+                ? product.originalPrice - product.price
+                : 0;
 
-          return (
-            <div
-              key={product._id}
-              className="stat-card"
-              style={{ 
-                padding: 24,
-                display: 'flex',
-                flexDirection: 'column',
-                justifyContent: 'space-between',
-              }}
-            >
-              <div>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 16 }}>
+            const primaryImg = product.images?.[0]?.url;
+
+            return (
+              <div
+                key={product._id}
+                style={{
+                  background: 'var(--surface-primary, #14131E)',
+                  border: '1px solid var(--card-border, rgba(201, 168, 76, 0.14))',
+                  borderRadius: 20,
+                  overflow: 'hidden',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  boxShadow: '0 6px 20px rgba(0, 0, 0, 0.25)',
+                  transition: 'all 0.25s cubic-bezier(0.16, 1, 0.3, 1)',
+                  position: 'relative',
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.borderColor = 'rgba(201, 168, 76, 0.4)';
+                  e.currentTarget.style.transform = 'translateY(-4px)';
+                  e.currentTarget.style.boxShadow = '0 14px 36px rgba(0, 0, 0, 0.45), 0 0 20px rgba(201, 168, 76, 0.15)';
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.borderColor = 'var(--card-border, rgba(201, 168, 76, 0.14))';
+                  e.currentTarget.style.transform = 'none';
+                  e.currentTarget.style.boxShadow = '0 6px 20px rgba(0, 0, 0, 0.25)';
+                }}
+              >
+                {/* Media Showcase Area */}
+                <div
+                  style={{
+                    position: 'relative',
+                    width: '100%',
+                    height: 220,
+                    background: '#0D0C14',
+                    overflow: 'hidden',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                  }}
+                >
+                  <img
+                    src={primaryImg ? optimizeImageUrl(primaryImg, 600) : '/pretty-glitz-logo.png'}
+                    alt={product.name}
+                    loading="lazy"
+                    onError={(e) => {
+                      e.currentTarget.onerror = null;
+                      e.currentTarget.src = '/pretty-glitz-logo.png';
+                      e.currentTarget.style.objectFit = 'contain';
+                      e.currentTarget.style.padding = '24px';
+                    }}
+                    style={{
+                      width: '100%',
+                      height: '100%',
+                      objectFit: primaryImg ? 'cover' : 'contain',
+                      padding: primaryImg ? '0' : '24px',
+                      transition: 'transform 0.4s ease',
+                    }}
+                  />
+
+                  {/* Gradient shadow overlay for legibility */}
                   <div
                     style={{
-                      width: 44,
-                      height: 44,
-                      borderRadius: 12,
-                      background: 'rgba(236,22,140,0.1)',
-                      border: '1px solid rgba(236,22,140,0.2)',
+                      position: 'absolute',
+                      inset: 0,
+                      background: 'linear-gradient(180deg, rgba(10, 10, 15, 0.4) 0%, transparent 45%, rgba(20, 19, 30, 0.95) 100%)',
+                      pointerEvents: 'none',
+                    }}
+                  />
+
+                  {/* Floating Category Pill */}
+                  <span
+                    style={{
+                      position: 'absolute',
+                      top: 12,
+                      left: 12,
+                      background: 'rgba(10, 10, 15, 0.8)',
+                      backdropFilter: 'blur(8px)',
+                      border: '1px solid rgba(201, 168, 76, 0.3)',
+                      color: 'var(--accent-gold-light, #E8CE8A)',
+                      fontSize: '0.72rem',
+                      fontWeight: 700,
+                      padding: '4px 10px',
+                      borderRadius: 999,
+                      textTransform: 'uppercase',
+                      letterSpacing: '0.06em',
                       display: 'flex',
                       alignItems: 'center',
-                      justifyContent: 'center',
-                      color: 'var(--accent-pink)',
+                      gap: 5,
                     }}
                   >
-                    <Tag size={22} />
+                    <Sparkles size={11} color="var(--accent-gold)" />
+                    {product.category}
+                  </span>
+
+                  {/* Floating Discount Badge */}
+                  {discountPct && (
+                    <span
+                      style={{
+                        position: 'absolute',
+                        top: 12,
+                        right: 12,
+                        background: 'linear-gradient(135deg, #C4386C, #8A2BE2)',
+                        color: '#FFFFFF',
+                        fontSize: '0.76rem',
+                        fontWeight: 800,
+                        padding: '4px 11px',
+                        borderRadius: 999,
+                        boxShadow: '0 4px 14px rgba(196, 56, 108, 0.4)',
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: 4,
+                        letterSpacing: '0.04em',
+                      }}
+                    >
+                      <Percent size={11} />
+                      {discountPct}% OFF
+                    </span>
+                  )}
+                </div>
+
+                {/* Content Details */}
+                <div style={{ padding: '20px 22px', display: 'flex', flexDirection: 'column', flex: 1 }}>
+                  <h3
+                    style={{
+                      margin: '0 0 12px',
+                      color: 'var(--text-primary)',
+                      fontFamily: 'Outfit, sans-serif',
+                      fontSize: '1.15rem',
+                      fontWeight: 700,
+                      lineHeight: 1.3,
+                    }}
+                  >
+                    {product.name}
+                  </h3>
+
+                  {/* Price Section */}
+                  <div style={{ display: 'flex', alignItems: 'baseline', gap: 10, marginBottom: 18, flexWrap: 'wrap' }}>
+                    <span
+                      style={{
+                        fontSize: '1.45rem',
+                        fontWeight: 800,
+                        color: 'var(--accent-gold, #C9A84C)',
+                        fontFamily: 'Outfit, sans-serif',
+                      }}
+                    >
+                      ₹{product.price}
+                    </span>
+                    {product.originalPrice && product.originalPrice > product.price && (
+                      <>
+                        <span
+                          style={{
+                            fontSize: '0.92rem',
+                            color: 'var(--text-muted)',
+                            textDecoration: 'line-through',
+                            fontWeight: 500,
+                          }}
+                        >
+                          ₹{product.originalPrice}
+                        </span>
+                        <span
+                          style={{
+                            fontSize: '0.72rem',
+                            color: '#10B981',
+                            fontWeight: 700,
+                            background: 'rgba(16, 185, 129, 0.12)',
+                            border: '1px solid rgba(16, 185, 129, 0.25)',
+                            padding: '2px 8px',
+                            borderRadius: 6,
+                          }}
+                        >
+                          Save ₹{savings}
+                        </span>
+                      </>
+                    )}
                   </div>
 
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                    {discountPct && (
-                      <span className="badge-pill badge-danger" style={{ fontSize: '0.72rem' }}>
-                        {discountPct}% OFF
-                      </span>
-                    )}
+                  {/* Action Footer */}
+                  <div
+                    style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: 10,
+                      marginTop: 'auto',
+                      paddingTop: 16,
+                      borderTop: '1px solid var(--card-border, rgba(201, 168, 76, 0.12))',
+                    }}
+                  >
+                    <button
+                      onClick={() => {
+                        setEditingProductId(product._id);
+                        setIsModalOpen(true);
+                      }}
+                      className="btn-edit"
+                      style={{
+                        flex: 1,
+                        padding: '9px 14px',
+                        borderRadius: 10,
+                        fontSize: '0.82rem',
+                        fontWeight: 600,
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        gap: 6,
+                      }}
+                    >
+                      <Pencil size={14} />
+                      <span>Edit Piece</span>
+                    </button>
                     <button
                       onClick={() => setRemoveTarget(product)}
                       className="btn-danger"
-                      style={{ padding: '6px 12px', fontSize: '0.76rem' }}
+                      style={{
+                        flex: 1,
+                        padding: '9px 14px',
+                        borderRadius: 10,
+                        fontSize: '0.82rem',
+                        fontWeight: 600,
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        gap: 6,
+                      }}
                     >
-                      Remove
+                      <Trash2 size={14} />
+                      <span>Remove Deal</span>
                     </button>
                   </div>
                 </div>
-                
-                <h3 style={{ margin: '0 0 10px', color: 'var(--text-primary)', fontSize: '1.15rem', fontWeight: 700 }}>
-                  {product.name}
-                </h3>
               </div>
+            );
+          })}
+        </div>
+      )}
 
-              <div style={{ display: 'flex', alignItems: 'baseline', gap: 12, paddingTop: 14, borderTop: '1px solid var(--card-border)' }}>
-                <span style={{ fontSize: '1.45rem', fontWeight: 800, color: 'var(--accent-pink)', fontFamily: 'Outfit, sans-serif' }}>
-                  ₹{product.price}
-                </span>
-                {product.originalPrice && (
-                  <span style={{ fontSize: '0.92rem', color: 'var(--text-muted)', textDecoration: 'line-through', fontWeight: 500 }}>
-                    ₹{product.originalPrice}
-                  </span>
-                )}
-                <span style={{ marginLeft: 'auto', fontSize: '0.75rem', color: 'var(--text-muted)' }}>
-                  {product.category}
-                </span>
-              </div>
-            </div>
-          );
-        })}
-
-        {offerProducts.length === 0 && (
-          <div style={{ gridColumn: '1 / -1' }}>
-            <EmptyState
-              icon={Sparkles}
-              title="No Active Offers Found"
-              description="Convert existing products into promotional deals using the form above."
-            />
-          </div>
-        )}
-      </div>
-
-      <AddEditProductModal 
+      <AddEditProductModal
         isOpen={isModalOpen}
         onClose={() => setIsModalOpen(false)}
         productId={editingProductId}
@@ -264,7 +470,7 @@ const Offers = () => {
         onClose={() => setRemoveTarget(null)}
         onConfirm={handleRemoveOffer}
         title="Remove Special Offer?"
-        message="This will restore the product to its original price and remove the offer tag from storefront."
+        message="This will restore the product to its original MRP price and remove the promotional ribbon from the customer storefront."
         itemName={removeTarget?.name}
         confirmText="Remove Offer"
         cancelText="Keep Offer"

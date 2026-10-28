@@ -6,6 +6,7 @@ import { CartContext } from '../context/CartContext';
 import { optimizeImageUrl } from '../utils/cloudinary';
 import { Check, ChevronRight, Share2, ZoomIn, Plus, Minus, ShoppingBag } from 'lucide-react';
 import ProductCard from '../components/ProductCard';
+import logoImg from '../assets/pretty-glitz-logo.png';
 
 const ProductDetail = () => {
   const { id } = useParams();
@@ -145,7 +146,17 @@ const ProductDetail = () => {
                     onMouseEnter={e => e.currentTarget.style.opacity = 1}
                     onMouseLeave={e => { if (activeImage !== idx) e.currentTarget.style.opacity = 0.6; }}
                   >
-                    <img src={optimizeImageUrl(img.url, 150)} alt="" loading="lazy" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                    <img
+                      src={optimizeImageUrl(img.url, 150)}
+                      alt=""
+                      loading="lazy"
+                      onError={(e) => {
+                        e.currentTarget.onerror = null;
+                        e.currentTarget.src = logoImg;
+                        e.currentTarget.style.padding = '4px';
+                      }}
+                      style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                    />
                   </button>
                 ))}
               </div>
@@ -165,10 +176,16 @@ const ProductDetail = () => {
                   style={{ width: '100%', height: '100%' }}
                 >
                   <img
-                    src={optimizeImageUrl(product.images?.[activeImage]?.url, 1000)}
+                    src={product.images?.[activeImage]?.url ? optimizeImageUrl(product.images[activeImage].url, 1000) : logoImg}
                     alt={product.name}
+                    onError={(e) => {
+                      e.currentTarget.onerror = null;
+                      e.currentTarget.src = logoImg;
+                      e.currentTarget.style.padding = '40px';
+                    }}
                     style={{
                       width: '100%', height: '100%', objectFit: 'contain',
+                      padding: product.images?.[activeImage]?.url ? 0 : '40px',
                       transform: isZoomed ? 'scale(2)' : 'scale(1)',
                       transformOrigin: `${mousePos.x}% ${mousePos.y}%`,
                       transition: isZoomed ? 'none' : 'transform 0.3s ease-out'

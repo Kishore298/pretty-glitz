@@ -20,6 +20,7 @@ import api from '../utils/api';
 import ProductCard from '../components/ProductCard';
 import ProductCardSkeleton from '../components/ProductCardSkeleton';
 import { optimizeImageUrl } from '../utils/cloudinary';
+import logoImg from '../assets/pretty-glitz-logo.png';
 
 const catIcons = {
   Bangles: <Sparkles size={24} />,
@@ -299,7 +300,7 @@ const Home = () => {
     <div className="home-page" style={{ background: 'transparent' }}>
       {/* Hero */}
       {showBanner ? (
-        <section className="home-hero-banner" style={{ width: '100%', position: 'relative', overflow: 'hidden', paddingTop: 72 }}>
+        <section className="home-hero-banner" style={{ width: '100%', position: 'relative', overflow: 'hidden', paddingTop: 100 }}>
           <img
             src={bannerImg.url}
             alt="PrettyGlitz Banner"
@@ -316,6 +317,7 @@ const Home = () => {
             justifyContent: 'center',
             position: 'relative',
             overflow: 'hidden',
+            paddingTop: 110,
           }}
         >
           <div className="section-padding" style={{ textAlign: 'center', maxWidth: 900, zIndex: 2 }}>
@@ -512,113 +514,79 @@ const Home = () => {
                   to={`/category/${encodeURIComponent(category.name)}`}
                   style={{ textDecoration: 'none', display: 'block', height: '100%' }}
                 >
-                  {category.bannerImage ? (
+                  <div
+                    className="theme-card"
+                    style={{
+                      borderRadius: 16,
+                      overflow: 'hidden',
+                      display: 'flex',
+                      flexDirection: 'column',
+                      height: '100%',
+                    }}
+                  >
                     <div
-                      className="theme-card"
                       style={{
-                        borderRadius: 16,
+                        width: '100%',
+                        aspectRatio: '4/3',
                         overflow: 'hidden',
+                        background: 'var(--bg-secondary)',
                         display: 'flex',
-                        flexDirection: 'column',
-                        height: '100%',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        position: 'relative',
                       }}
                     >
-                      <div style={{ width: '100%', aspectRatio: '4/3', overflow: 'hidden' }}>
-                        <img
-                          src={optimizeImageUrl(category.bannerImage, {
-                            width: 600,
-                            height: 400,
-                            crop: 'fill',
-                            gravity: 'auto',
-                          })}
-                          alt={category.name}
-                          loading="lazy"
-                          style={{
-                            width: '100%',
-                            height: '100%',
-                            objectFit: 'cover',
-                            transition: 'transform 0.5s ease',
-                          }}
-                          onMouseEnter={(event) => {
-                            event.currentTarget.style.transform = 'scale(1.05)';
-                          }}
-                          onMouseLeave={(event) => {
-                            event.currentTarget.style.transform = 'scale(1)';
-                          }}
-                        />
-                      </div>
-                      <div
-                        style={{
-                          padding: 16,
-                          flex: 1,
-                          display: 'flex',
-                          flexDirection: 'column',
-                          justifyContent: 'center',
-                          background: 'var(--bg-card)',
+                      <img
+                        src={
+                          category.bannerImage
+                            ? optimizeImageUrl(category.bannerImage, {
+                                width: 600,
+                                height: 450,
+                                crop: 'fill',
+                                gravity: 'auto',
+                              })
+                            : logoImg
+                        }
+                        alt={category.name}
+                        loading="lazy"
+                        onError={(event) => {
+                          event.currentTarget.onerror = null;
+                          event.currentTarget.src = logoImg;
+                          event.currentTarget.style.objectFit = 'contain';
+                          event.currentTarget.style.padding = '24px';
                         }}
-                      >
-                        <h3
-                          style={{
-                            fontFamily: 'Outfit, sans-serif',
-                            fontWeight: 700,
-                            fontSize: '1.2rem',
-                            color: 'var(--text)',
-                            margin: '0 0 8px',
-                          }}
-                        >
-                          {category.name}
-                        </h3>
-                        <div
-                          style={{
-                            display: 'inline-flex',
-                            alignItems: 'center',
-                            gap: 6,
-                            color: 'var(--accent)',
-                            fontWeight: 600,
-                            fontSize: '0.85rem',
-                          }}
-                        >
-                          Explore <ArrowRight size={14} />
-                        </div>
-                      </div>
+                        style={{
+                          width: '100%',
+                          height: '100%',
+                          objectFit: category.bannerImage ? 'cover' : 'contain',
+                          padding: category.bannerImage ? 0 : '24px',
+                          transition: 'transform 0.5s ease',
+                        }}
+                        onMouseEnter={(event) => {
+                          event.currentTarget.style.transform = 'scale(1.05)';
+                        }}
+                        onMouseLeave={(event) => {
+                          event.currentTarget.style.transform = 'scale(1)';
+                        }}
+                      />
                     </div>
-                  ) : (
                     <div
-                      className="theme-card"
                       style={{
-                        borderRadius: 16,
-                        padding: '24px 16px',
-                        position: 'relative',
-                        overflow: 'hidden',
-                        height: '100%',
-                        aspectRatio: '4/3',
+                        padding: 16,
+                        flex: 1,
                         display: 'flex',
                         flexDirection: 'column',
                         justifyContent: 'center',
+                        background: 'var(--bg-card)',
                       }}
                     >
-                      <div
-                        style={{
-                          width: 48,
-                          height: 48,
-                          borderRadius: 12,
-                          marginBottom: 16,
-                          background: 'var(--bg-secondary)',
-                          color: 'var(--accent)',
-                          display: 'flex',
-                          alignItems: 'center',
-                          justifyContent: 'center',
-                        }}
-                      >
-                        {catIcons[category.name] || <Sparkles size={24} />}
-                      </div>
                       <h3
                         style={{
                           fontFamily: 'Outfit, sans-serif',
                           fontWeight: 700,
-                          fontSize: '1.4rem',
+                          fontSize: '1.2rem',
                           color: 'var(--text)',
-                          margin: '0 0 16px',
+                          margin: '0 0 8px',
                         }}
                       >
                         {category.name}
@@ -636,7 +604,7 @@ const Home = () => {
                         Explore <ArrowRight size={14} />
                       </div>
                     </div>
-                  )}
+                  </div>
                 </Link>
               </motion.div>
             ))

@@ -2,30 +2,30 @@ import React, { useEffect, useState } from 'react';
 import { DragDropContext, Droppable, Draggable } from '@hello-pangea/dnd';
 import { motion, AnimatePresence } from 'framer-motion';
 import api from '../utils/api';
-import { Pencil, Trash2, Plus, Sparkles, Flower2, MoreHorizontal, X } from 'lucide-react';
+import {
+  Pencil,
+  Trash2,
+  Plus,
+  Sparkles,
+  Flower2,
+  MoreHorizontal,
+  X,
+  GripVertical
+} from 'lucide-react';
 import ImageUpload from '../components/ImageUpload';
 import ConfirmModal from '../components/ConfirmModal';
 import PageWrapper from '../components/PageWrapper';
 import PageHeader from '../components/PageHeader';
+import EmptyState from '../components/EmptyState';
+import { SkeletonCategories } from '../components/SkeletonLoader';
 import toast from 'react-hot-toast';
 
-const catGradients = [
-  { from: 'rgba(255,20,147,0.12)', to: 'rgba(138,43,226,0.04)', accent: '#FF1493', ring: '#FF1493' },
-  { from: 'rgba(138,43,226,0.12)', to: 'rgba(99,102,241,0.04)', accent: '#8A2BE2', ring: '#8A2BE2' },
-  { from: 'rgba(255,140,0,0.12)', to: 'rgba(255,215,0,0.04)', accent: '#FF8C00', ring: '#FF8C00' },
-  { from: 'rgba(255,0,255,0.1)', to: 'rgba(218,112,214,0.04)', accent: '#FF00FF', ring: '#FF00FF' },
-  { from: 'rgba(16,185,129,0.1)', to: 'rgba(52,211,153,0.04)', accent: '#10B981', ring: '#10B981' },
-  { from: 'rgba(245,158,11,0.1)', to: 'rgba(252,211,77,0.04)', accent: '#F59E0B', ring: '#F59E0B' },
-  { from: 'rgba(239,68,68,0.1)', to: 'rgba(252,165,165,0.04)', accent: '#EF4444', ring: '#EF4444' },
-  { from: 'rgba(99,102,241,0.1)', to: 'rgba(165,180,252,0.04)', accent: '#6366F1', ring: '#6366F1' },
+const flowerGradients = [
+  { from: 'rgba(236, 72, 153, 0.22)', to: 'rgba(196, 56, 108, 0.08)', accent: '#EC4899' },
+  { from: 'rgba(138, 43, 226, 0.22)', to: 'rgba(201, 168, 76, 0.08)', accent: '#8A2BE2' },
+  { from: 'rgba(201, 168, 76, 0.26)', to: 'rgba(184, 134, 11, 0.1)', accent: '#C9A84C' },
+  { from: 'rgba(16, 185, 129, 0.22)', to: 'rgba(201, 168, 76, 0.08)', accent: '#10B981' },
 ];
-
-const catIcons = {
-  'Rose Garlands': <Flower2 size={24} />,
-  'Jasmine Strings': <Flower2 size={24} />,
-  'Veni': <Flower2 size={24} />,
-  'Bridal Gajra': <Flower2 size={24} />
-};
 
 const optimizeImageUrl = (url, opts = {}) => {
   if (!url || !url.includes('cloudinary.com')) return url;
@@ -38,9 +38,9 @@ const optimizeImageUrl = (url, opts = {}) => {
   return `${parts[0]}/upload/${transforms.join(',')}/${parts[1]}`;
 };
 
-
 const Subcategories = () => {
   const [subcategories, setSubcategories] = useState([]);
+  const [loading, setLoading] = useState(true);
   const [name, setName] = useState('');
   const [bannerImage, setBannerImage] = useState('');
   const [editId, setEditId] = useState(null);
@@ -48,12 +48,14 @@ const Subcategories = () => {
   const [deleteConfirm, setDeleteConfirm] = useState(null);
   const [activeMenu, setActiveMenu] = useState(null);
 
-  useEffect(() => { fetchSubcategories(); }, []);
+  useEffect(() => {
+    fetchSubcategories();
+  }, []);
 
   // Close menus on outside click
   useEffect(() => {
     const handleOutside = (e) => {
-      if (!e.target.closest('.category-action-menu') && !e.target.closest('.category-menu-btn')) {
+      if (!e.target.closest('.subcategory-action-menu') && !e.target.closest('.subcategory-menu-btn')) {
         setActiveMenu(null);
       }
     };
@@ -62,10 +64,16 @@ const Subcategories = () => {
   }, []);
 
   const fetchSubcategories = async () => {
+    setLoading(true);
     try {
       const { data } = await api.get('/subcategories');
-      setSubcategories(data.sort((a, b) => (a.order || 0) - (b.order || 0)));
-    } catch (err) { console.error(err); }
+      setSubcategories(Array.isArray(data) ? data.sort((a, b) => (a.order || 0) - (b.order || 0)) : []);
+    } catch (err) {
+      console.error(err);
+      toast.error('Failed to load subcategories');
+    } finally {
+      setLoading(false);
+    }
   };
 
   const onDragEnd = async (result) => {
@@ -77,6 +85,7 @@ const Subcategories = () => {
     setSubcategories(updatedWithOrder);
     try {
       await api.put('/subcategories/reorder', { items: updatedWithOrder.map(c => ({ id: c._id, order: c.order })) });
+      toast.success('Flower subcategory order updated');
     } catch (err) {
       console.error(err);
       toast.error('Failed to reorder: ' + (err.response?.data?.message || err.message));
@@ -86,6 +95,10 @@ const Subcategories = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    if (!name.trim()) {
+      toast.error('Please enter a subcategory name');
+      return;
+    }
     try {
       if (editId) {
         await api.put(`/subcategories/${editId}`, { name, bannerImage, category: 'artifical flowers' });
@@ -133,12 +146,21 @@ const Subcategories = () => {
     <PageWrapper>
       <PageHeader
         title="Flower Subcategories"
-        subtitle="Drag and drop cards horizontally to customize the order floral subcategories appear on your store."
-        badge={`${subcategories.length} Flower Types`}
+        subtitle="Manage artificial flower arrangements, bridal veni, garlands, and accessories display order."
+        badge={`${subcategories.length} Flower Varieties`}
         actions={
           <button
             onClick={() => setIsModalOpen(true)}
             className="btn-primary"
+            style={{
+              padding: '10px 18px',
+              borderRadius: 12,
+              display: 'flex',
+              alignItems: 'center',
+              gap: 8,
+              fontSize: '0.88rem',
+              fontWeight: 700,
+            }}
           >
             <Plus size={16} />
             <span>Add Subcategory</span>
@@ -146,145 +168,284 @@ const Subcategories = () => {
         }
       />
 
-      <div>
-        <div
-          style={{
-            marginBottom: 28,
-            padding: '14px 18px',
-            background: 'rgba(236, 22, 140, 0.06)',
-            border: '1px solid rgba(236, 22, 140, 0.16)',
-            borderRadius: 12,
-            fontSize: '0.84rem',
-            color: 'var(--text-secondary)',
-            display: 'flex',
-            alignItems: 'center',
-            gap: 10,
-          }}
-        >
-          <Sparkles size={16} color="var(--accent-pink)" />
-          <span>Floral ordering changes take effect immediately on both desktop and mobile storefronts.</span>
+      {/* Sync Status Info Banner */}
+      <div
+        style={{
+          marginBottom: 28,
+          padding: '14px 20px',
+          background: 'rgba(236, 72, 153, 0.08)',
+          border: '1px solid rgba(236, 72, 153, 0.22)',
+          borderRadius: 14,
+          fontSize: '0.85rem',
+          color: 'var(--text-secondary)',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          flexWrap: 'wrap',
+          gap: 12,
+        }}
+      >
+        <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+          <Flower2 size={16} color="var(--accent-pink)" />
+          <span>Subcategories appear under Artificial Flowers in the customer navigation and category browsing filters.</span>
         </div>
+        <div style={{ fontSize: '0.78rem', color: 'var(--accent-gold-light)', fontWeight: 600 }}>
+          Auto-Saved
+        </div>
+      </div>
 
+      {/* Content State: Skeleton vs Empty vs DragDrop Grid */}
+      {loading ? (
+        <SkeletonCategories count={4} />
+      ) : subcategories.length === 0 ? (
+        <EmptyState
+          icon={Flower2}
+          title="No Flower Subcategories Found"
+          message="Create your first flower subcategory (e.g. Bridal Veni, Jasmine Garlands) to organize flowers on the storefront."
+          action={{
+            label: 'Add First Subcategory',
+            onClick: () => setIsModalOpen(true),
+          }}
+        />
+      ) : (
         <DragDropContext onDragEnd={onDragEnd}>
           <Droppable droppableId="subcategories-list" direction="horizontal">
             {(provided) => (
               <div
                 {...provided.droppableProps}
                 ref={provided.innerRef}
-                className="admin-grid"
+                style={{
+                  display: 'grid',
+                  gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))',
+                  gap: 22,
+                }}
               >
-                {subcategories.map((category, index) => {
+                {subcategories.map((subcat, index) => {
                   const col = {
-                    name: category.name,
-                    bannerImage: category.bannerImage,
-                    gradient: catGradients[index % catGradients.length],
+                    name: subcat.name,
+                    bannerImage: subcat.bannerImage,
+                    gradient: flowerGradients[index % flowerGradients.length],
                   };
 
                   return (
-                    <Draggable key={category._id} draggableId={category._id} index={index}>
+                    <Draggable key={subcat._id} draggableId={subcat._id} index={index}>
                       {(provided, snapshot) => (
                         <div
                           ref={provided.innerRef}
                           {...provided.draggableProps}
                           {...provided.dragHandleProps}
-                          className="admin-category-card-wrapper"
                           style={{
                             ...provided.draggableProps.style,
                           }}
                         >
                           <motion.div
-                            className="admin-category-card"
-                            initial={{ opacity: 0, y: 20 }}
+                            initial={{ opacity: 0, y: 16 }}
                             animate={{ opacity: 1, y: 0 }}
-                            transition={{ delay: index * 0.05, duration: 0.3 }}
+                            transition={{ delay: index * 0.04, duration: 0.25 }}
                             style={{
-                              cursor: snapshot.isDragging ? 'grabbing' : 'pointer',
-                              border: 'none',
-                              borderRadius: 16,
+                              cursor: snapshot.isDragging ? 'grabbing' : 'grab',
+                              borderRadius: 18,
                               overflow: 'hidden',
-                              background: 'var(--card-bg)',
-                              display: 'flex', flexDirection: 'column', height: '100%', minHeight: 'auto',
+                              background: 'var(--surface-primary, #14131E)',
+                              border: snapshot.isDragging
+                                ? '1px solid var(--accent-pink)'
+                                : '1px solid var(--card-border, rgba(201, 168, 76, 0.12))',
+                              display: 'flex',
+                              flexDirection: 'column',
+                              height: '100%',
                               position: 'relative',
-                              boxShadow: snapshot.isDragging ? `0 12px 30px rgba(0,0,0,0.4)` : '0 4px 12px rgba(0,0,0,0.1)',
+                              boxShadow: snapshot.isDragging
+                                ? '0 16px 40px rgba(0, 0, 0, 0.5), 0 0 24px rgba(196, 56, 108, 0.25)'
+                                : '0 4px 16px rgba(0, 0, 0, 0.2)',
                               transform: snapshot.isDragging ? 'translateY(-6px)' : undefined,
+                              transition: 'border-color 0.2s, box-shadow 0.2s',
+                            }}
+                            onMouseEnter={(e) => {
+                              if (!snapshot.isDragging) {
+                                e.currentTarget.style.borderColor = 'rgba(201, 168, 76, 0.35)';
+                                e.currentTarget.style.boxShadow = '0 8px 24px rgba(0, 0, 0, 0.3)';
+                              }
+                            }}
+                            onMouseLeave={(e) => {
+                              if (!snapshot.isDragging) {
+                                e.currentTarget.style.borderColor = 'var(--card-border, rgba(201, 168, 76, 0.12))';
+                                e.currentTarget.style.boxShadow = '0 4px 16px rgba(0, 0, 0, 0.2)';
+                              }
                             }}
                           >
-
-
-                          {/* Image Area */}
-                          {col.bannerImage ? (
-                            <div style={{ aspectRatio: '16/9', width: '100%', overflow: 'hidden', flexShrink: 0 }}>
-                              <img src={optimizeImageUrl(col.bannerImage, { width: 400, height: 300, crop: 'fill' })} alt={col.name} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-                            </div>
-                          ) : (
-                            <div style={{ aspectRatio: '16/9', width: '100%', background: `linear-gradient(135deg, ${col.gradient.from}, ${col.gradient.to})`, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
-                              <div style={{
-                                width: 48, height: 48, borderRadius: 12,
-                                background: `linear-gradient(135deg, ${col.gradient.accent}, ${col.gradient.accent}80)`,
-                                display: 'flex', alignItems: 'center', justifyContent: 'center',
-                                color: 'white',
-                                boxShadow: `0 4px 20px ${col.gradient.accent}40`,
-                              }}>
-                                {catIcons[col.name] || <Sparkles size={24} />}
-                              </div>
-                            </div>
-                          )}
-
-                          {/* Content Area */}
-                          <div className="admin-category-content" style={{ padding: '16px 20px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12, position: 'relative' }}>
-                            <div style={{ minWidth: 0 }}>
-                              <h3 style={{
-                                fontFamily: 'Outfit, sans-serif', fontWeight: 700,
-                                fontSize: '1.1rem', color: 'var(--text-primary)', margin: '0 0 4px',
-                                whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis'
-                              }}>
-                                {col.name}
-                              </h3>
+                            {/* Drag Indicator Top Pill */}
+                            <div
+                              style={{
+                                position: 'absolute',
+                                top: 12,
+                                left: 12,
+                                zIndex: 10,
+                                background: 'rgba(10, 10, 15, 0.75)',
+                                backdropFilter: 'blur(8px)',
+                                border: '1px solid rgba(255, 255, 255, 0.12)',
+                                padding: '4px 8px',
+                                borderRadius: 8,
+                                display: 'flex',
+                                alignItems: 'center',
+                                gap: 4,
+                                color: 'var(--text-secondary)',
+                                fontSize: '0.72rem',
+                                fontWeight: 700,
+                              }}
+                            >
+                              <GripVertical size={13} color="var(--accent-pink)" />
+                              <span>#{index + 1}</span>
                             </div>
 
-                            {/* Action Menu */}
-                            <div style={{ position: 'relative' }}>
-                              <button
-                                className="category-menu-btn"
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  setActiveMenu(activeMenu === category._id ? null : category._id);
+                            {/* Image Showcase Area */}
+                            <div style={{ aspectRatio: '16/9', width: '100%', overflow: 'hidden', flexShrink: 0, position: 'relative', background: 'var(--surface-secondary, #1a1829)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                              <img
+                                src={col.bannerImage ? optimizeImageUrl(col.bannerImage, 500) : '/pretty-glitz-logo.png'}
+                                alt={col.name}
+                                onError={(e) => {
+                                  e.currentTarget.onerror = null;
+                                  e.currentTarget.src = '/pretty-glitz-logo.png';
+                                  e.currentTarget.style.objectFit = 'contain';
+                                  e.currentTarget.style.padding = '20px';
                                 }}
                                 style={{
-                                  background: activeMenu === category._id ? 'var(--surface-elevated)' : 'transparent',
-                                  border: 'none', color: 'var(--text-secondary)', cursor: 'pointer',
-                                  width: 32, height: 32, borderRadius: 8, display: 'flex', alignItems: 'center', justifyContent: 'center',
-                                  transition: 'background 0.2s, color 0.2s'
+                                  width: '100%',
+                                  height: '100%',
+                                  objectFit: col.bannerImage ? 'cover' : 'contain',
+                                  padding: col.bannerImage ? '0' : '20px',
+                                  transition: 'transform 0.3s ease',
                                 }}
-                              >
-                                <MoreHorizontal size={18} />
-                              </button>
-
-                              {activeMenu === category._id && (
-                                <div className="category-action-menu" style={{
-                                  position: 'absolute', bottom: '100%', right: 0, marginBottom: 8,
-                                  background: 'var(--surface-elevated)', border: '1px solid var(--card-border)',
-                                  borderRadius: 10, padding: 6, minWidth: 140,
-                                  boxShadow: '0 8px 30px rgba(0,0,0,0.5)', zIndex: 20
-                                }}>
-                                  <button onClick={() => { handleEdit(category); setActiveMenu(null); }} style={{
-                                    width: '100%', background: 'transparent', border: 'none', color: 'var(--text-primary)',
-                                    padding: '8px 12px', borderRadius: 6, display: 'flex', alignItems: 'center', gap: 10,
-                                    cursor: 'pointer', fontSize: '0.85rem', fontWeight: 500, transition: 'background 0.15s'
-                                  }} onMouseEnter={e => e.currentTarget.style.background = 'rgba(255,255,255,0.05)'} onMouseLeave={e => e.currentTarget.style.background = 'transparent'}>
-                                    <Pencil size={14} style={{ color: 'var(--text-secondary)' }} /> Edit
-                                  </button>
-                                  <button onClick={() => { setDeleteConfirm(category._id); setActiveMenu(null); }} style={{
-                                    width: '100%', background: 'transparent', border: 'none', color: '#ef4444',
-                                    padding: '8px 12px', borderRadius: 6, display: 'flex', alignItems: 'center', gap: 10,
-                                    cursor: 'pointer', fontSize: '0.85rem', fontWeight: 500, transition: 'background 0.15s'
-                                  }} onMouseEnter={e => e.currentTarget.style.background = 'rgba(239,68,68,0.1)'} onMouseLeave={e => e.currentTarget.style.background = 'transparent'}>
-                                    <Trash2 size={14} /> Delete
-                                  </button>
-                                </div>
-                              )}
+                              />
+                              <div
+                                style={{
+                                  position: 'absolute',
+                                  inset: 0,
+                                  background: 'linear-gradient(180deg, transparent 40%, rgba(20, 19, 30, 0.9) 100%)',
+                                  pointerEvents: 'none',
+                                }}
+                              />
                             </div>
-                          </div>
+
+                            {/* Content Area */}
+                            <div style={{ padding: '18px 20px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12, position: 'relative', marginTop: 'auto' }}>
+                              <div style={{ minWidth: 0 }}>
+                                <h3
+                                  style={{
+                                    fontFamily: 'Outfit, sans-serif',
+                                    fontWeight: 700,
+                                    fontSize: '1.1rem',
+                                    color: 'var(--text-primary)',
+                                    margin: 0,
+                                    whiteSpace: 'nowrap',
+                                    overflow: 'hidden',
+                                    textOverflow: 'ellipsis',
+                                  }}
+                                >
+                                  {col.name}
+                                </h3>
+                                <div style={{ fontSize: '0.75rem', color: 'var(--accent-pink)', marginTop: 3, fontWeight: 500 }}>
+                                  Artificial Flowers Subcategory
+                                </div>
+                              </div>
+
+                              {/* Action Menu */}
+                              <div style={{ position: 'relative' }}>
+                                <button
+                                  className="subcategory-menu-btn"
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    setActiveMenu(activeMenu === subcat._id ? null : subcat._id);
+                                  }}
+                                  style={{
+                                    background: activeMenu === subcat._id ? 'var(--surface-elevated)' : 'rgba(255, 255, 255, 0.05)',
+                                    border: '1px solid var(--card-border)',
+                                    color: 'var(--text-secondary)',
+                                    cursor: 'pointer',
+                                    width: 34,
+                                    height: 34,
+                                    borderRadius: 10,
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    justifyContent: 'center',
+                                    transition: 'all 0.18s ease',
+                                  }}
+                                >
+                                  <MoreHorizontal size={18} />
+                                </button>
+
+                                {activeMenu === subcat._id && (
+                                  <div
+                                    className="subcategory-action-menu"
+                                    style={{
+                                      position: 'absolute',
+                                      bottom: '100%',
+                                      right: 0,
+                                      marginBottom: 8,
+                                      background: 'var(--surface-elevated, #222033)',
+                                      border: '1px solid var(--card-border, rgba(201, 168, 76, 0.25))',
+                                      borderRadius: 12,
+                                      padding: 6,
+                                      minWidth: 150,
+                                      boxShadow: '0 12px 32px rgba(0,0,0,0.6)',
+                                      zIndex: 30,
+                                    }}
+                                  >
+                                    <button
+                                      onClick={() => {
+                                        handleEdit(subcat);
+                                        setActiveMenu(null);
+                                      }}
+                                      style={{
+                                        width: '100%',
+                                        background: 'transparent',
+                                        border: 'none',
+                                        color: 'var(--text-primary)',
+                                        padding: '9px 12px',
+                                        borderRadius: 8,
+                                        display: 'flex',
+                                        alignItems: 'center',
+                                        gap: 10,
+                                        cursor: 'pointer',
+                                        fontSize: '0.85rem',
+                                        fontWeight: 500,
+                                        transition: 'background 0.15s',
+                                      }}
+                                      onMouseEnter={(e) => (e.currentTarget.style.background = 'rgba(255, 255, 255, 0.06)')}
+                                      onMouseLeave={(e) => (e.currentTarget.style.background = 'transparent')}
+                                    >
+                                      <Pencil size={15} style={{ color: 'var(--accent-gold)' }} />
+                                      <span>Edit Variety</span>
+                                    </button>
+                                    <button
+                                      onClick={() => {
+                                        setDeleteConfirm(subcat._id);
+                                        setActiveMenu(null);
+                                      }}
+                                      style={{
+                                        width: '100%',
+                                        background: 'transparent',
+                                        border: 'none',
+                                        color: '#EF4444',
+                                        padding: '9px 12px',
+                                        borderRadius: 8,
+                                        display: 'flex',
+                                        alignItems: 'center',
+                                        gap: 10,
+                                        cursor: 'pointer',
+                                        fontSize: '0.85rem',
+                                        fontWeight: 500,
+                                        transition: 'background 0.15s',
+                                      }}
+                                      onMouseEnter={(e) => (e.currentTarget.style.background = 'rgba(239, 68, 68, 0.12)')}
+                                      onMouseLeave={(e) => (e.currentTarget.style.background = 'transparent')}
+                                    >
+                                      <Trash2 size={15} />
+                                      <span>Delete</span>
+                                    </button>
+                                  </div>
+                                )}
+                              </div>
+                            </div>
                           </motion.div>
                         </div>
                       )}
@@ -296,20 +457,18 @@ const Subcategories = () => {
             )}
           </Droppable>
         </DragDropContext>
+      )}
 
-
-      </div>
-
-      {/* Modal Overlay */}
+      {/* Add / Edit Subcategory Modal */}
       <AnimatePresence>
         {isModalOpen && (
           <div
             style={{
               position: 'fixed',
               inset: 0,
-              background: 'rgba(7, 6, 11, 0.75)',
-              backdropFilter: 'blur(8px)',
-              WebkitBackdropFilter: 'blur(8px)',
+              background: 'rgba(7, 6, 11, 0.78)',
+              backdropFilter: 'blur(10px)',
+              WebkitBackdropFilter: 'blur(10px)',
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
@@ -319,19 +478,19 @@ const Subcategories = () => {
             onClick={closeModal}
           >
             <motion.div
-              initial={{ opacity: 0, scale: 0.94, y: 12 }}
+              initial={{ opacity: 0, scale: 0.94, y: 14 }}
               animate={{ opacity: 1, scale: 1, y: 0 }}
               exit={{ opacity: 0, scale: 0.95, y: 8 }}
               transition={{ duration: 0.2 }}
               onClick={(e) => e.stopPropagation()}
               style={{
-                background: 'linear-gradient(180deg, #181622 0%, #12111A 100%)',
-                border: '1px solid var(--card-border)',
-                borderRadius: 20,
-                padding: '32px 28px',
+                background: 'linear-gradient(180deg, #181726 0%, #12111A 100%)',
+                border: '1px solid rgba(236, 72, 153, 0.3)',
+                borderRadius: 22,
+                padding: '32px 30px',
                 width: '100%',
-                maxWidth: 460,
-                boxShadow: '0 24px 60px rgba(0,0,0,0.65)',
+                maxWidth: 480,
+                boxShadow: '0 24px 60px rgba(0,0,0,0.7)',
                 position: 'relative',
               }}
             >
@@ -356,25 +515,44 @@ const Subcategories = () => {
                 <X size={16} />
               </button>
 
-              <h3
-                style={{
-                  margin: '0 0 8px',
-                  fontFamily: 'Outfit, sans-serif',
-                  color: 'var(--text-primary)',
-                  fontSize: '1.35rem',
-                  fontWeight: 700,
-                }}
-              >
-                {editId ? 'Edit Flower Subcategory' : 'Create Flower Subcategory'}
-              </h3>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 8 }}>
+                <div
+                  style={{
+                    width: 36,
+                    height: 36,
+                    borderRadius: 10,
+                    background: 'rgba(236, 72, 153, 0.12)',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    color: 'var(--accent-pink)',
+                  }}
+                >
+                  <Flower2 size={18} />
+                </div>
+                <h3
+                  style={{
+                    margin: 0,
+                    fontFamily: 'Outfit, sans-serif',
+                    color: 'var(--text-primary)',
+                    fontSize: '1.35rem',
+                    fontWeight: 700,
+                  }}
+                >
+                  {editId ? 'Edit Flower Variety' : 'New Flower Subcategory'}
+                </h3>
+              </div>
+
               <p style={{ margin: '0 0 24px', color: 'var(--text-secondary)', fontSize: '0.86rem' }}>
-                {editId ? 'Update subcategory name or floral header image.' : 'Add a new floral subcategory like Rose Garlands or Veni.'}
+                {editId
+                  ? 'Update flower subcategory title or representative image.'
+                  : 'Add a new artificial flower type to the catalog.'}
               </p>
 
-              <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: 18 }}>
+              <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
                 <div>
                   <label style={{ display: 'block', fontSize: '0.82rem', color: 'var(--text-secondary)', marginBottom: 8, fontWeight: 600 }}>
-                    Subcategory Name
+                    Subcategory Name *
                   </label>
                   <input
                     type="text"
@@ -382,22 +560,22 @@ const Subcategories = () => {
                     onChange={(e) => setName(e.target.value)}
                     required
                     className="admin-input"
-                    placeholder="e.g. Bridal Veni"
+                    placeholder="e.g. Bridal Veni, Jasmine Garlands, Rose Strings..."
                   />
                 </div>
 
                 <div>
                   <label style={{ display: 'block', fontSize: '0.82rem', color: 'var(--text-secondary)', marginBottom: 8, fontWeight: 600 }}>
-                    Banner Image (Optional)
+                    Showcase Banner Image
                   </label>
-                  <ImageUpload value={bannerImage} onChange={setBannerImage} placeholder="Upload Banner Image" />
+                  <ImageUpload value={bannerImage} onChange={setBannerImage} placeholder="Upload Flower Banner" />
                 </div>
 
                 <div style={{ display: 'flex', gap: 12, marginTop: 12 }}>
                   <button type="button" onClick={closeModal} className="btn-secondary" style={{ flex: 1, justifyContent: 'center' }}>
                     Cancel
                   </button>
-                  <button type="submit" className="btn-primary" style={{ flex: 1.5, justifyContent: 'center' }}>
+                  <button type="submit" className="btn-primary" style={{ flex: 1.5, justifyContent: 'center', gap: 8 }}>
                     {editId ? 'Save Changes' : <><Plus size={16} /> Create Subcategory</>}
                   </button>
                 </div>
@@ -407,12 +585,13 @@ const Subcategories = () => {
         )}
       </AnimatePresence>
 
+      {/* Delete Confirmation Modal */}
       <ConfirmModal
         isOpen={!!deleteConfirm}
         onClose={() => setDeleteConfirm(null)}
         onConfirm={handleDelete}
         title="Delete Flower Subcategory?"
-        message="Are you sure you want to delete this subcategory? Artificial flowers linked to this will lose their subcategory."
+        message="Are you sure you want to delete this flower subcategory? Existing flower products linked to this subcategory will lose this filter tag."
         itemName={subcategories.find((c) => c._id === deleteConfirm)?.name}
         confirmText="Delete Subcategory"
         cancelText="Keep Subcategory"

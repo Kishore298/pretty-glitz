@@ -2,20 +2,25 @@
 @tailwind components;
 @tailwind utilities;
 
-/* Google Font Import */
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Outfit:wght@400;500;600;700;800;900&display=swap');
+/* Google Font Import - Cormorant Garamond (Editorial Luxury), Outfit (Display), Inter (UI) */
+@import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,400;0,500;0,600;0,700;1,400;1,600&family=Inter:wght@300;400;500;600;700;800&family=Outfit:wght@400;500;600;700;800;900&display=swap');
 
 /* =============================================
-   ADMIN PANEL DESIGN TOKENS - Luxury Dark Edition
+   ADMIN PANEL DESIGN - PrettyGlitz Atelier Luxury
    ============================================= */
 :root {
-  /* Brand Luxury Colors */
-  --accent-pink: #EC168C;
-  --accent-purple: #9B3DFF;
-  --accent-gold: #E5B25D;
+  /* PrettyGlitz Signature Brand Colors */
+  --accent-pink: #C4386C;
+  --accent-purple: #8A2BE2;
+  --accent-gold: #C9A84C;
+  --accent-gold-light: #E8CE8A;
+  --accent-gold-dark: #9E7D2D;
   --accent-cyan: #06B6D4;
-  
-  /* Semantic Colors */
+
+  --accent-gradient: linear-gradient(135deg, #C4386C, #8A2BE2);
+  --accent-gradient-gold: linear-gradient(90deg, #C4386C, #8A2BE2, #C9A84C);
+
+  /* Semantic Status Colors */
   --success: #10B981;
   --success-bg: rgba(16, 185, 129, 0.12);
   --success-border: rgba(16, 185, 129, 0.25);
@@ -28,21 +33,21 @@
   --danger-bg: rgba(239, 68, 68, 0.12);
   --danger-border: rgba(239, 68, 68, 0.25);
 
-  --info: #6366F1;
-  --info-bg: rgba(99, 102, 241, 0.12);
-  --info-border: rgba(99, 102, 241, 0.25);
+  --info: #8A2BE2;
+  --info-bg: rgba(138, 43, 226, 0.12);
+  --info-border: rgba(138, 43, 226, 0.25);
 
-  /* Surfaces - Dark Premium */
-  --panel-bg: #09080E;
-  --sidebar-bg: #0E0D14;
-  --topbar-bg: rgba(14, 13, 20, 0.75);
-  --surface-primary: #13121A;
-  --surface-secondary: #181722;
-  --surface-elevated: #1F1D2B;
-  --surface-hover: rgba(255, 255, 255, 0.04);
+  /* Luxury Dark Surfaces */
+  --panel-bg: #0A0A0F;
+  --sidebar-bg: #0F0E17;
+  --topbar-bg: rgba(15, 14, 23, 0.85);
+  --surface-primary: #14131E;
+  --surface-secondary: #1B1928;
+  --surface-elevated: #222033;
+  --surface-hover: rgba(255, 255, 255, 0.045);
   --card-bg: var(--surface-primary);
-  --card-border: rgba(255, 255, 255, 0.07);
-  --card-border-hover: rgba(255, 255, 255, 0.14);
+  --card-border: rgba(201, 168, 76, 0.12);
+  --card-border-hover: rgba(201, 168, 76, 0.3);
 
   /* Typography Colors */
   --text-primary: #FAF9FC;
@@ -53,10 +58,12 @@
   --shadow-sm: 0 2px 8px rgba(0, 0, 0, 0.25);
   --shadow-md: 0 8px 24px rgba(0, 0, 0, 0.35);
   --shadow-lg: 0 16px 40px rgba(0, 0, 0, 0.5);
-  --shadow-glow-pink: 0 0 30px rgba(236, 22, 140, 0.25);
-  --shadow-glow-purple: 0 0 30px rgba(155, 61, 255, 0.25);
+  --shadow-glow-pink: 0 0 30px rgba(196, 56, 108, 0.25);
+  --shadow-glow-purple: 0 0 30px rgba(138, 43, 226, 0.25);
+  --shadow-glow-gold: 0 0 30px rgba(201, 168, 76, 0.2);
 
   /* Font Families */
+  --font-serif: 'Cormorant Garamond', Georgia, serif;
   --font-display: 'Outfit', sans-serif;
   --font-body: 'Inter', system-ui, -apple-system, sans-serif;
 }
@@ -75,7 +82,7 @@ body {
    TYPOGRAPHY & GRADIENTS
    ============================================= */
 .glitz-text {
-  background: linear-gradient(135deg, var(--accent-pink), var(--accent-purple));
+  background: linear-gradient(90deg, #C4386C, #8A2BE2, #C9A84C);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
@@ -83,7 +90,7 @@ body {
 }
 
 .glitz-text-gold {
-  background: linear-gradient(135deg, #FDE68A, #D97706);
+  background: linear-gradient(135deg, #FDE68A, #C9A84C, #9E7D2D);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
@@ -91,7 +98,7 @@ body {
 }
 
 .glitz-bg {
-  background: linear-gradient(135deg, var(--accent-pink), var(--accent-purple));
+  background: linear-gradient(135deg, #C4386C, #8A2BE2);
 }
 
 .glitz-border {
@@ -99,13 +106,14 @@ body {
   background: var(--card-bg);
   border-radius: 16px;
 }
+
 .glitz-border::before {
   content: '';
   position: absolute;
   inset: 0;
   border-radius: 16px;
   padding: 1px;
-  background: linear-gradient(135deg, rgba(236,22,140,0.4), rgba(155,61,255,0.4));
+  background: linear-gradient(135deg, rgba(196, 56, 108, 0.4), rgba(138, 43, 226, 0.4), rgba(201, 168, 76, 0.4));
   -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
   -webkit-mask-composite: xor;
   mask-composite: exclude;
@@ -131,6 +139,7 @@ body {
   position: relative;
   overflow: hidden;
 }
+
 .stat-card:hover {
   border-color: var(--card-border-hover);
   transform: translateY(-3px);
@@ -154,16 +163,19 @@ body {
   margin-bottom: 4px;
   position: relative;
 }
+
 .sidebar-link:hover {
   background: rgba(255, 255, 255, 0.04);
   color: var(--text-primary);
 }
+
 .sidebar-link.active {
   background: linear-gradient(90deg, rgba(236, 22, 140, 0.12) 0%, rgba(155, 61, 255, 0.04) 100%);
   color: #FFFFFF;
   font-weight: 600;
   border: 1px solid rgba(236, 22, 140, 0.2);
 }
+
 .sidebar-link.active .link-icon {
   color: var(--accent-pink);
   transform: scale(1.05);
@@ -188,14 +200,17 @@ body {
   font-family: var(--font-body);
   box-shadow: 0 4px 16px rgba(236, 22, 140, 0.25);
 }
+
 .btn-primary:hover:not(:disabled) {
   transform: translateY(-2px);
   box-shadow: 0 8px 24px rgba(236, 22, 140, 0.4);
   filter: brightness(1.08);
 }
+
 .btn-primary:active:not(:disabled) {
   transform: translateY(0) scale(0.98);
 }
+
 .btn-primary:disabled {
   opacity: 0.5;
   cursor: not-allowed;
@@ -218,12 +233,14 @@ body {
   gap: 8px;
   font-family: var(--font-body);
 }
+
 .btn-secondary:hover:not(:disabled) {
   background: rgba(255, 255, 255, 0.08);
   border-color: rgba(255, 255, 255, 0.16);
   color: #fff;
   transform: translateY(-1px);
 }
+
 .btn-secondary:active:not(:disabled) {
   transform: scale(0.98);
 }
@@ -242,12 +259,14 @@ body {
   align-items: center;
   gap: 6px;
 }
+
 .btn-danger:hover {
   background: rgba(239, 68, 68, 0.25);
   border-color: rgba(239, 68, 68, 0.45);
   color: #fff;
   transform: translateY(-1px);
 }
+
 .btn-danger:active {
   transform: scale(0.98);
 }
@@ -265,6 +284,7 @@ body {
   cursor: pointer;
   transition: all 0.18s ease;
 }
+
 .btn-icon:hover {
   background: rgba(255, 255, 255, 0.08);
   color: var(--text-primary);
@@ -287,14 +307,17 @@ body {
   outline: none;
   font-family: var(--font-body);
 }
+
 .admin-input:focus {
   border-color: var(--accent-purple);
   background: #1B1A26;
   box-shadow: 0 0 0 3px rgba(155, 61, 255, 0.18);
 }
+
 .admin-input::placeholder {
   color: var(--text-muted);
 }
+
 .admin-input option {
   background: #14131A;
   color: #fff;
@@ -307,6 +330,7 @@ body {
   border-bottom: 1px solid var(--card-border);
   transition: background 0.15s ease, transform 0.15s ease;
 }
+
 .admin-table-row:hover {
   background: rgba(255, 255, 255, 0.025);
 }
@@ -360,23 +384,44 @@ body {
 }
 
 /* =============================================
-   SKELETON SHIMMER ANIMATION
+   SKELETON SHIMMER ANIMATION (Luxury Brand Tinted)
    ============================================= */
 @keyframes shimmer {
-  0% { background-position: -200% 0; }
-  100% { background-position: 200% 0; }
+  0% {
+    background-position: -200% 0;
+  }
+
+  100% {
+    background-position: 200% 0;
+  }
 }
 
 .skeleton-shimmer {
-  background: linear-gradient(
-    90deg,
-    rgba(255, 255, 255, 0.03) 25%,
-    rgba(255, 255, 255, 0.08) 50%,
-    rgba(255, 255, 255, 0.03) 75%
-  );
+  background: linear-gradient(90deg,
+      rgba(255, 255, 255, 0.03) 20%,
+      rgba(201, 168, 76, 0.08) 40%,
+      rgba(196, 56, 108, 0.08) 60%,
+      rgba(255, 255, 255, 0.03) 80%);
   background-size: 200% 100%;
   animation: shimmer 1.8s infinite linear;
   border-radius: 8px;
+}
+
+/* Luxury Atelier Helpers */
+.font-serif {
+  font-family: var(--font-serif);
+}
+
+.font-display {
+  font-family: var(--font-display);
+}
+
+.gold-accent-border {
+  border: 1px solid rgba(201, 168, 76, 0.22);
+}
+
+.gold-accent-border:hover {
+  border-color: rgba(201, 168, 76, 0.45);
 }
 
 /* =============================================
@@ -386,13 +431,16 @@ body {
   width: 6px;
   height: 6px;
 }
+
 ::-webkit-scrollbar-track {
   background: transparent;
 }
+
 ::-webkit-scrollbar-thumb {
   background: rgba(255, 255, 255, 0.1);
   border-radius: 6px;
 }
+
 ::-webkit-scrollbar-thumb:hover {
   background: rgba(255, 255, 255, 0.2);
 }
@@ -419,6 +467,7 @@ body {
   .admin-content-area {
     padding: 28px 20px !important;
   }
+
   .admin-topbar {
     padding: 0 20px !important;
   }
@@ -428,14 +477,15 @@ body {
   .admin-content-area {
     padding: 20px 14px !important;
   }
+
   .admin-topbar {
     padding: 0 14px !important;
   }
-  
+
   .admin-mobile-header {
     display: flex !important;
   }
-  
+
   .admin-sidebar {
     position: fixed !important;
     top: 0;
@@ -446,7 +496,7 @@ body {
     transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1);
     background: #0E0D14 !important;
   }
-  
+
   .admin-sidebar.open {
     transform: translateX(0) !important;
     box-shadow: 10px 0 50px rgba(0, 0, 0, 0.85) !important;
@@ -458,19 +508,22 @@ body {
   flex-wrap: wrap;
   gap: 20px;
 }
-.admin-grid > .admin-category-card-wrapper {
+
+.admin-grid>.admin-category-card-wrapper {
   width: calc(25% - 15px);
 }
+
 .admin-category-card {
   transition: transform 0.2s ease, box-shadow 0.2s ease;
 }
+
 .admin-category-card:hover {
   transform: translateY(-4px);
   box-shadow: 0 12px 30px rgba(0, 0, 0, 0.25) !important;
 }
 
 @media (max-width: 1100px) {
-  .admin-grid > .admin-category-card-wrapper {
+  .admin-grid>.admin-category-card-wrapper {
     width: calc(33.333% - 14px);
   }
 }
@@ -479,19 +532,24 @@ body {
   .admin-grid {
     gap: 12px;
   }
-  .admin-grid > .admin-category-card-wrapper {
+
+  .admin-grid>.admin-category-card-wrapper {
     width: calc(50% - 6px);
   }
+
   .admin-grid .admin-subcategory-card {
     padding: 12px !important;
   }
+
   .admin-grid .admin-category-content {
     padding: 12px !important;
   }
+
   .admin-grid h3 {
     font-size: 0.88rem !important;
     white-space: normal;
   }
+
   .admin-grid button {
     padding: 6px !important;
     font-size: 0.75rem !important;
@@ -513,24 +571,29 @@ body {
 }
 
 @media (max-width: 640px) {
+
   /* Navbar / Topbar */
   .admin-topbar {
     padding: 0 12px !important;
     height: 56px !important;
   }
+
   .admin-breadcrumb-home,
   .admin-breadcrumb-separator {
     display: none !important;
   }
+
   .admin-breadcrumb-title {
     font-size: 0.84rem !important;
     max-width: 140px !important;
   }
+
   .admin-shop-btn {
     padding: 5px 10px !important;
     font-size: 0.75rem !important;
     gap: 4px !important;
   }
+
   .admin-shop-btn svg {
     width: 12px !important;
     height: 12px !important;
@@ -546,23 +609,28 @@ body {
     margin-bottom: 18px !important;
     gap: 10px !important;
   }
+
   .page-header-title {
     font-size: 1.35rem !important;
     line-height: 1.25 !important;
   }
+
   .page-header-subtitle {
     font-size: 0.8rem !important;
     line-height: 1.4 !important;
   }
+
   .page-header-badge {
     font-size: 0.7rem !important;
     padding: 2px 8px !important;
   }
+
   .page-header-actions {
     width: 100% !important;
     gap: 8px !important;
   }
-  .page-header-actions > * {
+
+  .page-header-actions>* {
     flex: 1 1 auto !important;
     justify-content: center !important;
     font-size: 0.82rem !important;
@@ -576,16 +644,19 @@ body {
     margin-bottom: 20px !important;
     gap: 12px !important;
   }
+
   .dashboard-banner-title {
     font-size: 1.35rem !important;
     line-height: 1.25 !important;
     letter-spacing: -0.01em !important;
   }
+
   .dashboard-banner-subtitle {
     font-size: 0.8rem !important;
     margin-top: 6px !important;
     line-height: 1.4 !important;
   }
+
   .dashboard-banner-date {
     text-align: left !important;
     width: 100% !important;
@@ -595,10 +666,12 @@ body {
     align-items: center !important;
     justify-content: space-between !important;
   }
+
   .dashboard-banner-date .date-label {
     font-size: 0.7rem !important;
     margin: 0 !important;
   }
+
   .dashboard-banner-date .date-val {
     font-size: 0.82rem !important;
     margin: 0 !important;
@@ -610,26 +683,32 @@ body {
     gap: 12px !important;
     margin-bottom: 24px !important;
   }
+
   .stat-card {
     padding: 16px 16px !important;
     border-radius: 14px !important;
   }
+
   .stat-card-val {
     font-size: 1.8rem !important;
   }
+
   .stat-card-label {
     font-size: 0.68rem !important;
     margin-bottom: 4px !important;
   }
+
   .stat-card-icon {
     width: 40px !important;
     height: 40px !important;
     border-radius: 12px !important;
   }
+
   .stat-card-icon svg {
     width: 18px !important;
     height: 18px !important;
   }
+
   .stat-card-footer {
     padding-top: 10px !important;
     font-size: 0.74rem !important;
@@ -639,24 +718,30 @@ body {
   .dashboard-section-title {
     font-size: 1.15rem !important;
   }
+
   .dashboard-section-subtitle {
     font-size: 0.78rem !important;
   }
+
   .dashboard-actions-grid {
     grid-template-columns: 1fr !important;
     gap: 10px !important;
     margin-bottom: 24px !important;
   }
+
   .action-card {
     padding: 16px 16px !important;
     border-radius: 14px !important;
   }
+
   .action-card-title {
     font-size: 0.92rem !important;
   }
+
   .action-card-desc {
     font-size: 0.78rem !important;
   }
+
   .dashboard-preview-card {
     padding: 16px !important;
     border-radius: 14px !important;
@@ -664,12 +749,15 @@ body {
     align-items: stretch !important;
     gap: 14px !important;
   }
+
   .dashboard-preview-card-title {
     font-size: 0.92rem !important;
   }
+
   .dashboard-preview-card-desc {
     font-size: 0.78rem !important;
   }
+
   .dashboard-preview-btn {
     width: 100% !important;
     justify-content: center !important;
@@ -685,26 +773,31 @@ body {
     flex-direction: column !important;
     align-items: stretch !important;
   }
+
   .products-search-wrapper {
     min-width: 100% !important;
     max-width: 100% !important;
   }
+
   .products-summary-pills {
     width: 100% !important;
     justify-content: flex-start !important;
     flex-wrap: wrap !important;
     gap: 6px !important;
   }
+
   .products-summary-pills .badge-pill {
     font-size: 0.7rem !important;
     padding: 2px 8px !important;
   }
 
   /* Buttons & Inputs general */
-  .btn-primary, .btn-secondary {
+  .btn-primary,
+  .btn-secondary {
     font-size: 0.82rem !important;
     padding: 8px 14px !important;
   }
+
   .admin-input {
     font-size: 0.86rem !important;
     padding: 9px 12px !important;
@@ -712,15 +805,17 @@ body {
 }
 
 @media (max-width: 480px) {
+
   /* On very compact screens (368px to 480px), category & subcategory cards take full width */
-  .admin-grid > .admin-category-card-wrapper {
+  .admin-grid>.admin-category-card-wrapper {
     width: 100% !important;
   }
+
   .admin-category-card {
     border-radius: 14px !important;
   }
+
   .dashboard-banner-title {
     font-size: 1.25rem !important;
   }
 }
-

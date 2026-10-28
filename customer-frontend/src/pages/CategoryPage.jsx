@@ -43,7 +43,7 @@ const CategoryPage = () => {
   };
 
   return (
-    <div style={{ minHeight: '100vh', paddingTop: 72, paddingBottom: 100 }}>
+    <div style={{ minHeight: '100vh', paddingTop: 104, paddingBottom: 100 }}>
       {/* Main Container */}
       <div className="section-padding" style={{ maxWidth: 1280, margin: '0 auto' }}>
         

@@ -3,14 +3,15 @@ import { NavLink, useLocation } from 'react-router-dom';
 import { AuthContext } from '../context/AuthContext';
 import {
   LayoutDashboard,
-  ShoppingBag,
+  Gem,
   Layers,
-  LayoutGrid,
+  Flower2,
   LogOut,
-  Sparkles,
+  Tag,
   MessageSquareQuote,
   ExternalLink,
-  ShieldCheck
+  ShieldCheck,
+  ShoppingBag
 } from 'lucide-react';
 
 const navGroups = [
@@ -23,15 +24,15 @@ const navGroups = [
   {
     label: 'Catalog & Inventory',
     items: [
-      { to: '/categories', label: 'Categories', Icon: LayoutGrid },
-      { to: '/subcategories', label: 'Flower Subcategories', Icon: Layers },
-      { to: '/products', label: 'Products', Icon: ShoppingBag },
+      { to: '/categories', label: 'Categories', Icon: Layers },
+      { to: '/subcategories', label: 'Flower Subcategories', Icon: Flower2 },
+      { to: '/products', label: 'Products & Inventory', Icon: Gem },
     ]
   },
   {
     label: 'Marketing & Reviews',
     items: [
-      { to: '/offers', label: 'Special Offers', Icon: Sparkles },
+      { to: '/offers', label: 'Special Offers', Icon: Tag },
       { to: '/testimonials', label: 'Testimonials', Icon: MessageSquareQuote },
     ]
   }
@@ -48,10 +49,10 @@ const Sidebar = ({ isOpen, setIsOpen }) => {
     <aside
       className={`admin-sidebar ${isOpen ? 'open' : ''}`}
       style={{
-        width: '270px',
+        width: '284px',
         minHeight: '100vh',
-        background: 'var(--sidebar-bg, #0E0D14)',
-        borderRight: '1px solid var(--card-border, rgba(255, 255, 255, 0.08))',
+        background: 'var(--sidebar-bg, #0F0E17)',
+        borderRight: '1px solid var(--card-border, rgba(201, 168, 76, 0.12))',
         display: 'flex',
         flexDirection: 'column',
         flexShrink: 0,
@@ -59,36 +60,35 @@ const Sidebar = ({ isOpen, setIsOpen }) => {
       }}
     >
       {/* Brand Header */}
-      <div style={{ padding: '28px 22px 20px' }}>
+      <div style={{ padding: '26px 20px 18px' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
           <div
             style={{
-              width: 50,
-              height: 50,
+              width: 76,
+              height: 76,
               borderRadius: '50%',
-              background: 'linear-gradient(135deg, rgba(236, 22, 140, 0.5), rgba(155, 61, 255, 0.7))',
-              padding: '1.5px',
+              background: 'linear-gradient(135deg, #C4386C, #8A2BE2, #C9A84C)',
+              padding: '2.5px',
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
-              boxShadow: '0 4px 16px rgba(236, 22, 140, 0.25)',
+              boxShadow: '0 8px 24px rgba(196, 56, 108, 0.38)',
               flexShrink: 0,
               overflow: 'hidden',
               backgroundColor: '#FFFFFF',
             }}
           >
             <img
-              src="/pretty-glitz-logo.png"
+              src="/pritty-glitz-logo1.png"
               alt="PrettyGlitz Logo"
               style={{
                 width: '100%',
                 height: '100%',
                 objectFit: 'cover',
-                transform: 'scale(1.08)',
-                transformOrigin: 'center 38%',
+                objectPosition: 'center 25%',
                 borderRadius: '50%',
                 imageRendering: '-webkit-optimize-contrast',
-                filter: 'contrast(1.06) brightness(1.02)',
+                filter: 'contrast(1.04) brightness(1.02)',
               }}
             />
           </div>
@@ -97,7 +97,7 @@ const Sidebar = ({ isOpen, setIsOpen }) => {
               style={{
                 fontFamily: 'Outfit, sans-serif',
                 fontWeight: 800,
-                fontSize: '1.35rem',
+                fontSize: '1.45rem',
                 letterSpacing: '-0.02em',
                 color: 'var(--text-primary, #FAF9FC)',
                 lineHeight: 1.15,
@@ -109,17 +109,17 @@ const Sidebar = ({ isOpen, setIsOpen }) => {
             <div
               style={{
                 fontSize: '0.68rem',
-                color: 'var(--accent-pink, #EC168C)',
+                color: 'var(--accent-gold, #C9A84C)',
                 letterSpacing: '0.08em',
                 textTransform: 'uppercase',
                 fontWeight: 700,
-                marginTop: 2,
+                marginTop: 3,
                 display: 'flex',
                 alignItems: 'center',
                 gap: 4,
               }}
             >
-              <ShieldCheck size={12} /> Management Console
+              <ShieldCheck size={12} /> Management Atelier
             </div>
           </div>
         </div>
@@ -134,39 +134,42 @@ const Sidebar = ({ isOpen, setIsOpen }) => {
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'space-between',
-            padding: '8px 12px',
-            background: 'rgba(255, 255, 255, 0.03)',
-            border: '1px solid rgba(255, 255, 255, 0.06)',
-            borderRadius: 10,
+            padding: '9px 14px',
+            background: 'rgba(201, 168, 76, 0.05)',
+            border: '1px solid rgba(201, 168, 76, 0.16)',
+            borderRadius: 12,
             color: 'var(--text-secondary, #ACA6B8)',
             fontSize: '0.8rem',
             textDecoration: 'none',
             fontWeight: 500,
-            transition: 'all 0.15s ease',
+            transition: 'all 0.2s ease',
           }}
           onMouseEnter={(e) => {
-            e.currentTarget.style.background = 'rgba(255, 255, 255, 0.07)';
+            e.currentTarget.style.background = 'rgba(201, 168, 76, 0.12)';
             e.currentTarget.style.color = '#FFFFFF';
-            e.currentTarget.style.borderColor = 'rgba(255, 255, 255, 0.12)';
+            e.currentTarget.style.borderColor = 'rgba(201, 168, 76, 0.35)';
           }}
           onMouseLeave={(e) => {
-            e.currentTarget.style.background = 'rgba(255, 255, 255, 0.03)';
+            e.currentTarget.style.background = 'rgba(201, 168, 76, 0.05)';
             e.currentTarget.style.color = 'var(--text-secondary, #ACA6B8)';
-            e.currentTarget.style.borderColor = 'rgba(255, 255, 255, 0.06)';
+            e.currentTarget.style.borderColor = 'rgba(201, 168, 76, 0.16)';
           }}
         >
-          <span>View Customer Store</span>
+          <span style={{ display: 'flex', alignItems: 'center', gap: 7 }}>
+            <ShoppingBag size={14} color="var(--accent-gold)" />
+            <span>View Customer Store</span>
+          </span>
           <ExternalLink size={13} />
         </a>
       </div>
 
       {/* Navigation Groups */}
-      <nav style={{ flex: 1, padding: '12px 14px', overflowY: 'auto' }}>
+      <nav style={{ flex: 1, padding: '10px 14px', overflowY: 'auto' }}>
         {navGroups.map((group) => (
-          <div key={group.label} style={{ marginBottom: 22 }}>
+          <div key={group.label} style={{ marginBottom: 20 }}>
             <p
               style={{
-                fontSize: '0.68rem',
+                fontSize: '0.67rem',
                 fontWeight: 700,
                 color: 'var(--text-muted, #6E687A)',
                 letterSpacing: '0.1em',
@@ -185,12 +188,44 @@ const Sidebar = ({ isOpen, setIsOpen }) => {
                   to={to}
                   onClick={() => setIsOpen && setIsOpen(false)}
                   className={`sidebar-link ${isActive ? 'active' : ''}`}
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: 12,
+                    padding: '10px 14px',
+                    borderRadius: 12,
+                    textDecoration: 'none',
+                    fontSize: '0.88rem',
+                    fontWeight: isActive ? 600 : 500,
+                    color: isActive ? '#FAF9FC' : 'var(--text-secondary)',
+                    background: isActive
+                      ? 'linear-gradient(90deg, rgba(196, 56, 108, 0.18), rgba(138, 43, 226, 0.12))'
+                      : 'transparent',
+                    borderLeft: isActive ? '3px solid var(--accent-gold)' : '3px solid transparent',
+                    borderTop: isActive ? '1px solid rgba(201, 168, 76, 0.2)' : '1px solid transparent',
+                    borderRight: isActive ? '1px solid rgba(201, 168, 76, 0.2)' : '1px solid transparent',
+                    borderBottom: isActive ? '1px solid rgba(201, 168, 76, 0.2)' : '1px solid transparent',
+                    marginBottom: 4,
+                    transition: 'all 0.18s ease',
+                  }}
+                  onMouseEnter={(e) => {
+                    if (!isActive) {
+                      e.currentTarget.style.background = 'rgba(255, 255, 255, 0.04)';
+                      e.currentTarget.style.color = '#FFFFFF';
+                    }
+                  }}
+                  onMouseLeave={(e) => {
+                    if (!isActive) {
+                      e.currentTarget.style.background = 'transparent';
+                      e.currentTarget.style.color = 'var(--text-secondary)';
+                    }
+                  }}
                 >
                   <Icon
                     className="link-icon"
                     size={18}
                     style={{
-                      opacity: isActive ? 1 : 0.75,
+                      color: isActive ? 'var(--accent-gold)' : 'var(--text-muted)',
                       transition: 'transform 0.15s ease',
                     }}
                   />
@@ -206,8 +241,8 @@ const Sidebar = ({ isOpen, setIsOpen }) => {
       <div
         style={{
           padding: '16px',
-          borderTop: '1px solid var(--card-border, rgba(255, 255, 255, 0.07))',
-          background: 'rgba(0, 0, 0, 0.15)',
+          borderTop: '1px solid var(--card-border, rgba(201, 168, 76, 0.12))',
+          background: 'rgba(0, 0, 0, 0.2)',
         }}
       >
         <div
@@ -216,26 +251,27 @@ const Sidebar = ({ isOpen, setIsOpen }) => {
             alignItems: 'center',
             justifyContent: 'space-between',
             gap: 10,
-            padding: '8px 10px',
-            background: 'var(--surface-primary, #13121A)',
-            border: '1px solid var(--card-border, rgba(255, 255, 255, 0.07))',
-            borderRadius: 12,
+            padding: '10px 12px',
+            background: 'var(--surface-primary, #14131E)',
+            border: '1px solid var(--card-border, rgba(201, 168, 76, 0.12))',
+            borderRadius: 14,
           }}
         >
           <div style={{ display: 'flex', alignItems: 'center', gap: 10, minWidth: 0 }}>
             <div
               style={{
-                width: 32,
-                height: 32,
+                width: 34,
+                height: 34,
                 borderRadius: '50%',
                 background: 'linear-gradient(135deg, var(--accent-pink), var(--accent-purple))',
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
                 fontWeight: 700,
-                fontSize: '0.85rem',
+                fontSize: '0.88rem',
                 color: '#FFFFFF',
                 flexShrink: 0,
+                boxShadow: '0 2px 8px rgba(196, 56, 108, 0.35)',
               }}
             >
               {initial}
@@ -256,10 +292,11 @@ const Sidebar = ({ isOpen, setIsOpen }) => {
               <div
                 style={{
                   fontSize: '0.68rem',
-                  color: 'var(--text-muted)',
+                  color: 'var(--accent-gold)',
+                  fontWeight: 500,
                 }}
               >
-                Administrator
+                Store Administrator
               </div>
             </div>
           </div>
