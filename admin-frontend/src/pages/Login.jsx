@@ -112,17 +112,18 @@ const Login = () => {
         <div style={{ textAlign: 'center', marginBottom: 32 }}>
           <div
             style={{
-              width: 96,
-              height: 96,
+              width: 84,
+              height: 84,
               borderRadius: '50%',
-              background: 'linear-gradient(135deg, var(--accent-pink, #EC168C), var(--accent-purple, #9B3DFF))',
-              padding: '3px',
+              background: 'linear-gradient(135deg, rgba(236, 22, 140, 0.6), rgba(155, 61, 255, 0.8))',
+              padding: '2px',
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
-              margin: '0 auto 20px',
-              boxShadow: '0 12px 40px rgba(236, 22, 140, 0.45)',
+              margin: '0 auto 18px',
+              boxShadow: '0 8px 30px rgba(236, 22, 140, 0.35)',
               overflow: 'hidden',
+              backgroundColor: '#FFFFFF',
             }}
           >
             <img
@@ -132,9 +133,11 @@ const Login = () => {
                 width: '100%',
                 height: '100%',
                 objectFit: 'cover',
-                transform: 'scale(1.36)',
-                transformOrigin: 'center 30%',
+                transform: 'scale(1.08)',
+                transformOrigin: 'center 38%',
                 borderRadius: '50%',
+                imageRendering: '-webkit-optimize-contrast',
+                filter: 'contrast(1.06) brightness(1.02)',
               }}
             />
           </div>

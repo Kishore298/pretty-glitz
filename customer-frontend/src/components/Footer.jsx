@@ -54,13 +54,14 @@ const Footer = () => {
           <div>
             <div style={{ display: 'flex', alignItems: 'center', gap: 14, marginBottom: 18 }}>
               <div style={{
-                width: 54, height: 54, borderRadius: '50%',
-                background: 'linear-gradient(135deg, #C4386C, #8A2BE2, #C9A84C)',
-                padding: '2.5px',
+                width: 48, height: 48, borderRadius: '50%',
+                background: 'linear-gradient(135deg, rgba(196, 56, 108, 0.35), rgba(201, 168, 76, 0.65))',
+                padding: '1.5px',
                 display: 'flex', alignItems: 'center', justifyContent: 'center',
-                boxShadow: '0 4px 16px rgba(196, 56, 108, 0.35)',
+                boxShadow: '0 2px 10px rgba(201, 168, 76, 0.16)',
                 overflow: 'hidden',
                 flexShrink: 0,
+                backgroundColor: '#FFFFFF',
               }}>
                 <img
                   src={logoImg}
@@ -69,9 +70,11 @@ const Footer = () => {
                     width: '100%',
                     height: '100%',
                     objectFit: 'cover',
-                    transform: 'scale(1.36)',
-                    transformOrigin: 'center 30%',
+                    transform: 'scale(1.08)',
+                    transformOrigin: 'center 38%',
                     borderRadius: '50%',
+                    imageRendering: '-webkit-optimize-contrast',
+                    filter: 'contrast(1.06) brightness(1.02)',
                   }}
                 />
               </div>

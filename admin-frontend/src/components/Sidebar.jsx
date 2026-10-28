@@ -63,17 +63,18 @@ const Sidebar = ({ isOpen, setIsOpen }) => {
         <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
           <div
             style={{
-              width: 58,
-              height: 58,
+              width: 50,
+              height: 50,
               borderRadius: '50%',
-              background: 'linear-gradient(135deg, var(--accent-pink, #EC168C), var(--accent-purple, #9B3DFF))',
-              padding: '2.5px',
+              background: 'linear-gradient(135deg, rgba(236, 22, 140, 0.5), rgba(155, 61, 255, 0.7))',
+              padding: '1.5px',
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
-              boxShadow: '0 6px 24px rgba(236, 22, 140, 0.4)',
+              boxShadow: '0 4px 16px rgba(236, 22, 140, 0.25)',
               flexShrink: 0,
               overflow: 'hidden',
+              backgroundColor: '#FFFFFF',
             }}
           >
             <img
@@ -83,9 +84,11 @@ const Sidebar = ({ isOpen, setIsOpen }) => {
                 width: '100%',
                 height: '100%',
                 objectFit: 'cover',
-                transform: 'scale(1.36)',
-                transformOrigin: 'center 30%',
+                transform: 'scale(1.08)',
+                transformOrigin: 'center 38%',
                 borderRadius: '50%',
+                imageRendering: '-webkit-optimize-contrast',
+                filter: 'contrast(1.06) brightness(1.02)',
               }}
             />
           </div>

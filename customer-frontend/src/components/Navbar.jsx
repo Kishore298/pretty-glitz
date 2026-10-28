@@ -283,7 +283,7 @@ const Navbar = () => {
                   @media (max-width: 768px) {
                     .desktop-search-dropdown {
                       position: fixed;
-                      top: 78px; /* Navbar height */
+                      top: 70px; /* Navbar height */
                       right: 24px;
                       width: calc(100vw - 48px);
                     }

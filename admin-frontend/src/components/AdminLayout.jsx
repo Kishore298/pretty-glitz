@@ -126,13 +126,14 @@ const AdminLayout = ({ children }) => {
                       width: 32,
                       height: 32,
                       borderRadius: '50%',
-                      background: 'linear-gradient(135deg, var(--accent-pink, #EC168C), var(--accent-purple, #9B3DFF))',
-                      padding: '1.5px',
+                      background: 'linear-gradient(135deg, rgba(236, 22, 140, 0.4), rgba(155, 61, 255, 0.6))',
+                      padding: '1px',
                       display: 'flex',
                       alignItems: 'center',
                       justifyContent: 'center',
                       overflow: 'hidden',
                       flexShrink: 0,
+                      backgroundColor: '#FFFFFF',
                     }}
                   >
                     <img
@@ -143,8 +144,10 @@ const AdminLayout = ({ children }) => {
                         height: '100%',
                         borderRadius: '50%',
                         objectFit: 'cover',
-                        transform: 'scale(1.36)',
-                        transformOrigin: 'center 30%',
+                        transform: 'scale(1.08)',
+                        transformOrigin: 'center 38%',
+                        imageRendering: '-webkit-optimize-contrast',
+                        filter: 'contrast(1.06) brightness(1.02)',
                       }}
                     />
                   </div>

@@ -1312,7 +1312,7 @@ section,
   }
 }
 
-/* ─── Navbar Brand & Logo Sizing (Minimized Gap, Prominent Logo) ─── */
+/* ─── Navbar Brand & Logo Sizing (Option 1: Clean, Crisp, Breathing Room) ─── */
 .navbar-wrapper {
   max-width: 1280px;
   margin: 0 auto;
@@ -1323,7 +1323,7 @@ section,
   display: flex;
   align-items: center;
   justify-content: space-between;
-  height: 80px;
+  height: 72px;
   transition: height 0.25s ease;
 }
 
@@ -1331,71 +1331,77 @@ section,
   text-decoration: none;
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: 11px;
 }
 
 .navbar-logo-badge {
-  width: 66px;
-  height: 66px;
+  width: 48px;
+  height: 48px;
   border-radius: 50%;
-  background: linear-gradient(135deg, #C4386C, #8A2BE2, #C9A84C);
-  padding: 2.5px;
+  background: linear-gradient(135deg, rgba(196, 56, 108, 0.35), rgba(201, 168, 76, 0.65));
+  padding: 1.5px;
   display: flex;
   align-items: center;
   justify-content: center;
-  box-shadow: 0 4px 18px rgba(196, 56, 108, 0.4);
+  box-shadow: 0 2px 10px rgba(201, 168, 76, 0.16), 0 1px 3px rgba(0, 0, 0, 0.06);
   flex-shrink: 0;
   overflow: hidden;
+  background-color: #FFFFFF;
 }
 
 .navbar-logo-img {
   width: 100%;
   height: 100%;
   object-fit: cover;
-  transform: scale(1.36);
-  transform-origin: center 30%;
+  transform: scale(1.08);
+  transform-origin: center 38%;
   border-radius: 50%;
+  image-rendering: -webkit-optimize-contrast;
+  image-rendering: crisp-edges;
+  filter: contrast(1.06) brightness(1.02);
 }
 
 .navbar-brand-text {
   font-family: 'Outfit', sans-serif;
-  font-weight: 900;
-  font-size: 1.35rem;
-  letter-spacing: 0.04em;
+  font-weight: 800;
+  font-size: 1.25rem;
+  letter-spacing: 0.05em;
   line-height: 1;
 }
 
 @media (max-width: 768px) {
   .navbar-wrapper {
-    padding: 0 14px;
+    padding: 0 16px;
   }
   .navbar-container {
-    height: 74px;
+    height: 66px;
   }
   .navbar-brand-link {
-    gap: 8px;
+    gap: 9px;
   }
   .navbar-logo-badge {
-    width: 60px;
-    height: 60px;
+    width: 42px;
+    height: 42px;
+    padding: 1.2px;
   }
   .navbar-brand-text {
-    font-size: 1.15rem;
+    font-size: 1.12rem;
+    letter-spacing: 0.04em;
   }
 }
 
 @media (max-width: 400px) {
   .navbar-wrapper {
-    padding: 0 10px;
+    padding: 0 12px;
   }
   .navbar-brand-link {
-    gap: 6px;
+    gap: 7px;
   }
   .navbar-logo-badge {
-    width: 56px;
-    height: 56px;
+    width: 38px;
+    height: 38px;
   }
   .navbar-brand-text {
-    font-size: 1.05rem;
+    font-size: 1.02rem;
   }
 }
