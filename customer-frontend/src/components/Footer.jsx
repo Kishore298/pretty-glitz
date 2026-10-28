@@ -52,13 +52,13 @@ const Footer = () => {
         }}>
           {/* Brand */}
           <div>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 16 }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 14, marginBottom: 18 }}>
               <div style={{
-                width: 36, height: 36, borderRadius: '50%',
+                width: 54, height: 54, borderRadius: '50%',
                 background: 'linear-gradient(135deg, #C4386C, #8A2BE2, #C9A84C)',
-                padding: '2px',
+                padding: '2.5px',
                 display: 'flex', alignItems: 'center', justifyContent: 'center',
-                boxShadow: '0 4px 14px rgba(196, 56, 108, 0.35)',
+                boxShadow: '0 4px 16px rgba(196, 56, 108, 0.35)',
                 overflow: 'hidden',
                 flexShrink: 0,
               }}>
@@ -69,13 +69,14 @@ const Footer = () => {
                     width: '100%',
                     height: '100%',
                     objectFit: 'cover',
+                    transform: 'scale(1.15)',
                     borderRadius: '50%',
                   }}
                 />
               </div>
               <span style={{
                 fontFamily: 'Outfit, sans-serif', fontWeight: 800,
-                letterSpacing: '0.04em', fontSize: '1.2rem',
+                letterSpacing: '0.04em', fontSize: '1.35rem',
                 background: 'linear-gradient(90deg, #C4386C, #8A2BE2, #C9A84C)',
                 WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', backgroundClip: 'text',
               }}>

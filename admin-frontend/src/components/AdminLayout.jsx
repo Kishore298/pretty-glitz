@@ -121,18 +121,33 @@ const AdminLayout = ({ children }) => {
                   onMouseEnter={(e) => (e.currentTarget.style.color = 'var(--text-primary)')}
                   onMouseLeave={(e) => (e.currentTarget.style.color = 'var(--text-muted)')}
                 >
-                  <img
-                    src="/pretty-glitz-logo.png"
-                    alt="PrettyGlitz"
+                  <div
                     style={{
-                      width: 20,
-                      height: 20,
+                      width: 32,
+                      height: 32,
                       borderRadius: '50%',
-                      objectFit: 'cover',
-                      border: '1px solid rgba(236, 22, 140, 0.4)',
+                      background: 'linear-gradient(135deg, var(--accent-pink, #EC168C), var(--accent-purple, #9B3DFF))',
+                      padding: '1.5px',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      overflow: 'hidden',
+                      flexShrink: 0,
                     }}
-                  />
-                  <span>PrettyGlitz</span>
+                  >
+                    <img
+                      src="/pretty-glitz-logo.png"
+                      alt="PrettyGlitz"
+                      style={{
+                        width: '100%',
+                        height: '100%',
+                        borderRadius: '50%',
+                        objectFit: 'cover',
+                        transform: 'scale(1.15)',
+                      }}
+                    />
+                  </div>
+                  <span style={{ fontWeight: 600 }}>PrettyGlitz</span>
                 </Link>
                 <ChevronRight size={14} className="admin-breadcrumb-separator" color="var(--text-muted)" style={{ flexShrink: 0 }} />
                 <span

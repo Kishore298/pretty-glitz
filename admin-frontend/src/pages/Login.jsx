@@ -112,16 +112,16 @@ const Login = () => {
         <div style={{ textAlign: 'center', marginBottom: 32 }}>
           <div
             style={{
-              width: 72,
-              height: 72,
+              width: 96,
+              height: 96,
               borderRadius: '50%',
               background: 'linear-gradient(135deg, var(--accent-pink, #EC168C), var(--accent-purple, #9B3DFF))',
               padding: '3px',
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
-              margin: '0 auto 18px',
-              boxShadow: '0 10px 35px rgba(236, 22, 140, 0.45)',
+              margin: '0 auto 20px',
+              boxShadow: '0 12px 40px rgba(236, 22, 140, 0.45)',
               overflow: 'hidden',
             }}
           >
@@ -132,6 +132,7 @@ const Login = () => {
                 width: '100%',
                 height: '100%',
                 objectFit: 'cover',
+                transform: 'scale(1.15)',
                 borderRadius: '50%',
               }}
             />

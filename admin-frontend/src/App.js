@@ -40,8 +40,8 @@ const AdminLoadingSplash = () => (
     {/* Brand Logo Emblem */}
     <div
       style={{
-        width: 72,
-        height: 72,
+        width: 96,
+        height: 96,
         borderRadius: '50%',
         background: 'linear-gradient(135deg, var(--accent-pink, #EC168C), var(--accent-purple, #9B3DFF))',
         padding: '3px',
@@ -49,7 +49,7 @@ const AdminLoadingSplash = () => (
         alignItems: 'center',
         justifyContent: 'center',
         marginBottom: 20,
-        boxShadow: '0 8px 32px rgba(236, 22, 140, 0.45)',
+        boxShadow: '0 12px 40px rgba(236, 22, 140, 0.45)',
         animation: 'pulse 2s infinite ease-in-out',
         overflow: 'hidden',
       }}
@@ -61,6 +61,7 @@ const AdminLoadingSplash = () => (
           width: '100%',
           height: '100%',
           objectFit: 'cover',
+          transform: 'scale(1.15)',
           borderRadius: '50%',
         }}
       />

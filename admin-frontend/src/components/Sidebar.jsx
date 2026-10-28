@@ -60,18 +60,18 @@ const Sidebar = ({ isOpen, setIsOpen }) => {
     >
       {/* Brand Header */}
       <div style={{ padding: '28px 22px 20px' }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
           <div
             style={{
-              width: 44,
-              height: 44,
+              width: 58,
+              height: 58,
               borderRadius: '50%',
               background: 'linear-gradient(135deg, var(--accent-pink, #EC168C), var(--accent-purple, #9B3DFF))',
-              padding: '2px',
+              padding: '2.5px',
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
-              boxShadow: '0 6px 20px rgba(236, 22, 140, 0.35)',
+              boxShadow: '0 6px 24px rgba(236, 22, 140, 0.4)',
               flexShrink: 0,
               overflow: 'hidden',
             }}
@@ -83,6 +83,7 @@ const Sidebar = ({ isOpen, setIsOpen }) => {
                 width: '100%',
                 height: '100%',
                 objectFit: 'cover',
+                transform: 'scale(1.15)',
                 borderRadius: '50%',
               }}
             />
@@ -92,7 +93,7 @@ const Sidebar = ({ isOpen, setIsOpen }) => {
               style={{
                 fontFamily: 'Outfit, sans-serif',
                 fontWeight: 800,
-                fontSize: '1.2rem',
+                fontSize: '1.35rem',
                 letterSpacing: '-0.02em',
                 color: 'var(--text-primary, #FAF9FC)',
                 lineHeight: 1.15,
