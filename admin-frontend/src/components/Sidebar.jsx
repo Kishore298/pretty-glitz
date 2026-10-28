@@ -83,7 +83,8 @@ const Sidebar = ({ isOpen, setIsOpen }) => {
                 width: '100%',
                 height: '100%',
                 objectFit: 'cover',
-                transform: 'scale(1.15)',
+                transform: 'scale(1.36)',
+                transformOrigin: 'center 30%',
                 borderRadius: '50%',
               }}
             />

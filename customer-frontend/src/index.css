@@ -1311,3 +1311,91 @@ section,
     background-position: center;
   }
 }
+
+/* ─── Navbar Brand & Logo Sizing (Minimized Gap, Prominent Logo) ─── */
+.navbar-wrapper {
+  max-width: 1280px;
+  margin: 0 auto;
+  padding: 0 24px;
+}
+
+.navbar-container {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  height: 80px;
+  transition: height 0.25s ease;
+}
+
+.navbar-brand-link {
+  text-decoration: none;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.navbar-logo-badge {
+  width: 66px;
+  height: 66px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #C4386C, #8A2BE2, #C9A84C);
+  padding: 2.5px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 4px 18px rgba(196, 56, 108, 0.4);
+  flex-shrink: 0;
+  overflow: hidden;
+}
+
+.navbar-logo-img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  transform: scale(1.36);
+  transform-origin: center 30%;
+  border-radius: 50%;
+}
+
+.navbar-brand-text {
+  font-family: 'Outfit', sans-serif;
+  font-weight: 900;
+  font-size: 1.35rem;
+  letter-spacing: 0.04em;
+  line-height: 1;
+}
+
+@media (max-width: 768px) {
+  .navbar-wrapper {
+    padding: 0 14px;
+  }
+  .navbar-container {
+    height: 74px;
+  }
+  .navbar-brand-link {
+    gap: 8px;
+  }
+  .navbar-logo-badge {
+    width: 60px;
+    height: 60px;
+  }
+  .navbar-brand-text {
+    font-size: 1.15rem;
+  }
+}
+
+@media (max-width: 400px) {
+  .navbar-wrapper {
+    padding: 0 10px;
+  }
+  .navbar-brand-link {
+    gap: 6px;
+  }
+  .navbar-logo-badge {
+    width: 56px;
+    height: 56px;
+  }
+  .navbar-brand-text {
+    font-size: 1.05rem;
+  }
+}

@@ -143,7 +143,8 @@ const AdminLayout = ({ children }) => {
                         height: '100%',
                         borderRadius: '50%',
                         objectFit: 'cover',
-                        transform: 'scale(1.15)',
+                        transform: 'scale(1.36)',
+                        transformOrigin: 'center 30%',
                       }}
                     />
                   </div>

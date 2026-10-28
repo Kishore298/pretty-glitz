@@ -166,43 +166,25 @@ const Navbar = () => {
         borderBottom: `1px solid var(--border)`,
         transition: 'background 0.35s ease, border-color 0.35s ease, box-shadow 0.35s ease',
       }}>
-        <div style={{ maxWidth: 1280, margin: '0 auto', padding: '0 24px' }}>
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', height: 72 }}>
+        <div className="navbar-wrapper">
+          <div className="navbar-container">
 
             {/* Logo */}
-            <Link to="/" style={{ textDecoration: 'none', display: 'flex', alignItems: 'center', gap: 12 }}>
-              <div style={{
-                width: 52, height: 52, borderRadius: '50%',
-                background: 'linear-gradient(135deg, #C4386C, #8A2BE2, #C9A84C)',
-                padding: '2.5px',
-                display: 'flex', alignItems: 'center', justifyContent: 'center',
-                boxShadow: '0 4px 16px rgba(196, 56, 108, 0.35)',
-                flexShrink: 0,
-                overflow: 'hidden',
-              }}>
+            <Link to="/" className="navbar-brand-link">
+              <div className="navbar-logo-badge">
                 <img
                   src={logoImg}
                   alt="PrettyGlitz Logo"
-                  style={{
-                    width: '100%',
-                    height: '100%',
-                    objectFit: 'cover',
-                    transform: 'scale(1.15)',
-                    borderRadius: '50%',
-                  }}
+                  className="navbar-logo-img"
                 />
               </div>
               <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
-                <span style={{
-                  fontFamily: 'Outfit, sans-serif', fontWeight: 900,
-                  fontSize: 'clamp(1.1rem, 3.8vw, 1.35rem)', letterSpacing: '0.04em',
-                  color: 'var(--text)', transition: 'color 0.3s',
-                }}>PRETTY</span>
-                <span style={{
-                  fontFamily: 'Outfit, sans-serif', fontWeight: 900,
-                  fontSize: 'clamp(1.1rem, 3.8vw, 1.35rem)', letterSpacing: '0.04em',
+                <span className="navbar-brand-text" style={{ color: 'var(--text)', transition: 'color 0.3s' }}>PRETTY</span>
+                <span className="navbar-brand-text" style={{
                   background: 'linear-gradient(90deg, #C4386C, #8A2BE2, #C9A84C)',
-                  WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', backgroundClip: 'text',
+                  WebkitBackgroundClip: 'text',
+                  WebkitTextFillColor: 'transparent',
+                  backgroundClip: 'text',
                 }}>GLITZ</span>
               </div>
             </Link>
@@ -301,7 +283,7 @@ const Navbar = () => {
                   @media (max-width: 768px) {
                     .desktop-search-dropdown {
                       position: fixed;
-                      top: 72px; /* Navbar height */
+                      top: 78px; /* Navbar height */
                       right: 24px;
                       width: calc(100vw - 48px);
                     }
