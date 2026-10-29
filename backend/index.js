@@ -20,14 +20,19 @@ app.use(helmet());
 // Connect to database
 connectDB();
 
-// Routes
+// Routes — existing (UNCHANGED)
 app.use('/api/admin/auth', adminAuthRoutes);
-app.use('/api/products', require('./routes/productRoutes'));
+app.use('/api/products',   require('./routes/productRoutes'));
 app.use('/api/categories', require('./routes/categoryRoutes'));
 app.use('/api/subcategories', require('./routes/subcategoryRoutes'));
-app.use('/api/upload', require('./routes/uploadRoutes'));
-app.use('/api/banners', require('./routes/bannerRoutes'));
+app.use('/api/upload',     require('./routes/uploadRoutes'));
+app.use('/api/banners',    require('./routes/bannerRoutes'));
 app.use('/api/testimonials', require('./routes/testimonialRoutes'));
+
+// Routes — new customer features
+app.use('/api/customer/auth', require('./routes/customerAuthRoutes'));
+app.use('/api/cart',          require('./routes/cartRoutes'));
+app.use('/api/wishlist',      require('./routes/wishlistRoutes'));
 
 // Basic Route
 app.get('/api', (req, res) => {

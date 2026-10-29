@@ -2,15 +2,19 @@ import React, { useState, useContext } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useTheme } from '../context/ThemeContext';
 import { CartContext } from '../context/CartContext';
+import { useWishlist } from '../context/WishlistContext';
 import { optimizeImageUrl } from '../utils/cloudinary';
-import { ShoppingBag, Plus, Minus, Sparkles } from 'lucide-react';
+import { ShoppingBag, Plus, Minus, Sparkles, Heart } from 'lucide-react';
 import logoImg from '../assets/pretty-glitz-logo.png';
 
-const ProductCard = ({ product }) => {
+const ProductCard = ({ product, showVariants = false }) => {
   const { isDark } = useTheme();
   const [isHovered, setIsHovered] = useState(false);
   const { addToCart, updateQuantity, removeFromCart, isInCart, getCartItemQuantity } = useContext(CartContext);
+  const { isInWishlist, toggleWishlist } = useWishlist();
   const navigate = useNavigate();
+
+  const inWishlist = isInWishlist(product._id);
 
   // Products with sizes/pieceCounts need the detail page for selection
   const needsDetailPage =
@@ -158,6 +162,54 @@ const ProductCard = ({ product }) => {
               </span>
             )}
           </div>
+
+          {/* Top-Right Wishlist Button */}
+          <button
+            type="button"
+            onClick={(e) => {
+              e.preventDefault();
+              e.stopPropagation();
+              toggleWishlist(product);
+            }}
+            aria-label={inWishlist ? 'Remove from wishlist' : 'Add to wishlist'}
+            title={inWishlist ? 'Remove from wishlist' : 'Add to wishlist'}
+            style={{
+              position: 'absolute',
+              top: 6,
+              right: 6,
+              width: 30,
+              height: 30,
+              borderRadius: '50%',
+              background: isDark ? 'rgba(20,20,28,0.78)' : 'rgba(255,255,255,0.88)',
+              backdropFilter: 'blur(8px)',
+              WebkitBackdropFilter: 'blur(8px)',
+              border: `1px solid ${inWishlist ? 'rgba(225,29,72,0.35)' : isDark ? 'rgba(255,255,255,0.12)' : 'rgba(0,0,0,0.08)'}`,
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              cursor: 'pointer',
+              zIndex: 3,
+              color: inWishlist ? '#E11D48' : (isDark ? '#F5F0EA' : '#1A1118'),
+              transition: 'transform 0.2s cubic-bezier(0.16, 1, 0.3, 1), background 0.2s, border-color 0.2s',
+              boxShadow: inWishlist ? '0 2px 8px rgba(225,29,72,0.35)' : '0 2px 6px rgba(0,0,0,0.08)',
+            }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.transform = 'scale(1.12)';
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.transform = 'scale(1)';
+            }}
+          >
+            <Heart
+              size={15}
+              style={{
+                fill: inWishlist ? '#E11D48' : 'transparent',
+                stroke: inWishlist ? '#E11D48' : 'currentColor',
+                strokeWidth: 2,
+                transition: 'fill 0.2s ease, stroke 0.2s ease',
+              }}
+            />
+          </button>
         </div>
 
         {/* Content */}
@@ -203,6 +255,72 @@ const ProductCard = ({ product }) => {
           }}>
             {product.name}
           </h3>
+
+          {/* Variant Indicators & Stock Badge (Rich Mode) */}
+          {showVariants && (
+            <div style={{
+              display: 'flex',
+              flexWrap: 'wrap',
+              gap: 4,
+              alignItems: 'center',
+              margin: '3px 0 6px',
+              width: '100%',
+            }}>
+              {product.sizes?.length > 0 && (
+                <span style={{
+                  fontSize: '0.62rem',
+                  fontWeight: 600,
+                  color: 'var(--text-secondary)',
+                  background: isDark ? 'rgba(255,255,255,0.06)' : 'rgba(26,17,24,0.05)',
+                  padding: '2px 6px',
+                  borderRadius: 4,
+                  border: '1px solid var(--border)',
+                  whiteSpace: 'nowrap',
+                }}>
+                  Sizes: {product.sizes.map(s => s.size).join(', ')}
+                </span>
+              )}
+              {product.pieceCounts?.length > 0 && (
+                <span style={{
+                  fontSize: '0.62rem',
+                  fontWeight: 600,
+                  color: 'var(--text-secondary)',
+                  background: isDark ? 'rgba(255,255,255,0.06)' : 'rgba(26,17,24,0.05)',
+                  padding: '2px 6px',
+                  borderRadius: 4,
+                  border: '1px solid var(--border)',
+                  whiteSpace: 'nowrap',
+                }}>
+                  {product.pieceCounts.map(p => `${p.count}P`).join(', ')}
+                </span>
+              )}
+              {product.inStock && typeof product.inStockCount === 'number' && product.inStockCount <= 5 && product.inStockCount > 0 ? (
+                <span style={{
+                  fontSize: '0.62rem',
+                  fontWeight: 700,
+                  color: '#D97706',
+                  background: 'rgba(217,119,6,0.1)',
+                  padding: '2px 6px',
+                  borderRadius: 4,
+                  whiteSpace: 'nowrap',
+                }}>
+                  Only {product.inStockCount} left
+                </span>
+              ) : product.inStock ? (
+                <span style={{
+                  fontSize: '0.62rem',
+                  fontWeight: 600,
+                  color: '#10B981',
+                  background: 'rgba(16,185,129,0.1)',
+                  padding: '2px 6px',
+                  borderRadius: 4,
+                  whiteSpace: 'nowrap',
+                }}>
+                  In Stock
+                </span>
+              ) : null}
+            </div>
+          )}
 
           {/* Price & Add to Cart on the SAME line */}
           <div style={{

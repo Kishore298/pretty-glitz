@@ -1,9 +1,11 @@
 import React, { useState, useContext, useEffect, useRef } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
-import { Menu, X, ShoppingBag, Sun, Moon, ChevronDown, Gift, Search, ChevronRight, Sparkles } from 'lucide-react';
+import { Menu, X, Sun, Moon, ChevronDown, Gift, Search, ChevronRight, Heart, User, MessageCircle } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { CartContext } from '../context/CartContext';
 import { useTheme } from '../context/ThemeContext';
+import { AuthContext } from '../context/AuthContext';
+import { useWishlist } from '../context/WishlistContext';
+import { getWhatsAppUrl, IS_WHATSAPP_CONFIGURED } from '../config/constants';
 import api from '../utils/api';
 import logoImg from '../assets/pretty-glitz-logo.png';
 import primaryLogoImg from '../assets/pritty-glitz-logo1.png';
@@ -22,8 +24,10 @@ const Navbar = () => {
   const [searchQuery, setSearchQuery] = useState('');
   const { pathname } = useLocation();
   const navigate = useNavigate();
-  const { getCartCount } = useContext(CartContext);
+  const { user } = useContext(AuthContext);
+  const { getWishlistCount } = useWishlist();
   const { isDark, toggleTheme } = useTheme();
+  const wishlistCount = getWishlistCount();
   const [allCategories, setAllCategories] = useState([]);
   const [searchResults, setSearchResults] = useState([]);
   const [isSearching, setIsSearching] = useState(false);
@@ -170,15 +174,17 @@ const Navbar = () => {
         <div className="navbar-wrapper">
           <div className="navbar-container">
 
-            {/* Logo */}
+            {/* Logo — natural aspect ratio, no circular mask */}
             <Link to="/" className="navbar-brand-link">
-              <div className="navbar-logo-badge">
-                <img
-                  src={primaryLogoImg}
-                  alt="PrettyGlitz Logo"
-                  className="navbar-logo-img"
-                />
-              </div>
+              <img
+                src={primaryLogoImg}
+                alt="PrettyGlitz"
+                className="navbar-logo-img"
+                onError={(e) => {
+                  e.currentTarget.onerror = null;
+                  e.currentTarget.src = logoImg;
+                }}
+              />
               <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
                 <span className="navbar-brand-text" style={{ color: 'var(--text)', transition: 'color 0.3s' }}>PRETTY</span>
                 <span className="navbar-brand-text" style={{
@@ -440,29 +446,60 @@ const Navbar = () => {
                 {isDark ? <Sun size={17} /> : <Moon size={17} />}
               </button>
 
-              {/* Cart Icon */}
-              <Link to="/cart" style={{ position: 'relative', color: 'var(--text-secondary)', transition: 'color 0.2s', display: 'flex', alignItems: 'center' }}
+              {/* Wishlist Icon */}
+              <Link to="/wishlist" style={{ position: 'relative', color: 'var(--text-secondary)', transition: 'color 0.2s', display: 'flex', alignItems: 'center' }}
                 onMouseEnter={e => e.currentTarget.style.color = 'var(--text)'}
                 onMouseLeave={e => e.currentTarget.style.color = 'var(--text-secondary)'}
+                title="My Wishlist"
               >
-                <ShoppingBag size={21} />
-                {getCartCount() > 0 && (
+                <Heart size={20} />
+                {wishlistCount > 0 && (
                   <motion.span
                     initial={{ scale: 0 }}
                     animate={{ scale: 1 }}
                     style={{
                       position: 'absolute', top: -6, right: -8,
-                      background: 'var(--accent-gradient)',
+                      background: 'linear-gradient(135deg, #E11D48, #C4386C)',
                       color: 'white', fontSize: '10px', fontWeight: 700,
                       minWidth: 18, height: 18, padding: '0 4px',
                       borderRadius: 999, display: 'flex', alignItems: 'center', justifyContent: 'center',
-                      boxShadow: '0 2px 8px rgba(196,56,108,0.5)',
+                      boxShadow: '0 2px 8px rgba(225,29,72,0.5)',
                     }}
                   >
-                    {getCartCount()}
+                    {wishlistCount > 99 ? '99+' : wishlistCount}
                   </motion.span>
                 )}
               </Link>
+
+              {/* User / Account Icon */}
+              <Link
+                to={user ? '/account' : '/login'}
+                style={{ position: 'relative', color: user ? 'var(--accent)' : 'var(--text-secondary)', transition: 'color 0.2s', display: 'flex', alignItems: 'center' }}
+                onMouseEnter={e => e.currentTarget.style.color = 'var(--text)'}
+                onMouseLeave={e => e.currentTarget.style.color = user ? 'var(--accent)' : 'var(--text-secondary)'}
+                title={user ? `Account: ${user.name || user.mobile}` : 'Login'}
+              >
+                <User size={20} />
+              </Link>
+
+              {/* WhatsApp Support Icon — only rendered when configured */}
+              {IS_WHATSAPP_CONFIGURED && (
+                <a
+                  href={getWhatsAppUrl() || '#'}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  title="Chat on WhatsApp"
+                  style={{
+                    ...iconBtnStyle,
+                    color: '#25D366',
+                    borderColor: 'rgba(37,211,102,0.2)',
+                    background: isDark ? 'rgba(37,211,102,0.08)' : 'rgba(37,211,102,0.06)',
+                    display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  }}
+                >
+                  <MessageCircle size={17} />
+                </a>
+              )}
 
               {/* Mobile Hamburger */}
               <button

@@ -6,35 +6,12 @@ import {
   ChevronDown,
   ChevronLeft,
   ChevronRight,
-  Sparkles,
-  Gem,
-  Star,
-  Heart,
-  Flower2,
-  Gift,
-  Crown,
-  MessageCircle,
-  Quote,
 } from 'lucide-react';
 import api from '../utils/api';
 import ProductCard from '../components/ProductCard';
 import ProductCardSkeleton from '../components/ProductCardSkeleton';
 import { optimizeImageUrl } from '../utils/cloudinary';
 import logoImg from '../assets/pretty-glitz-logo.png';
-
-const catIcons = {
-  Bangles: <Sparkles size={24} />,
-  'Glass Bangles': <Gem size={24} />,
-  Valaikaappu: <Star size={24} />,
-  'Valaikaappu Bangles': <Star size={24} />,
-  'Antique Bangles': <Crown size={24} />,
-  'Wedding Bangles': <Heart size={24} />,
-  'Artificial Flowers': <Flower2 size={24} />,
-  'Gift Box Combo': <Gift size={24} />,
-  Jumkhas: <Star size={24} />,
-  Jewels: <Crown size={24} />,
-};
-
 const getBreakpoint = () => {
   const width = window.innerWidth;
   if (width <= 648) return 'mobile';

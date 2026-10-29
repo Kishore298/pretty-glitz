@@ -3,8 +3,9 @@ import { useParams, Link } from 'react-router-dom';
 import api from '../utils/api';
 import { motion, AnimatePresence } from 'framer-motion';
 import { CartContext } from '../context/CartContext';
+import { useWishlist } from '../context/WishlistContext';
 import { optimizeImageUrl } from '../utils/cloudinary';
-import { Check, ChevronRight, Share2, ZoomIn, Plus, Minus, ShoppingBag } from 'lucide-react';
+import { Check, ChevronRight, Share2, ZoomIn, Plus, Minus, ShoppingBag, Heart } from 'lucide-react';
 import ProductCard from '../components/ProductCard';
 import logoImg from '../assets/pretty-glitz-logo.png';
 
@@ -12,6 +13,7 @@ const ProductDetail = () => {
   const { id } = useParams();
   const [product, setProduct] = useState(null);
   const [relatedProducts, setRelatedProducts] = useState([]);
+  const [discoveryProducts, setDiscoveryProducts] = useState([]);
   const [selectedSize, setSelectedSize] = useState(null);
   const [selectedPieceCount, setSelectedPieceCount] = useState(null);
   const [error, setError] = useState('');
@@ -21,6 +23,9 @@ const ProductDetail = () => {
   const [mousePos, setMousePos] = useState({ x: 0, y: 0 });
 
   const { addToCart, updateQuantity, removeFromCart, getCartItemQuantity, isInCart } = useContext(CartContext);
+  const { isInWishlist, toggleWishlist } = useWishlist();
+
+  const inWishlist = product ? isInWishlist(product._id) : false;
 
   useEffect(() => {
     fetchProduct();
@@ -39,10 +44,19 @@ const ProductDetail = () => {
         setSelectedPieceCount(sorted[0]);
       }
 
-      // Fetch related products
+      // Fetch related products (same category / subcategory)
       if (data.category) {
         const rel = await api.get(`/products?category=${encodeURIComponent(data.category)}`);
         setRelatedProducts(rel.data.filter(p => p._id !== data._id).slice(0, 4));
+      }
+
+      // Fetch cross-category discovery products
+      try {
+        const allRes = await api.get('/products');
+        const cross = allRes.data.filter(p => p.category !== data.category && p._id !== data._id);
+        setDiscoveryProducts(cross.slice(0, 4));
+      } catch (e) {
+        console.error('Error fetching discovery products:', e);
       }
     } catch (err) { console.error(err); }
   };
@@ -211,13 +225,29 @@ const ProductDetail = () => {
                   {product.category}
                 </p>
 
-                <button
-                  onClick={handleShare}
-                  className="product-detail-share-btn"
-                  title="Share to WhatsApp"
-                >
-                  <Share2 size={16} />
-                </button>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                  <button
+                    onClick={() => product && toggleWishlist(product)}
+                    className="product-detail-share-btn"
+                    title={inWishlist ? 'Remove from Wishlist' : 'Add to Wishlist'}
+                    aria-label={inWishlist ? 'Remove from Wishlist' : 'Add to Wishlist'}
+                    style={{
+                      color: inWishlist ? '#E11D48' : 'var(--text-secondary)',
+                      borderColor: inWishlist ? 'rgba(225,29,72,0.3)' : 'var(--border)',
+                      background: inWishlist ? 'rgba(225,29,72,0.08)' : 'transparent',
+                    }}
+                  >
+                    <Heart size={16} style={{ fill: inWishlist ? '#E11D48' : 'transparent', stroke: inWishlist ? '#E11D48' : 'currentColor' }} />
+                  </button>
+
+                  <button
+                    onClick={handleShare}
+                    className="product-detail-share-btn"
+                    title="Share to WhatsApp"
+                  >
+                    <Share2 size={16} />
+                  </button>
+                </div>
               </div>
 
               <h1 className="product-detail-title">
@@ -379,22 +409,44 @@ const ProductDetail = () => {
           </div>
         </div>
 
-        {/* ── Related Products ─────────────────────────────────── */}
+        {/* ── Same-Category & Subcategory Section: Complete Your Look ───── */}
         {relatedProducts.length > 0 && (
           <div className="product-related-section">
             <div className="product-related-header">
               <h2 className="product-related-title">
-                You May Also Like
+                Complete Your Look
               </h2>
               <p className="product-related-subtitle">
-                Explore more from the {product.category} collection
+                Matching artisanal designs from the {product.category} collection
               </p>
             </div>
 
             <div className="product-grid-4">
               {relatedProducts.map((relProduct, idx) => (
                 <motion.div key={relProduct._id} initial={{ opacity: 0, y: 30 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ delay: idx * 0.1 }}>
-                  <ProductCard product={relProduct} />
+                  <ProductCard product={relProduct} showVariants={true} />
+                </motion.div>
+              ))}
+            </div>
+          </div>
+        )}
+
+        {/* ── Cross-Category Discovery: More to Explore ─────────── */}
+        {discoveryProducts.length > 0 && (
+          <div className="product-related-section" style={{ marginTop: 52 }}>
+            <div className="product-related-header">
+              <h2 className="product-related-title">
+                More to Explore Across Collections
+              </h2>
+              <p className="product-related-subtitle">
+                Discover handcrafted jewellery and bespoke accessories across our ateliers
+              </p>
+            </div>
+
+            <div className="product-grid-4">
+              {discoveryProducts.map((discProduct, idx) => (
+                <motion.div key={discProduct._id} initial={{ opacity: 0, y: 30 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ delay: idx * 0.1 }}>
+                  <ProductCard product={discProduct} />
                 </motion.div>
               ))}
             </div>

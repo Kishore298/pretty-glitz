@@ -5,6 +5,7 @@ import { motion } from 'framer-motion';
 import { optimizeImageUrl } from '../utils/cloudinary';
 import logoImg from '../assets/pretty-glitz-logo.png';
 import { ChevronRight, ShieldCheck, CheckCircle2 } from 'lucide-react';
+import { getWhatsAppUrl, IS_WHATSAPP_CONFIGURED } from '../config/constants';
 
 const Checkout = () => {
   const { cartItems, getCartTotal, clearCart } = useContext(CartContext);
@@ -42,10 +43,15 @@ const Checkout = () => {
 
   const handlePlaceOrder = (e) => {
     e.preventDefault();
+
+    if (!IS_WHATSAPP_CONFIGURED) {
+      alert('WhatsApp ordering is temporarily unavailable. Please contact us directly.');
+      return;
+    }
+
     const message = constructWhatsAppMessage();
-    const phone = "919876543210"; 
-    const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
-    const whatsappUrl = isMobile ? `https://wa.me/${phone}?text=${message}` : `https://web.whatsapp.com/send?phone=${phone}&text=${message}`;
+    const whatsappUrl = getWhatsAppUrl(decodeURIComponent(message));
+    if (!whatsappUrl) return;
     window.open(whatsappUrl, '_blank');
     clearCart();
     setRedirecting(true);

@@ -2,21 +2,9 @@ import React, { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import api from '../utils/api';
 import { motion } from 'framer-motion';
-import { ChevronRight, Sparkles, Gem, Star, Heart, Flower2, Gift, Crown } from 'lucide-react';
+import { ChevronRight } from 'lucide-react';
 import { optimizeImageUrl } from '../utils/cloudinary';
 import logoImg from '../assets/pretty-glitz-logo.png';
-
-const catIcons = {
-  'Bangles': <Sparkles size={28} />,
-  'Glass Bangles': <Gem size={28} />,
-  'Valaikaappu Bangles': <Star size={28} />,
-  'Antique Bangles': <Crown size={28} />,
-  'Wedding Bangles': <Heart size={28} />,
-  'Artificial Flowers': <Flower2 size={28} />,
-  'Gift Box Combo': <Gift size={28} />,
-  'Jumkhas': <Star size={28} />,
-  'Jewels': <Crown size={28} />,
-};
 
 const catGradients = [
   { from: '#1a0a10', to: '#2d0a1e', accent: '#C4386C' },

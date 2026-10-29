@@ -5,6 +5,7 @@ import { MapPin, Mail, Phone, Send } from 'lucide-react';
 import api from '../utils/api';
 import logoImg from '../assets/pretty-glitz-logo.png';
 import primaryLogoImg from '../assets/pritty-glitz-logo1.png';
+import { getWhatsAppUrl, IS_WHATSAPP_CONFIGURED } from '../config/constants';
 
 const Footer = () => {
   const { isDark } = useTheme();
@@ -67,6 +68,10 @@ const Footer = () => {
                 <img
                   src={primaryLogoImg}
                   alt="PrettyGlitz Logo"
+                  onError={(e) => {
+                    e.currentTarget.onerror = null;
+                    e.currentTarget.src = logoImg;
+                  }}
                   style={{
                     width: '100%',
                     height: '100%',
@@ -172,7 +177,20 @@ const Footer = () => {
               </li>
               <li style={{ display: 'flex', alignItems: 'center', gap: 10, color: isDark ? 'rgba(255, 255, 255, 0.8)' : '#5A4E40', fontSize: '0.85rem' }}>
                 <Phone size={16} style={{ color: 'var(--accent-gold)', flexShrink: 0 }} />
-                <span>WhatsApp for Orders</span>
+                {IS_WHATSAPP_CONFIGURED ? (
+                  <a
+                    href={getWhatsAppUrl() || '#'}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    style={{ color: 'inherit', textDecoration: 'none', transition: 'color 0.2s' }}
+                    onMouseEnter={e => e.currentTarget.style.color = '#25D366'}
+                    onMouseLeave={e => e.currentTarget.style.color = isDark ? 'rgba(255, 255, 255, 0.8)' : '#5A4E40'}
+                  >
+                    WhatsApp for Orders
+                  </a>
+                ) : (
+                  <span>WhatsApp for Orders</span>
+                )}
               </li>
               <li style={{ display: 'flex', alignItems: 'center', gap: 10, color: isDark ? 'rgba(255, 255, 255, 0.8)' : '#5A4E40', fontSize: '0.85rem' }}>
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="url(#ig-grad)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink: 0 }}>
