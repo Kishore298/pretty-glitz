@@ -7,13 +7,15 @@ import { useWishlist } from '../context/WishlistContext';
 import { optimizeImageUrl } from '../utils/cloudinary';
 import { Check, ChevronRight, Share2, ZoomIn, Plus, Minus, ShoppingBag, Heart } from 'lucide-react';
 import ProductCard from '../components/ProductCard';
+import CollectionProductDetailCard from '../components/CollectionProductDetailCard';
 import logoImg from '../assets/pretty-glitz-logo.png';
 
 const ProductDetail = () => {
   const { id } = useParams();
   const [product, setProduct] = useState(null);
   const [relatedProducts, setRelatedProducts] = useState([]);
-  const [discoveryProducts, setDiscoveryProducts] = useState([]);
+  const [productsByCategory, setProductsByCategory] = useState({});
+  const [activeCategoryTab, setActiveCategoryTab] = useState('ALL');
   const [selectedSize, setSelectedSize] = useState(null);
   const [selectedPieceCount, setSelectedPieceCount] = useState(null);
   const [error, setError] = useState('');
@@ -44,17 +46,22 @@ const ProductDetail = () => {
         setSelectedPieceCount(sorted[0]);
       }
 
-      // Fetch related products (same category / subcategory)
+      // Fetch related products (all other products in the same category)
       if (data.category) {
         const rel = await api.get(`/products?category=${encodeURIComponent(data.category)}`);
-        setRelatedProducts(rel.data.filter(p => p._id !== data._id).slice(0, 4));
+        setRelatedProducts(rel.data.filter(p => p._id !== data._id && p.isActive !== false));
       }
 
-      // Fetch cross-category discovery products
+      // Fetch all products across all other categories to display all collections
       try {
         const allRes = await api.get('/products');
-        const cross = allRes.data.filter(p => p.category !== data.category && p._id !== data._id);
-        setDiscoveryProducts(cross.slice(0, 4));
+        const grouped = {};
+        allRes.data.forEach(p => {
+          if (!p.category || p.category === data.category || p._id === data._id || p.isActive === false) return;
+          if (!grouped[p.category]) grouped[p.category] = [];
+          grouped[p.category].push(p);
+        });
+        setProductsByCategory(grouped);
       } catch (e) {
         console.error('Error fetching discovery products:', e);
       }
@@ -417,39 +424,188 @@ const ProductDetail = () => {
                 Complete Your Look
               </h2>
               <p className="product-related-subtitle">
-                Matching artisanal designs from the {product.category} collection
+                Other handcrafted designs from the {product.category} collection with complete details & specifications
               </p>
             </div>
 
-            <div className="product-grid-4">
+            <div style={{
+              display: 'flex',
+              flexDirection: 'column',
+              gap: 20,
+            }}>
               {relatedProducts.map((relProduct, idx) => (
-                <motion.div key={relProduct._id} initial={{ opacity: 0, y: 30 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ delay: idx * 0.1 }}>
-                  <ProductCard product={relProduct} showVariants={true} />
+                <motion.div
+                  key={relProduct._id}
+                  initial={{ opacity: 0, y: 24 }}
+                  whileInView={{ opacity: 1, y: 0 }}
+                  viewport={{ once: true }}
+                  transition={{ delay: idx * 0.08 }}
+                >
+                  <CollectionProductDetailCard product={relProduct} />
                 </motion.div>
               ))}
             </div>
           </div>
         )}
 
-        {/* ── Cross-Category Discovery: More to Explore ─────────── */}
-        {discoveryProducts.length > 0 && (
-          <div className="product-related-section" style={{ marginTop: 52 }}>
+        {/* ── Cross-Category Discovery: More to Explore Across Collections ── */}
+        {Object.keys(productsByCategory).length > 0 && (
+          <div className="product-related-section" style={{ marginTop: 64 }}>
             <div className="product-related-header">
               <h2 className="product-related-title">
                 More to Explore Across Collections
               </h2>
               <p className="product-related-subtitle">
-                Discover handcrafted jewellery and bespoke accessories across our ateliers
+                Discover bespoke handcrafted jewellery across all our atelier collections
               </p>
             </div>
 
-            <div className="product-grid-4">
-              {discoveryProducts.map((discProduct, idx) => (
-                <motion.div key={discProduct._id} initial={{ opacity: 0, y: 30 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ delay: idx * 0.1 }}>
-                  <ProductCard product={discProduct} />
-                </motion.div>
+            {/* Category Filter Tab Pills */}
+            <div style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: 8,
+              overflowX: 'auto',
+              paddingBottom: 16,
+              marginBottom: 32,
+              scrollbarWidth: 'none',
+              msOverflowStyle: 'none',
+            }}>
+              <button
+                type="button"
+                onClick={() => setActiveCategoryTab('ALL')}
+                className={`category-tab-pill ${activeCategoryTab === 'ALL' ? 'active' : ''}`}
+              >
+                ✨ All Collections ({Object.values(productsByCategory).reduce((acc, curr) => acc + curr.length, 0)})
+              </button>
+              {Object.keys(productsByCategory).map(catName => (
+                <button
+                  key={catName}
+                  type="button"
+                  onClick={() => setActiveCategoryTab(catName)}
+                  className={`category-tab-pill ${activeCategoryTab === catName ? 'active' : ''}`}
+                >
+                  {catName} ({productsByCategory[catName].length})
+                </button>
               ))}
             </div>
+
+            {/* If a specific category tab is selected */}
+            {activeCategoryTab !== 'ALL' ? (
+              <div style={{ marginBottom: 40 }}>
+                <div style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'space-between',
+                  marginBottom: 20,
+                  flexWrap: 'wrap',
+                  gap: 12,
+                }}>
+                  <div>
+                    <h3 style={{
+                      fontFamily: '"Cormorant Garamond", Georgia, serif',
+                      fontSize: '1.6rem',
+                      fontWeight: 700,
+                      color: 'var(--text)',
+                      margin: 0,
+                    }}>
+                      {activeCategoryTab} Collection
+                    </h3>
+                    <p style={{ fontSize: '0.84rem', color: 'var(--text-secondary)', margin: '2px 0 0' }}>
+                      Showing all {productsByCategory[activeCategoryTab]?.length || 0} pieces
+                    </p>
+                  </div>
+                  <Link
+                    to={`/category/${encodeURIComponent(activeCategoryTab)}`}
+                    style={{
+                      fontSize: '0.85rem',
+                      color: 'var(--accent)',
+                      fontWeight: 600,
+                      textDecoration: 'none',
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      gap: 4,
+                      padding: '6px 14px',
+                      borderRadius: 8,
+                      background: 'var(--bg-secondary)',
+                      border: '1px solid var(--border)',
+                    }}
+                  >
+                    View Full Collection <ChevronRight size={14} />
+                  </Link>
+                </div>
+
+                <div className="product-grid-4">
+                  {(productsByCategory[activeCategoryTab] || []).map((discProduct) => (
+                    <ProductCard key={discProduct._id} product={discProduct} />
+                  ))}
+                </div>
+              </div>
+            ) : (
+              /* If "ALL Collections" is selected, display every single category collection with its own collection title! */
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 48 }}>
+                {Object.keys(productsByCategory).map((catName, catIdx) => (
+                  <motion.div
+                    key={catName}
+                    initial={{ opacity: 0, y: 20 }}
+                    whileInView={{ opacity: 1, y: 0 }}
+                    viewport={{ once: true }}
+                    transition={{ delay: catIdx * 0.05 }}
+                  >
+                    <div style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'space-between',
+                      marginBottom: 18,
+                      flexWrap: 'wrap',
+                      gap: 12,
+                      borderBottom: '1px solid var(--border)',
+                      paddingBottom: 10,
+                    }}>
+                      <div>
+                        <h3 style={{
+                          fontFamily: '"Cormorant Garamond", Georgia, serif',
+                          fontSize: '1.45rem',
+                          fontWeight: 700,
+                          color: 'var(--text)',
+                          margin: 0,
+                        }}>
+                          {catName}
+                        </h3>
+                        <p style={{ fontSize: '0.82rem', color: 'var(--text-secondary)', margin: '2px 0 0' }}>
+                          Artisanal {catName.toLowerCase()} collection
+                        </p>
+                      </div>
+
+                      <Link
+                        to={`/category/${encodeURIComponent(catName)}`}
+                        style={{
+                          fontSize: '0.82rem',
+                          color: 'var(--accent)',
+                          fontWeight: 600,
+                          textDecoration: 'none',
+                          display: 'inline-flex',
+                          alignItems: 'center',
+                          gap: 4,
+                          padding: '6px 12px',
+                          borderRadius: 8,
+                          background: 'var(--bg-secondary)',
+                          border: '1px solid var(--border)',
+                        }}
+                      >
+                        Explore Collection ({productsByCategory[catName].length}) <ChevronRight size={14} />
+                      </Link>
+                    </div>
+
+                    <div className="product-grid-4">
+                      {productsByCategory[catName].map((discProduct) => (
+                        <ProductCard key={discProduct._id} product={discProduct} />
+                      ))}
+                    </div>
+                  </motion.div>
+                ))}
+              </div>
+            )}
           </div>
         )}
 

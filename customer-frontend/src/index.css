@@ -1419,4 +1419,69 @@ section,
   .navbar-brand-text {
     font-size: 1.12rem;
   }
-}
+}
+
+/* ─── Collection Full Detail Cards ────────────────────────── */
+.collection-full-detail-card {
+  display: grid;
+  grid-template-columns: minmax(240px, 320px) 1fr;
+  gap: 24px;
+  background: var(--bg-card, #FFFFFF);
+  border: 1px solid var(--border);
+  border-radius: 20px;
+  padding: 24px;
+  position: relative;
+  transition: transform 0.25s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.25s ease, border-color 0.25s ease;
+  box-shadow: 0 4px 16px rgba(26, 17, 24, 0.04);
+}
+
+.collection-full-detail-card:hover {
+  transform: translateY(-2px);
+  border-color: var(--accent-gold);
+  box-shadow: 0 12px 32px rgba(26, 17, 24, 0.08);
+}
+
+.dark .collection-full-detail-card {
+  background: var(--bg-secondary, #14141C);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.4);
+}
+
+.dark .collection-full-detail-card:hover {
+  box-shadow: 0 14px 36px rgba(0, 0, 0, 0.6), 0 0 0 1px rgba(212, 175, 55, 0.25);
+}
+
+@media (max-width: 768px) {
+  .collection-full-detail-card {
+    grid-template-columns: 1fr;
+    gap: 16px;
+    padding: 16px;
+  }
+}
+
+/* ─── Category Discovery Tab Pills ────────────────────────── */
+.category-tab-pill {
+  padding: 8px 18px;
+  border-radius: 999px;
+  font-size: 0.85rem;
+  font-weight: 600;
+  cursor: pointer;
+  border: 1px solid var(--border);
+  background: var(--bg-card, #FFFFFF);
+  color: var(--text-secondary);
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+  white-space: nowrap;
+}
+
+.category-tab-pill:hover {
+  color: var(--text);
+  border-color: var(--accent);
+  transform: translateY(-1px);
+}
+
+.category-tab-pill.active {
+  background: var(--accent-gradient, linear-gradient(135deg, #C4386C, #8A2BE2));
+  color: #FFFFFF;
+  border-color: transparent;
+  box-shadow: 0 4px 14px rgba(196, 56, 108, 0.35);
+}
+
