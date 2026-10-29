@@ -11,7 +11,8 @@ import {
   MessageSquareQuote,
   ExternalLink,
   ShieldCheck,
-  ShoppingBag
+  ShoppingBag,
+  Image
 } from 'lucide-react';
 
 const navGroups = [
@@ -30,8 +31,9 @@ const navGroups = [
     ]
   },
   {
-    label: 'Marketing & Reviews',
+    label: 'Marketing & Storefront',
     items: [
+      { to: '/banners', label: 'Hero Banners', Icon: Image },
       { to: '/offers', label: 'Special Offers', Icon: Tag },
       { to: '/testimonials', label: 'Testimonials', Icon: MessageSquareQuote },
     ]

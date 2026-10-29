@@ -1350,18 +1350,19 @@ section,
 
 /* Natural-aspect logo — no circular mask or forced crop */
 .navbar-logo-img {
-  height: 72px;
+  height: 96px;
   width: auto;
   object-fit: contain;
   object-position: center;
   flex-shrink: 0;
-  transition: opacity 0.25s ease, transform 0.25s ease;
+  transition: opacity 0.25s ease;
   image-rendering: -webkit-optimize-contrast;
   image-rendering: crisp-edges;
+  display: block;
 }
 
 .navbar-brand-link:hover .navbar-logo-img {
-  transform: scale(1.03);
+  transform: none !important;
 }
 
 .navbar-brand-text {
@@ -1376,9 +1377,11 @@ section,
   .navbar-container {
     height: 90px;
   }
+
   .navbar-logo-img {
-    height: 62px;
+    height: 86px;
   }
+
   .navbar-brand-text {
     font-size: 1.4rem;
   }
@@ -1388,15 +1391,19 @@ section,
   .navbar-wrapper {
     padding: 0 16px;
   }
+
   .navbar-container {
     height: 82px;
   }
+
   .navbar-brand-link {
     gap: 10px;
   }
+
   .navbar-logo-img {
-    height: 54px;
+    height: 80px;
   }
+
   .navbar-brand-text {
     font-size: 1.25rem;
     letter-spacing: 0.04em;
@@ -1407,15 +1414,19 @@ section,
   .navbar-wrapper {
     padding: 0 10px;
   }
+
   .navbar-container {
     height: 76px;
   }
+
   .navbar-brand-link {
     gap: 8px;
   }
+
   .navbar-logo-img {
-    height: 48px;
+    height: 74px;
   }
+
   .navbar-brand-text {
     font-size: 1.12rem;
   }
@@ -1484,4 +1495,241 @@ section,
   border-color: transparent;
   box-shadow: 0 4px 14px rgba(196, 56, 108, 0.35);
 }
-
+
+/* ─── Product Card Responsive & Dynamic Height ──────────────── */
+.product-card-title {
+  font-family: "Cormorant Garamond", Georgia, serif;
+  font-size: 1.02rem;
+  font-weight: 600;
+  line-height: 1.25;
+  margin: 0 0 6px;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  width: 100%;
+}
+
+.product-card-prices {
+  display: flex !important;
+  align-items: baseline !important;
+  gap: 4px !important;
+  white-space: nowrap !important;
+  flex-wrap: nowrap !important;
+  flex-shrink: 0 !important;
+  min-width: 0;
+}
+
+.product-card-price-current {
+  font-size: 0.88rem;
+  font-weight: 700;
+  color: var(--accent-gold);
+  font-family: 'Outfit', sans-serif;
+  line-height: 1;
+  letter-spacing: -0.01em;
+  white-space: nowrap !important;
+}
+
+.product-card-price-original {
+  font-size: 0.68rem;
+  color: var(--text-muted);
+  text-decoration: line-through;
+  font-weight: 500;
+  white-space: nowrap !important;
+}
+
+.product-card-btn {
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  gap: 3px !important;
+  padding: 4px 8px !important;
+  border-radius: 999px !important;
+  font-size: 0.68rem !important;
+  font-weight: 600 !important;
+  font-family: 'Outfit', sans-serif !important;
+  letter-spacing: 0.01em !important;
+  cursor: pointer;
+  white-space: nowrap !important;
+  flex-shrink: 0 !important;
+  transition: all 0.2s ease;
+}
+
+.product-card-stepper {
+  display: inline-flex !important;
+  align-items: center !important;
+  background: var(--accent-gradient) !important;
+  border-radius: 999px !important;
+  overflow: hidden !important;
+  height: 24px !important;
+  box-shadow: 0 2px 8px rgba(196, 56, 108, 0.25) !important;
+  flex-shrink: 0 !important;
+}
+
+.product-card-stepper button {
+  width: 22px !important;
+  height: 24px !important;
+  background: transparent !important;
+  border: none !important;
+  color: #FFFFFF !important;
+  cursor: pointer;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+}
+
+.product-card-stepper span {
+  min-width: 14px !important;
+  text-align: center !important;
+  font-size: 0.72rem !important;
+  font-weight: 700 !important;
+  color: #FFFFFF !important;
+  font-family: 'Outfit', sans-serif !important;
+  user-select: none !important;
+}
+
+@media (min-width: 768px) {
+  .product-card-price-current {
+    font-size: 1.05rem;
+  }
+
+  .product-card-price-original {
+    font-size: 0.74rem;
+  }
+
+  .product-card-btn {
+    gap: 4px !important;
+    padding: 5px 11px !important;
+    font-size: 0.74rem !important;
+  }
+
+  .product-card-stepper {
+    height: 28px !important;
+  }
+
+  .product-card-stepper button {
+    width: 26px !important;
+    height: 28px !important;
+  }
+
+  .product-card-stepper span {
+    min-width: 18px !important;
+    font-size: 0.78rem !important;
+  }
+}
+
+/* ─── Hero Banner Carousel ──────────────────────────────────── */
+.hero-banner-section {
+  padding-top: 100px;
+  background: var(--bg-primary);
+  position: relative;
+  overflow: hidden;
+  width: 100%;
+}
+
+.hero-banner-img {
+  width: 100%;
+  display: block;
+  object-fit: cover;
+  aspect-ratio: 16 / 6;
+  min-height: 340px;
+  max-height: 580px;
+}
+
+@media (max-width: 900px) {
+  .hero-banner-section {
+    padding-top: 90px;
+  }
+}
+
+@media (max-width: 767px) {
+  .hero-banner-img {
+    aspect-ratio: 4 / 3;
+    min-height: 250px;
+    max-height: 440px;
+  }
+}
+
+@media (max-width: 640px) {
+  .hero-banner-section {
+    padding-top: 82px;
+  }
+}
+
+@media (max-width: 400px) {
+  .hero-banner-section {
+    padding-top: 76px;
+  }
+}
+
+/* Floating Navigation Buttons (Desktop & Tablets Only) */
+.hero-carousel-nav-btn {
+  position: absolute;
+  top: 55%;
+  transform: translateY(-50%);
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.75);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  border: 1px solid var(--border);
+  display: flex !important;
+  align-items: center;
+  justify-content: center;
+  color: var(--text);
+  cursor: pointer;
+  z-index: 10;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.2);
+  transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.dark-theme .hero-carousel-nav-btn {
+  background: rgba(20, 20, 28, 0.75);
+  color: #FAF9FC;
+}
+
+.hero-carousel-nav-btn:hover {
+  transform: translateY(-50%) scale(1.12);
+  background: var(--accent);
+  color: #FFFFFF;
+  border-color: var(--accent);
+  box-shadow: 0 6px 20px rgba(196, 56, 108, 0.4);
+}
+
+.hero-carousel-btn-prev {
+  left: 20px;
+}
+
+.hero-carousel-btn-next {
+  right: 20px;
+}
+
+/* Hide manual navigation buttons on mobile screens (< 768px) per requirements */
+@media (max-width: 767px) {
+  .hero-carousel-nav-btn {
+    display: none !important;
+  }
+}
+
+/* Indicators */
+.hero-carousel-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.5);
+  border: 1px solid rgba(0, 0, 0, 0.1);
+  padding: 0;
+  cursor: pointer;
+  transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.hero-carousel-dot:hover {
+  background: rgba(255, 255, 255, 0.8);
+}
+
+.hero-carousel-dot.active {
+  width: 24px;
+  background: var(--accent-gradient, linear-gradient(135deg, #C4386C, #8A2BE2));
+  box-shadow: 0 2px 8px rgba(196, 56, 108, 0.4);
+}

@@ -280,7 +280,7 @@ const CollectionProductDetailCard = ({ product }) => {
           </Link>
 
           {/* Pricing Row */}
-          <div style={{ display: 'flex', alignItems: 'baseline', gap: 10, marginBottom: 14, flexWrap: 'wrap' }}>
+          <div style={{ display: 'flex', alignItems: 'baseline', gap: 10, marginBottom: 14, flexWrap: 'wrap', whiteSpace: 'nowrap' }}>
             <span style={{
               fontSize: '1.45rem',
               fontWeight: 800,

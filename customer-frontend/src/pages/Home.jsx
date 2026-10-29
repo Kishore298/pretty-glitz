@@ -3,7 +3,6 @@ import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import {
   ArrowRight,
-  ChevronDown,
   ChevronLeft,
   ChevronRight,
   Sparkles,
@@ -18,12 +17,7 @@ import ProductCard from '../components/ProductCard';
 import ProductCardSkeleton from '../components/ProductCardSkeleton';
 import { optimizeImageUrl } from '../utils/cloudinary';
 import logoImg from '../assets/pretty-glitz-logo.png';
-const getBreakpoint = () => {
-  const width = window.innerWidth;
-  if (width <= 648) return 'mobile';
-  if (width <= 1024) return 'tablet';
-  return 'desktop';
-};
+import HeroBannerCarousel from '../components/HeroBannerCarousel';
 
 const Home = () => {
   const [bestsellers, setBestsellers] = useState([]);
@@ -31,7 +25,6 @@ const Home = () => {
   const [collections, setCollections] = useState([]);
   const [banners, setBanners] = useState([]);
   const [testimonials, setTestimonials] = useState([]);
-  const [breakpoint, setBreakpoint] = useState(getBreakpoint());
   const [viewportWidth, setViewportWidth] = useState(window.innerWidth);
   const [loadingCollections, setLoadingCollections] = useState(true);
   const [loadingOffers, setLoadingOffers] = useState(true);
@@ -54,7 +47,6 @@ const Home = () => {
 
   useEffect(() => {
     const onResize = () => {
-      setBreakpoint(getBreakpoint());
       setViewportWidth(window.innerWidth);
     };
     window.addEventListener('resize', onResize);
@@ -269,160 +261,10 @@ const Home = () => {
     }
   };
 
-  const activeBanner = banners.length > 0 ? banners[0] : null;
-  const bannerImg = activeBanner
-    ? breakpoint === 'mobile'
-      ? activeBanner.mobileImage
-      : breakpoint === 'tablet'
-        ? activeBanner.tabletImage || activeBanner.desktopImage
-        : activeBanner.desktopImage
-    : null;
-  const showBanner = bannerImg?.url;
-
   return (
     <div className="home-page" style={{ background: 'transparent' }}>
-      {/* Hero */}
-      {showBanner ? (
-        <section className="home-hero-banner" style={{ width: '100%', position: 'relative', overflow: 'hidden', paddingTop: 100 }}>
-          <img
-            src={bannerImg.url}
-            alt="PrettyGlitz Banner"
-            style={{ width: '100%', display: 'block', maxHeight: '90vh', objectFit: 'cover' }}
-          />
-        </section>
-      ) : (
-        <section
-          className="section-py"
-          style={{
-            minHeight: 'min(85vh, 700px)',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            position: 'relative',
-            overflow: 'hidden',
-            paddingTop: 110,
-          }}
-        >
-          <div className="section-padding" style={{ textAlign: 'center', maxWidth: 900, zIndex: 2 }}>
-            <motion.div
-              initial={{ opacity: 0, y: 30 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.9 }}
-            >
-              <p
-                style={{
-                  fontSize: '0.8rem',
-                  letterSpacing: '0.25em',
-                  textTransform: 'uppercase',
-                  color: 'var(--accent)',
-                  fontWeight: 700,
-                  marginBottom: 24,
-                }}
-              >
-                Premium Accessories
-              </p>
-              <h1
-                style={{
-                  fontFamily: '"Cormorant Garamond", Georgia, serif',
-                  fontWeight: 600,
-                  fontSize: 'clamp(2.5rem, 6vw, 4.5rem)',
-                  lineHeight: 1.1,
-                  margin: '0 0 24px',
-                  color: 'var(--text)',
-                }}
-              >
-                Beauty in{' '}
-                <span
-                  style={{
-                    background: 'var(--accent-gradient)',
-                    WebkitBackgroundClip: 'text',
-                    WebkitTextFillColor: 'transparent',
-                    backgroundClip: 'text',
-                  }}
-                >
-                  Every Detail
-                </span>
-              </h1>
-              <p
-                style={{
-                  fontSize: '1.1rem',
-                  color: 'var(--text-secondary)',
-                  maxWidth: 560,
-                  margin: '0 auto 40px',
-                  lineHeight: 1.7,
-                }}
-              >
-                Discover exquisite bangles, everlasting artificial flowers, and premium jewels crafted for your most precious moments.
-              </p>
-            </motion.div>
-
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.9, delay: 0.3 }}
-              style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 24 }}
-            >
-              <div style={{ display: 'flex', gap: 16, justifyContent: 'center', flexWrap: 'wrap' }}>
-                <button
-                  type="button"
-                  onClick={() => collectionsRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' })}
-                  style={{
-                    display: 'inline-flex',
-                    alignItems: 'center',
-                    gap: 8,
-                    background: 'var(--accent-gradient)',
-                    color: 'white',
-                    padding: '14px 36px',
-                    borderRadius: 999,
-                    fontWeight: 600,
-                    border: 'none',
-                    cursor: 'pointer',
-                    fontSize: '0.9rem',
-                    letterSpacing: '0.04em',
-                    boxShadow: '0 8px 24px rgba(196,56,108,0.3)',
-                    transition: 'transform 0.2s, box-shadow 0.2s',
-                  }}
-                  onMouseEnter={(event) => {
-                    event.currentTarget.style.transform = 'translateY(-2px)';
-                    event.currentTarget.style.boxShadow = '0 12px 32px rgba(196,56,108,0.4)';
-                  }}
-                  onMouseLeave={(event) => {
-                    event.currentTarget.style.transform = 'none';
-                    event.currentTarget.style.boxShadow = '0 8px 24px rgba(196,56,108,0.3)';
-                  }}
-                >
-                  Explore Collection <ChevronDown size={16} />
-                </button>
-              </div>
-
-              <div
-                style={{
-                  display: 'flex',
-                  gap: 16,
-                  flexWrap: 'wrap',
-                  justifyContent: 'center',
-                  fontSize: '0.8rem',
-                  color: 'var(--text-muted)',
-                  fontWeight: 500,
-                  marginTop: 12,
-                }}
-              >
-                <span style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-                  <Sparkles size={14} color="var(--accent-gold)" /> Premium Quality
-                </span>
-                <span style={{ opacity: 0.5 }}>•</span>
-                <span style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-                  <span style={{ color: 'var(--accent-gold)' }}>🚚</span> All-India Delivery
-                </span>
-                <span style={{ opacity: 0.5 }}>•</span>
-                <span style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-                  <span style={{ color: '#25D366' }}>💬</span> Order via WhatsApp
-                </span>
-              </div>
-            </motion.div>
-          </div>
-        </section>
-      )}
+      {/* Storefront Hero Banner Slider (2.5s auto-scroll, manual buttons on desktop, touch swipe on mobile) */}
+      <HeroBannerCarousel banners={banners} />
 
       {/* Collections Grid — restored to the earlier collection-grid/theme-card design */}
       <section

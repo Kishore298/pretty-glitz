@@ -238,18 +238,17 @@ const ProductCard = ({ product, showVariants = false }) => {
             {product.subcategoryId?.name || product.category}
           </span>
 
-          <h3 style={{
+          <h3 className="product-card-title" style={{
             fontFamily: '"Cormorant Garamond", Georgia, serif',
             fontSize: '1.02rem',
             fontWeight: 600,
-            lineHeight: 1.2,
+            lineHeight: 1.25,
             color: isHovered ? 'var(--accent)' : 'var(--text)',
-            margin: '0 0 4px',
+            margin: '0 0 6px',
             display: '-webkit-box',
             WebkitLineClamp: 2,
             WebkitBoxOrient: 'vertical',
             overflow: 'hidden',
-            minHeight: '2.4em',
             transition: 'color 0.2s ease',
             width: '100%',
           }}>
@@ -332,24 +331,12 @@ const ProductCard = ({ product, showVariants = false }) => {
             gap: 6,
             paddingTop: 4,
           }}>
-            <div style={{ display: 'flex', alignItems: 'baseline', gap: 5, minWidth: 0, flexWrap: 'wrap' }}>
-              <span style={{
-                fontSize: '1.05rem',
-                fontWeight: 700,
-                color: 'var(--accent-gold)',
-                fontFamily: 'Outfit, sans-serif',
-                lineHeight: 1,
-                letterSpacing: '-0.01em',
-              }}>
+            <div className="product-card-prices">
+              <span className="product-card-price-current">
                 ₹{product.price}
               </span>
               {product.originalPrice && (
-                <span style={{
-                  fontSize: '0.75rem',
-                  color: 'var(--text-muted)',
-                  textDecoration: 'line-through',
-                  fontWeight: 500,
-                }}>
+                <span className="product-card-price-original">
                   ₹{product.originalPrice}
                 </span>
               )}
@@ -360,42 +347,20 @@ const ProductCard = ({ product, showVariants = false }) => {
                 inCart && !needsDetailPage ? (
                   /* Quantity stepper */
                   <div
-                    style={{
-                      display: 'inline-flex',
-                      alignItems: 'center',
-                      background: 'var(--accent-gradient)',
-                      borderRadius: 999,
-                      overflow: 'hidden',
-                      height: 28,
-                      boxShadow: '0 2px 8px rgba(196,56,108,0.25)',
-                    }}
+                    className="product-card-stepper"
                     onClick={e => e.preventDefault()}
                   >
                     <button
                       onClick={handleDecrease}
-                      style={{
-                        width: 26, height: 28, background: 'transparent', border: 'none',
-                        color: '#FFFFFF', cursor: 'pointer',
-                        display: 'flex', alignItems: 'center', justifyContent: 'center',
-                      }}
                       aria-label="Decrease quantity"
                     >
                       <Minus size={11} />
                     </button>
-                    <span style={{
-                      minWidth: 18, textAlign: 'center',
-                      fontSize: '0.78rem', fontWeight: 700, color: '#FFFFFF',
-                      fontFamily: 'Outfit, sans-serif', userSelect: 'none',
-                    }}>
+                    <span>
                       {cartQty}
                     </span>
                     <button
                       onClick={handleIncrease}
-                      style={{
-                        width: 26, height: 28, background: 'transparent', border: 'none',
-                        color: '#FFFFFF', cursor: 'pointer',
-                        display: 'flex', alignItems: 'center', justifyContent: 'center',
-                      }}
                       aria-label="Increase quantity"
                     >
                       <Plus size={11} />
@@ -404,28 +369,16 @@ const ProductCard = ({ product, showVariants = false }) => {
                 ) : (
                   /* Add to cart pill button */
                   <button
+                    className="product-card-btn"
                     style={{
-                      display: 'inline-flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      gap: 4,
-                      padding: '5px 11px',
-                      borderRadius: 999,
                       border: '1px solid',
                       borderColor: isHovered ? 'var(--accent)' : 'var(--border-strong)',
                       background: isHovered ? 'var(--accent)' : (isDark ? 'rgba(255,255,255,0.06)' : '#FAF8F5'),
                       color: isHovered ? '#FFFFFF' : 'var(--text)',
-                      fontSize: '0.74rem',
-                      fontWeight: 600,
-                      fontFamily: 'Outfit, sans-serif',
-                      letterSpacing: '0.02em',
-                      cursor: 'pointer',
-                      transition: 'all 0.2s ease',
-                      whiteSpace: 'nowrap',
                     }}
                     onClick={handleCartClick}
                   >
-                    <ShoppingBag size={12} />
+                    <ShoppingBag size={11} />
                     <span>{needsDetailPage ? 'Options' : 'Add to Cart'}</span>
                   </button>
                 )
