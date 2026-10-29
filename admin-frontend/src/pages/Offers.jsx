@@ -217,7 +217,6 @@ const Offers = () => {
             display: 'grid',
             gridTemplateColumns: 'repeat(auto-fill, minmax(230px, 1fr))',
             gap: 16,
-            alignItems: 'start',
           }}
         >
           {offerProducts.map((product) => {
@@ -242,6 +241,7 @@ const Offers = () => {
                   overflow: 'hidden',
                   display: 'flex',
                   flexDirection: 'column',
+                  height: '100%',
                   boxShadow: '0 4px 14px rgba(0, 0, 0, 0.22)',
                   transition: 'all 0.22s cubic-bezier(0.16, 1, 0.3, 1)',
                   position: 'relative',
@@ -289,29 +289,29 @@ const Offers = () => {
                     }}
                   />
 
-                  {/* Floating Category Pill */}
+                  {/* Floating Category Pill - Dainty & Compact */}
                   <span
                     style={{
                       position: 'absolute',
-                      top: 8,
-                      left: 8,
-                      background: 'rgba(10, 10, 15, 0.82)',
+                      top: 7,
+                      left: 7,
+                      background: 'rgba(10, 10, 15, 0.85)',
                       backdropFilter: 'blur(8px)',
                       border: '1px solid rgba(201, 168, 76, 0.25)',
                       color: 'var(--accent-gold-light, #E8CE8A)',
-                      fontSize: '0.64rem',
+                      fontSize: '0.55rem',
                       fontWeight: 700,
-                      padding: '2px 7px',
+                      padding: '1.5px 6px',
                       borderRadius: 999,
                       textTransform: 'uppercase',
                       letterSpacing: '0.04em',
                       display: 'flex',
                       alignItems: 'center',
-                      gap: 4,
+                      gap: 3,
                       zIndex: 2,
                     }}
                   >
-                    <Sparkles size={9} color="var(--accent-gold)" />
+                    <Sparkles size={8} color="var(--accent-gold)" />
                     {product.category}
                   </span>
 
@@ -320,13 +320,13 @@ const Offers = () => {
                     <span
                       style={{
                         position: 'absolute',
-                        top: 8,
-                        right: 8,
+                        top: 7,
+                        right: 7,
                         background: 'linear-gradient(135deg, #C4386C, #8A2BE2)',
                         color: '#FFFFFF',
-                        fontSize: '0.68rem',
+                        fontSize: '0.60rem',
                         fontWeight: 800,
-                        padding: '2px 7px',
+                        padding: '1.5px 6px',
                         borderRadius: 999,
                         boxShadow: '0 2px 8px rgba(196, 56, 108, 0.4)',
                         display: 'flex',
@@ -336,20 +336,20 @@ const Offers = () => {
                         zIndex: 2,
                       }}
                     >
-                      <Percent size={9} />
+                      <Percent size={8} />
                       {discountPct}% OFF
                     </span>
                   )}
                 </div>
 
-                {/* Content Details: Snug, zero dead space, dynamically sizing with text */}
-                <div style={{ padding: '10px 12px', display: 'flex', flexDirection: 'column' }}>
+                {/* Content Details: Uniform height, flex: 1 for dynamic expansion */}
+                <div style={{ padding: '10px 12px', display: 'flex', flexDirection: 'column', flex: 1 }}>
                   <h3
                     style={{
                       margin: '0 0 4px',
                       color: 'var(--text-primary)',
                       fontFamily: 'Outfit, sans-serif',
-                      fontSize: '0.94rem',
+                      fontSize: '0.92rem',
                       fontWeight: 700,
                       lineHeight: 1.25,
                       display: '-webkit-box',
@@ -363,11 +363,11 @@ const Offers = () => {
                     {product.name}
                   </h3>
 
-                  {/* Price Section */}
-                  <div style={{ display: 'flex', alignItems: 'baseline', gap: 6, marginBottom: 8, flexWrap: 'nowrap' }}>
+                  {/* Price Section - Dainty, reduced size & single-line */}
+                  <div style={{ display: 'flex', alignItems: 'baseline', gap: 5, marginBottom: 6, flexWrap: 'nowrap' }}>
                     <span
                       style={{
-                        fontSize: '1.15rem',
+                        fontSize: '0.98rem',
                         fontWeight: 800,
                         color: 'var(--accent-gold, #C9A84C)',
                         fontFamily: 'Outfit, sans-serif',
@@ -381,7 +381,7 @@ const Offers = () => {
                       <>
                         <span
                           style={{
-                            fontSize: '0.8rem',
+                            fontSize: '0.72rem',
                             color: 'var(--text-muted)',
                             textDecoration: 'line-through',
                             fontWeight: 500,
@@ -392,12 +392,12 @@ const Offers = () => {
                         </span>
                         <span
                           style={{
-                            fontSize: '0.65rem',
+                            fontSize: '0.58rem',
                             color: '#10B981',
                             fontWeight: 700,
                             background: 'rgba(16, 185, 129, 0.12)',
                             border: '1px solid rgba(16, 185, 129, 0.25)',
-                            padding: '1px 5px',
+                            padding: '1px 4px',
                             borderRadius: 4,
                             whiteSpace: 'nowrap',
                           }}
@@ -408,12 +408,13 @@ const Offers = () => {
                     )}
                   </div>
 
-                  {/* Action Footer: Compact, single-line buttons without wrapping */}
+                  {/* Action Footer: Aligns neatly at the bottom with marginTop: auto */}
                   <div
                     style={{
                       display: 'flex',
                       alignItems: 'center',
                       gap: 6,
+                      marginTop: 'auto',
                       paddingTop: 8,
                       borderTop: '1px solid var(--card-border, rgba(201, 168, 76, 0.12))',
                     }}
@@ -487,7 +488,7 @@ const Offers = () => {
         type="warning"
         loading={isRemoving}
       />
-    </PageWrapper>
+    </PageWrapper >
   );
 };
 
