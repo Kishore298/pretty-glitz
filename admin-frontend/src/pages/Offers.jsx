@@ -257,13 +257,13 @@ const Offers = () => {
                   e.currentTarget.style.boxShadow = '0 4px 14px rgba(0, 0, 0, 0.22)';
                 }}
               >
-                {/* Media Showcase Area - Compact and Sleek */}
+                {/* Media Showcase Area - Compact, Clean & Clear */}
                 <div
                   style={{
                     position: 'relative',
                     width: '100%',
-                    height: 155,
-                    background: '#0D0C14',
+                    height: 140,
+                    background: '#111019',
                     overflow: 'hidden',
                     display: 'flex',
                     alignItems: 'center',
@@ -278,24 +278,14 @@ const Offers = () => {
                       e.currentTarget.onerror = null;
                       e.currentTarget.src = '/pretty-glitz-logo.png';
                       e.currentTarget.style.objectFit = 'contain';
-                      e.currentTarget.style.padding = '16px';
+                      e.currentTarget.style.padding = '12px';
                     }}
                     style={{
                       width: '100%',
                       height: '100%',
                       objectFit: primaryImg ? 'cover' : 'contain',
-                      padding: primaryImg ? '0' : '16px',
+                      padding: primaryImg ? '0' : '12px',
                       transition: 'transform 0.35s ease',
-                    }}
-                  />
-
-                  {/* Gradient shadow overlay for legibility */}
-                  <div
-                    style={{
-                      position: 'absolute',
-                      inset: 0,
-                      background: 'linear-gradient(180deg, rgba(10, 10, 15, 0.35) 0%, transparent 45%, rgba(20, 19, 30, 0.9) 100%)',
-                      pointerEvents: 'none',
                     }}
                   />
 
@@ -303,24 +293,25 @@ const Offers = () => {
                   <span
                     style={{
                       position: 'absolute',
-                      top: 10,
-                      left: 10,
-                      background: 'rgba(10, 10, 15, 0.85)',
+                      top: 8,
+                      left: 8,
+                      background: 'rgba(10, 10, 15, 0.82)',
                       backdropFilter: 'blur(8px)',
-                      border: '1px solid rgba(201, 168, 76, 0.3)',
+                      border: '1px solid rgba(201, 168, 76, 0.25)',
                       color: 'var(--accent-gold-light, #E8CE8A)',
-                      fontSize: '0.66rem',
+                      fontSize: '0.64rem',
                       fontWeight: 700,
-                      padding: '3px 8px',
+                      padding: '2px 7px',
                       borderRadius: 999,
                       textTransform: 'uppercase',
-                      letterSpacing: '0.05em',
+                      letterSpacing: '0.04em',
                       display: 'flex',
                       alignItems: 'center',
                       gap: 4,
+                      zIndex: 2,
                     }}
                   >
-                    <Sparkles size={10} color="var(--accent-gold)" />
+                    <Sparkles size={9} color="var(--accent-gold)" />
                     {product.category}
                   </span>
 
@@ -329,35 +320,36 @@ const Offers = () => {
                     <span
                       style={{
                         position: 'absolute',
-                        top: 10,
-                        right: 10,
+                        top: 8,
+                        right: 8,
                         background: 'linear-gradient(135deg, #C4386C, #8A2BE2)',
                         color: '#FFFFFF',
-                        fontSize: '0.7rem',
+                        fontSize: '0.68rem',
                         fontWeight: 800,
-                        padding: '3px 8px',
+                        padding: '2px 7px',
                         borderRadius: 999,
-                        boxShadow: '0 3px 10px rgba(196, 56, 108, 0.4)',
+                        boxShadow: '0 2px 8px rgba(196, 56, 108, 0.4)',
                         display: 'flex',
                         alignItems: 'center',
                         gap: 3,
-                        letterSpacing: '0.03em',
+                        letterSpacing: '0.02em',
+                        zIndex: 2,
                       }}
                     >
-                      <Percent size={10} />
+                      <Percent size={9} />
                       {discountPct}% OFF
                     </span>
                   )}
                 </div>
 
-                {/* Content Details: Compact, no static height or dead gaps */}
-                <div style={{ padding: '12px 14px', display: 'flex', flexDirection: 'column' }}>
+                {/* Content Details: Snug, zero dead space, dynamically sizing with text */}
+                <div style={{ padding: '10px 12px', display: 'flex', flexDirection: 'column' }}>
                   <h3
                     style={{
-                      margin: '0 0 6px',
+                      margin: '0 0 4px',
                       color: 'var(--text-primary)',
                       fontFamily: 'Outfit, sans-serif',
-                      fontSize: '0.98rem',
+                      fontSize: '0.94rem',
                       fontWeight: 700,
                       lineHeight: 1.25,
                       display: '-webkit-box',
@@ -372,14 +364,15 @@ const Offers = () => {
                   </h3>
 
                   {/* Price Section */}
-                  <div style={{ display: 'flex', alignItems: 'baseline', gap: 8, marginBottom: 10, flexWrap: 'wrap' }}>
+                  <div style={{ display: 'flex', alignItems: 'baseline', gap: 6, marginBottom: 8, flexWrap: 'nowrap' }}>
                     <span
                       style={{
-                        fontSize: '1.2rem',
+                        fontSize: '1.15rem',
                         fontWeight: 800,
                         color: 'var(--accent-gold, #C9A84C)',
                         fontFamily: 'Outfit, sans-serif',
                         lineHeight: 1,
+                        whiteSpace: 'nowrap',
                       }}
                     >
                       ₹{product.price}
@@ -388,22 +381,23 @@ const Offers = () => {
                       <>
                         <span
                           style={{
-                            fontSize: '0.82rem',
+                            fontSize: '0.8rem',
                             color: 'var(--text-muted)',
                             textDecoration: 'line-through',
                             fontWeight: 500,
+                            whiteSpace: 'nowrap',
                           }}
                         >
                           ₹{product.originalPrice}
                         </span>
                         <span
                           style={{
-                            fontSize: '0.68rem',
+                            fontSize: '0.65rem',
                             color: '#10B981',
                             fontWeight: 700,
                             background: 'rgba(16, 185, 129, 0.12)',
                             border: '1px solid rgba(16, 185, 129, 0.25)',
-                            padding: '1px 6px',
+                            padding: '1px 5px',
                             borderRadius: 4,
                             whiteSpace: 'nowrap',
                           }}
@@ -414,13 +408,13 @@ const Offers = () => {
                     )}
                   </div>
 
-                  {/* Action Footer: Compact, tight binding without dead gap */}
+                  {/* Action Footer: Compact, single-line buttons without wrapping */}
                   <div
                     style={{
                       display: 'flex',
                       alignItems: 'center',
-                      gap: 8,
-                      paddingTop: 10,
+                      gap: 6,
+                      paddingTop: 8,
                       borderTop: '1px solid var(--card-border, rgba(201, 168, 76, 0.12))',
                     }}
                   >
@@ -432,36 +426,38 @@ const Offers = () => {
                       className="btn-edit"
                       style={{
                         flex: 1,
-                        padding: '7px 10px',
+                        padding: '6px 8px',
                         borderRadius: 8,
-                        fontSize: '0.78rem',
+                        fontSize: '0.76rem',
                         fontWeight: 600,
                         display: 'flex',
                         alignItems: 'center',
                         justifyContent: 'center',
-                        gap: 5,
+                        gap: 4,
+                        whiteSpace: 'nowrap',
                       }}
                     >
-                      <Pencil size={13} />
-                      <span>Edit Piece</span>
+                      <Pencil size={12} />
+                      <span>Edit</span>
                     </button>
                     <button
                       onClick={() => setRemoveTarget(product)}
                       className="btn-danger"
                       style={{
                         flex: 1,
-                        padding: '7px 10px',
+                        padding: '6px 8px',
                         borderRadius: 8,
-                        fontSize: '0.78rem',
+                        fontSize: '0.76rem',
                         fontWeight: 600,
                         display: 'flex',
                         alignItems: 'center',
                         justifyContent: 'center',
-                        gap: 5,
+                        gap: 4,
+                        whiteSpace: 'nowrap',
                       }}
                     >
-                      <Trash2 size={13} />
-                      <span>Remove Deal</span>
+                      <Trash2 size={12} />
+                      <span>Remove</span>
                     </button>
                   </div>
                 </div>
