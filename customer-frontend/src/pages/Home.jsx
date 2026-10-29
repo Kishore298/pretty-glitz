@@ -6,6 +6,12 @@ import {
   ChevronDown,
   ChevronLeft,
   ChevronRight,
+  Sparkles,
+  Star,
+  Heart,
+  Crown,
+  MessageCircle,
+  Quote,
 } from 'lucide-react';
 import api from '../utils/api';
 import ProductCard from '../components/ProductCard';
