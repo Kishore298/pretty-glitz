@@ -245,6 +245,33 @@ body {
   transform: scale(0.98);
 }
 
+.btn-edit {
+  background: rgba(201, 168, 76, 0.08);
+  color: var(--accent-gold-light, #E8CE8A);
+  border: 1px solid rgba(201, 168, 76, 0.25);
+  padding: 7px 12px;
+  border-radius: 8px;
+  font-size: 0.78rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.18s ease;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+}
+
+.btn-edit:hover {
+  background: rgba(201, 168, 76, 0.18);
+  border-color: var(--accent-gold);
+  color: #FFFFFF;
+  transform: translateY(-1px);
+}
+
+.btn-edit:active {
+  transform: scale(0.98);
+}
+
 .btn-danger {
   background: var(--danger-bg);
   color: #F87171;
@@ -574,18 +601,8 @@ body {
 
   /* Navbar / Topbar */
   .admin-topbar {
-    padding: 0 12px !important;
-    height: 56px !important;
-  }
-
-  .admin-breadcrumb-home,
-  .admin-breadcrumb-separator {
-    display: none !important;
-  }
-
-  .admin-breadcrumb-title {
-    font-size: 0.84rem !important;
-    max-width: 140px !important;
+    padding: 0 14px !important;
+    height: 60px !important;
   }
 
   .admin-shop-btn {

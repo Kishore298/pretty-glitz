@@ -212,7 +212,14 @@ const Offers = () => {
           description="Convert an existing product to an offer or create a promotional item using the form above."
         />
       ) : (
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))', gap: 24 }}>
+        <div
+          style={{
+            display: 'grid',
+            gridTemplateColumns: 'repeat(auto-fill, minmax(230px, 1fr))',
+            gap: 16,
+            alignItems: 'start',
+          }}
+        >
           {offerProducts.map((product) => {
             const discountPct =
               product.originalPrice && product.originalPrice > product.price
@@ -231,31 +238,31 @@ const Offers = () => {
                 style={{
                   background: 'var(--surface-primary, #14131E)',
                   border: '1px solid var(--card-border, rgba(201, 168, 76, 0.14))',
-                  borderRadius: 20,
+                  borderRadius: 14,
                   overflow: 'hidden',
                   display: 'flex',
                   flexDirection: 'column',
-                  boxShadow: '0 6px 20px rgba(0, 0, 0, 0.25)',
-                  transition: 'all 0.25s cubic-bezier(0.16, 1, 0.3, 1)',
+                  boxShadow: '0 4px 14px rgba(0, 0, 0, 0.22)',
+                  transition: 'all 0.22s cubic-bezier(0.16, 1, 0.3, 1)',
                   position: 'relative',
                 }}
                 onMouseEnter={(e) => {
                   e.currentTarget.style.borderColor = 'rgba(201, 168, 76, 0.4)';
-                  e.currentTarget.style.transform = 'translateY(-4px)';
-                  e.currentTarget.style.boxShadow = '0 14px 36px rgba(0, 0, 0, 0.45), 0 0 20px rgba(201, 168, 76, 0.15)';
+                  e.currentTarget.style.transform = 'translateY(-3px)';
+                  e.currentTarget.style.boxShadow = '0 10px 24px rgba(0, 0, 0, 0.4), 0 0 16px rgba(201, 168, 76, 0.12)';
                 }}
                 onMouseLeave={(e) => {
                   e.currentTarget.style.borderColor = 'var(--card-border, rgba(201, 168, 76, 0.14))';
                   e.currentTarget.style.transform = 'none';
-                  e.currentTarget.style.boxShadow = '0 6px 20px rgba(0, 0, 0, 0.25)';
+                  e.currentTarget.style.boxShadow = '0 4px 14px rgba(0, 0, 0, 0.22)';
                 }}
               >
-                {/* Media Showcase Area */}
+                {/* Media Showcase Area - Compact and Sleek */}
                 <div
                   style={{
                     position: 'relative',
                     width: '100%',
-                    height: 220,
+                    height: 155,
                     background: '#0D0C14',
                     overflow: 'hidden',
                     display: 'flex',
@@ -264,21 +271,21 @@ const Offers = () => {
                   }}
                 >
                   <img
-                    src={primaryImg ? optimizeImageUrl(primaryImg, 600) : '/pretty-glitz-logo.png'}
+                    src={primaryImg ? optimizeImageUrl(primaryImg, 400) : '/pretty-glitz-logo.png'}
                     alt={product.name}
                     loading="lazy"
                     onError={(e) => {
                       e.currentTarget.onerror = null;
                       e.currentTarget.src = '/pretty-glitz-logo.png';
                       e.currentTarget.style.objectFit = 'contain';
-                      e.currentTarget.style.padding = '24px';
+                      e.currentTarget.style.padding = '16px';
                     }}
                     style={{
                       width: '100%',
                       height: '100%',
                       objectFit: primaryImg ? 'cover' : 'contain',
-                      padding: primaryImg ? '0' : '24px',
-                      transition: 'transform 0.4s ease',
+                      padding: primaryImg ? '0' : '16px',
+                      transition: 'transform 0.35s ease',
                     }}
                   />
 
@@ -287,7 +294,7 @@ const Offers = () => {
                     style={{
                       position: 'absolute',
                       inset: 0,
-                      background: 'linear-gradient(180deg, rgba(10, 10, 15, 0.4) 0%, transparent 45%, rgba(20, 19, 30, 0.95) 100%)',
+                      background: 'linear-gradient(180deg, rgba(10, 10, 15, 0.35) 0%, transparent 45%, rgba(20, 19, 30, 0.9) 100%)',
                       pointerEvents: 'none',
                     }}
                   />
@@ -296,24 +303,24 @@ const Offers = () => {
                   <span
                     style={{
                       position: 'absolute',
-                      top: 12,
-                      left: 12,
-                      background: 'rgba(10, 10, 15, 0.8)',
+                      top: 10,
+                      left: 10,
+                      background: 'rgba(10, 10, 15, 0.85)',
                       backdropFilter: 'blur(8px)',
                       border: '1px solid rgba(201, 168, 76, 0.3)',
                       color: 'var(--accent-gold-light, #E8CE8A)',
-                      fontSize: '0.72rem',
+                      fontSize: '0.66rem',
                       fontWeight: 700,
-                      padding: '4px 10px',
+                      padding: '3px 8px',
                       borderRadius: 999,
                       textTransform: 'uppercase',
-                      letterSpacing: '0.06em',
+                      letterSpacing: '0.05em',
                       display: 'flex',
                       alignItems: 'center',
-                      gap: 5,
+                      gap: 4,
                     }}
                   >
-                    <Sparkles size={11} color="var(--accent-gold)" />
+                    <Sparkles size={10} color="var(--accent-gold)" />
                     {product.category}
                   </span>
 
@@ -322,50 +329,57 @@ const Offers = () => {
                     <span
                       style={{
                         position: 'absolute',
-                        top: 12,
-                        right: 12,
+                        top: 10,
+                        right: 10,
                         background: 'linear-gradient(135deg, #C4386C, #8A2BE2)',
                         color: '#FFFFFF',
-                        fontSize: '0.76rem',
+                        fontSize: '0.7rem',
                         fontWeight: 800,
-                        padding: '4px 11px',
+                        padding: '3px 8px',
                         borderRadius: 999,
-                        boxShadow: '0 4px 14px rgba(196, 56, 108, 0.4)',
+                        boxShadow: '0 3px 10px rgba(196, 56, 108, 0.4)',
                         display: 'flex',
                         alignItems: 'center',
-                        gap: 4,
-                        letterSpacing: '0.04em',
+                        gap: 3,
+                        letterSpacing: '0.03em',
                       }}
                     >
-                      <Percent size={11} />
+                      <Percent size={10} />
                       {discountPct}% OFF
                     </span>
                   )}
                 </div>
 
-                {/* Content Details */}
-                <div style={{ padding: '20px 22px', display: 'flex', flexDirection: 'column', flex: 1 }}>
+                {/* Content Details: Compact, no static height or dead gaps */}
+                <div style={{ padding: '12px 14px', display: 'flex', flexDirection: 'column' }}>
                   <h3
                     style={{
-                      margin: '0 0 12px',
+                      margin: '0 0 6px',
                       color: 'var(--text-primary)',
                       fontFamily: 'Outfit, sans-serif',
-                      fontSize: '1.15rem',
+                      fontSize: '0.98rem',
                       fontWeight: 700,
-                      lineHeight: 1.3,
+                      lineHeight: 1.25,
+                      display: '-webkit-box',
+                      WebkitLineClamp: 2,
+                      WebkitBoxOrient: 'vertical',
+                      overflow: 'hidden',
+                      wordBreak: 'break-word',
                     }}
+                    title={product.name}
                   >
                     {product.name}
                   </h3>
 
                   {/* Price Section */}
-                  <div style={{ display: 'flex', alignItems: 'baseline', gap: 10, marginBottom: 18, flexWrap: 'wrap' }}>
+                  <div style={{ display: 'flex', alignItems: 'baseline', gap: 8, marginBottom: 10, flexWrap: 'wrap' }}>
                     <span
                       style={{
-                        fontSize: '1.45rem',
+                        fontSize: '1.2rem',
                         fontWeight: 800,
                         color: 'var(--accent-gold, #C9A84C)',
                         fontFamily: 'Outfit, sans-serif',
+                        lineHeight: 1,
                       }}
                     >
                       ₹{product.price}
@@ -374,7 +388,7 @@ const Offers = () => {
                       <>
                         <span
                           style={{
-                            fontSize: '0.92rem',
+                            fontSize: '0.82rem',
                             color: 'var(--text-muted)',
                             textDecoration: 'line-through',
                             fontWeight: 500,
@@ -384,13 +398,14 @@ const Offers = () => {
                         </span>
                         <span
                           style={{
-                            fontSize: '0.72rem',
+                            fontSize: '0.68rem',
                             color: '#10B981',
                             fontWeight: 700,
                             background: 'rgba(16, 185, 129, 0.12)',
                             border: '1px solid rgba(16, 185, 129, 0.25)',
-                            padding: '2px 8px',
-                            borderRadius: 6,
+                            padding: '1px 6px',
+                            borderRadius: 4,
+                            whiteSpace: 'nowrap',
                           }}
                         >
                           Save ₹{savings}
@@ -399,14 +414,13 @@ const Offers = () => {
                     )}
                   </div>
 
-                  {/* Action Footer */}
+                  {/* Action Footer: Compact, tight binding without dead gap */}
                   <div
                     style={{
                       display: 'flex',
                       alignItems: 'center',
-                      gap: 10,
-                      marginTop: 'auto',
-                      paddingTop: 16,
+                      gap: 8,
+                      paddingTop: 10,
                       borderTop: '1px solid var(--card-border, rgba(201, 168, 76, 0.12))',
                     }}
                   >
@@ -418,17 +432,17 @@ const Offers = () => {
                       className="btn-edit"
                       style={{
                         flex: 1,
-                        padding: '9px 14px',
-                        borderRadius: 10,
-                        fontSize: '0.82rem',
+                        padding: '7px 10px',
+                        borderRadius: 8,
+                        fontSize: '0.78rem',
                         fontWeight: 600,
                         display: 'flex',
                         alignItems: 'center',
                         justifyContent: 'center',
-                        gap: 6,
+                        gap: 5,
                       }}
                     >
-                      <Pencil size={14} />
+                      <Pencil size={13} />
                       <span>Edit Piece</span>
                     </button>
                     <button
@@ -436,17 +450,17 @@ const Offers = () => {
                       className="btn-danger"
                       style={{
                         flex: 1,
-                        padding: '9px 14px',
-                        borderRadius: 10,
-                        fontSize: '0.82rem',
+                        padding: '7px 10px',
+                        borderRadius: 8,
+                        fontSize: '0.78rem',
                         fontWeight: 600,
                         display: 'flex',
                         alignItems: 'center',
                         justifyContent: 'center',
-                        gap: 6,
+                        gap: 5,
                       }}
                     >
-                      <Trash2 size={14} />
+                      <Trash2 size={13} />
                       <span>Remove Deal</span>
                     </button>
                   </div>

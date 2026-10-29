@@ -4,7 +4,7 @@ const { getBanners, getAllBanners, createBanner, updateBanner, deleteBanner } = 
 const { protectAdmin } = require('../middleware/authMiddleware');
 
 router.get('/', getBanners);                         // Public: active banners for homepage
-router.get('/all', protectAdmin, getAllBanners);      // Admin: all banners
+router.get('/all', getAllBanners);                    // Public/Admin: all banners
 router.post('/', protectAdmin, createBanner);
 router.put('/:id', protectAdmin, updateBanner);
 router.delete('/:id', protectAdmin, deleteBanner);

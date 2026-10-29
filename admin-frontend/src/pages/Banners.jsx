@@ -37,8 +37,14 @@ const Banners = () => {
       const { data } = await api.get('/banners/all');
       setBanners(Array.isArray(data) ? data : []);
     } catch (err) {
-      console.error('Error fetching banners:', err);
-      toast.error('Failed to load hero banners');
+      console.warn('Could not fetch /banners/all, trying /banners fallback:', err);
+      try {
+        const fallbackRes = await api.get('/banners');
+        setBanners(Array.isArray(fallbackRes.data) ? fallbackRes.data : []);
+      } catch (fallbackErr) {
+        console.error('Error fetching fallback banners:', fallbackErr);
+        toast.error('Failed to load hero banners');
+      }
     } finally {
       setLoading(false);
     }

@@ -1,23 +1,10 @@
 import React, { useState } from 'react';
-import { useLocation, Link } from 'react-router-dom';
-import { Menu, X, ExternalLink, ChevronRight, Sparkles, Store } from 'lucide-react';
+import { Link } from 'react-router-dom';
+import { Menu, X, ExternalLink, Store } from 'lucide-react';
 import Sidebar from './Sidebar';
-
-const pageTitleMap = {
-  '/dashboard': 'Dashboard Overview',
-  '/products': 'Product Catalog & Inventory',
-  '/categories': 'Category Collections',
-  '/subcategories': 'Flower Subcategories',
-  '/offers': 'Special Offers & Discounts',
-  '/testimonials': 'Customer Testimonials',
-};
 
 const AdminLayout = ({ children }) => {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
-  const location = useLocation();
-
-  const currentPath = location.pathname;
-  const currentTitle = pageTitleMap[currentPath] || 'Management Console';
 
   return (
     <div
@@ -84,7 +71,7 @@ const AdminLayout = ({ children }) => {
               justifyContent: 'space-between',
             }}
           >
-            {/* Left: Mobile Toggle & Breadcrumb */}
+            {/* Left: Mobile Toggle & Brand */}
             <div style={{ display: 'flex', alignItems: 'center', gap: 12, minWidth: 0 }}>
               <button
                 onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
@@ -105,97 +92,58 @@ const AdminLayout = ({ children }) => {
                 {isMobileMenuOpen ? <X size={20} /> : <Menu size={20} />}
               </button>
 
-              {/* Breadcrumb Navigation */}
-              <div className="admin-breadcrumb" style={{ display: 'flex', alignItems: 'center', gap: 8, minWidth: 0 }}>
-                <Link
-                  to="/dashboard"
-                  className="admin-breadcrumb-home"
-                  style={{
-                    color: 'var(--text-muted, #6E687A)',
-                    textDecoration: 'none',
-                    fontWeight: 600,
-                    fontSize: '0.85rem',
-                    transition: 'color 0.15s ease',
-                    whiteSpace: 'nowrap',
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: 8,
-                  }}
-                  onMouseEnter={(e) => (e.currentTarget.style.color = 'var(--text-primary)')}
-                  onMouseLeave={(e) => (e.currentTarget.style.color = 'var(--text-muted)')}
-                >
-                  <div
-                    style={{
-                      width: 48,
-                      height: 48,
-                      borderRadius: '50%',
-                      background: 'linear-gradient(135deg, var(--accent-pink), var(--accent-purple))',
-                      padding: '2px',
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      overflow: 'hidden',
-                      flexShrink: 0,
-                      backgroundColor: '#FFFFFF',
-                      boxShadow: '0 3px 12px rgba(196, 56, 108, 0.3)',
-                    }}
-                  >
-                    <img
-                      src="/pritty-glitz-logo1.png"
-                      alt="PrettyGlitz"
-                      style={{
-                        width: '100%',
-                        height: '100%',
-                        borderRadius: '50%',
-                        objectFit: 'cover',
-                        objectPosition: 'center 25%',
-                        imageRendering: '-webkit-optimize-contrast',
-                        filter: 'contrast(1.04) brightness(1.02)',
-                      }}
-                    />
-                  </div>
-                  <span style={{ fontWeight: 700, fontSize: '1.05rem', letterSpacing: '0.02em', color: 'var(--text-primary)' }}>PrettyGlitz</span>
-                </Link>
-                <ChevronRight size={14} className="admin-breadcrumb-separator" color="var(--accent-gold)" style={{ opacity: 0.6, flexShrink: 0 }} />
-                <span
-                  className="admin-breadcrumb-title"
-                  style={{
-                    color: 'var(--accent-gold-light, #E8CE8A)',
-                    fontWeight: 600,
-                    letterSpacing: '-0.01em',
-                    fontSize: '0.88rem',
-                    overflow: 'hidden',
-                    textOverflow: 'ellipsis',
-                    whiteSpace: 'nowrap',
-                  }}
-                >
-                  {currentTitle}
-                </span>
-              </div>
-            </div>
-
-            {/* Right: Live Store Badge & Quick Store Link */}
-            <div style={{ display: 'flex', alignItems: 'center', gap: 12, flexShrink: 0 }}>
-              {/* Store Status Indicator */}
-              <div
+              {/* Brand Logo & Name */}
+              <Link
+                to="/dashboard"
                 style={{
+                  color: 'var(--text-primary)',
+                  textDecoration: 'none',
+                  fontWeight: 700,
+                  fontSize: '1.05rem',
                   display: 'flex',
                   alignItems: 'center',
-                  gap: 6,
-                  padding: '5px 12px',
-                  borderRadius: 999,
-                  background: 'rgba(16, 185, 129, 0.08)',
-                  border: '1px solid rgba(16, 185, 129, 0.22)',
-                  fontSize: '0.75rem',
-                  color: '#34D399',
-                  fontWeight: 600,
+                  gap: 10,
+                  whiteSpace: 'nowrap',
                 }}
               >
-                <span style={{ width: 6, height: 6, borderRadius: '50%', background: '#10B981', boxShadow: '0 0 8px #10B981' }} />
-                <span>Storefront Live</span>
-              </div>
+                <div
+                  style={{
+                    width: 42,
+                    height: 42,
+                    borderRadius: '50%',
+                    background: 'linear-gradient(135deg, var(--accent-pink), var(--accent-purple))',
+                    padding: '2px',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    overflow: 'hidden',
+                    flexShrink: 0,
+                    backgroundColor: '#FFFFFF',
+                    boxShadow: '0 3px 12px rgba(196, 56, 108, 0.3)',
+                  }}
+                >
+                  <img
+                    src="/pritty-glitz-logo1.png"
+                    alt="PrettyGlitz"
+                    style={{
+                      width: '100%',
+                      height: '100%',
+                      borderRadius: '50%',
+                      objectFit: 'cover',
+                      objectPosition: 'center 25%',
+                      imageRendering: '-webkit-optimize-contrast',
+                      filter: 'contrast(1.04) brightness(1.02)',
+                    }}
+                  />
+                </div>
+                <span style={{ fontWeight: 800, fontSize: '1.1rem', letterSpacing: '-0.01em', color: 'var(--text-primary)' }}>
+                  PrettyGlitz
+                </span>
+              </Link>
+            </div>
 
-              {/* Customer Store Link Button */}
+            {/* Right: Quick Store Link */}
+            <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexShrink: 0 }}>
               <a
                 href="http://localhost:3000"
                 target="_blank"
