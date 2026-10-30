@@ -180,13 +180,8 @@ const Navbar = () => {
                 alt="PrettyGlitz"
                 className="navbar-logo-img"
               />
-              <span className="navbar-brand-text" style={{ color: 'var(--text)', transition: 'color 0.3s', whiteSpace: 'nowrap' }}>
-                PRETTY<span style={{
-                  background: 'linear-gradient(90deg, #C4386C, #8A2BE2, #C9A84C)',
-                  WebkitBackgroundClip: 'text',
-                  WebkitTextFillColor: 'transparent',
-                  backgroundClip: 'text',
-                }}>GLITZ</span>
+              <span className="navbar-brand-text">
+                PrettyGlitz
               </span>
             </Link>
 

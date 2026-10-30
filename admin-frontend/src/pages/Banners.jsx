@@ -1,5 +1,5 @@
-import React, { useState, useEffect } from 'react';
-import { Plus, Image, Monitor, Smartphone, Pencil, Trash2, Eye, EyeOff } from 'lucide-react';
+import React, { useState, useEffect, useRef } from 'react';
+import { Plus, Image, Monitor, Smartphone, Pencil, Trash2, Eye, EyeOff, ChevronDown, Check } from 'lucide-react';
 import api from '../utils/api';
 import { optimizeImageUrl } from '../utils/cloudinary';
 import PageWrapper from '../components/PageWrapper';
@@ -27,6 +27,33 @@ const Banners = () => {
   // Collections for dynamic redirect dropdown
   const [categories, setCategories] = useState([]);
   const [subcategories, setSubcategories] = useState([]);
+  const [dropdownOpen, setDropdownOpen] = useState(false);
+  const dropdownRef = useRef(null);
+
+  useEffect(() => {
+    const handleClickOutside = (e) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(e.target)) {
+        setDropdownOpen(false);
+      }
+    };
+    if (dropdownOpen) {
+      document.addEventListener('mousedown', handleClickOutside);
+    }
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, [dropdownOpen]);
+
+  const getSelectedLabel = () => {
+    if (!linkTo) return '-- No CTA Button (Display Image Only) --';
+    if (linkTo === '/offers') return 'Special Offers Section (/offers)';
+    if (linkTo === '/#bestsellers') return 'Best Sellers Section (/#bestsellers)';
+    if (linkTo === '/categories') return 'All Collections Grid (/categories)';
+    if (linkTo === '/products') return 'All Products Catalog (/products)';
+    const cat = categories.find((c) => `/category/${encodeURIComponent(c.name)}` === linkTo);
+    if (cat) return `${cat.name} Collection (/category/${cat.name})`;
+    const sub = subcategories.find((s) => `/category/${encodeURIComponent(s.name)}` === linkTo);
+    if (sub) return `${sub.name} ${sub.category?.name ? `(${sub.category.name})` : ''}`;
+    return linkTo;
+  };
 
   // Delete target
   const [deleteTarget, setDeleteTarget] = useState(null);
@@ -432,55 +459,188 @@ const Banners = () => {
                 />
               </div>
 
-              {/* Banner Destination / CTA Link (Dynamic Dropdown) */}
-              <div>
+              {/* Banner Destination / CTA Link (Custom Scrollable Half-Height Dropdown) */}
+              <div ref={dropdownRef} style={{ position: 'relative' }}>
                 <label style={{ display: 'block', fontSize: '0.84rem', fontWeight: 600, color: 'var(--text-primary)', marginBottom: 6 }}>
                   Explore Collection Destination (CTA Button on Banner)
                 </label>
-                <select
-                  value={linkTo}
-                  onChange={(e) => setLinkTo(e.target.value)}
-                  className="input-luxury"
+
+                {/* Dropdown Trigger */}
+                <button
+                  type="button"
+                  onClick={() => setDropdownOpen(!dropdownOpen)}
                   style={{
                     width: '100%',
                     padding: '10px 14px',
                     borderRadius: 8,
                     background: 'var(--surface-secondary, #1B1928)',
-                    border: '1px solid var(--border)',
-                    color: 'var(--text-primary)',
+                    border: `1px solid ${dropdownOpen ? 'var(--accent-gold, #C9A84C)' : 'var(--border)'}`,
+                    color: linkTo ? 'var(--text-primary)' : 'var(--text-muted)',
                     fontSize: '0.9rem',
                     cursor: 'pointer',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'space-between',
+                    gap: 10,
+                    textAlign: 'left',
+                    boxShadow: dropdownOpen ? '0 0 0 2px rgba(201, 168, 76, 0.2)' : 'none',
+                    transition: 'all 0.2s ease',
                   }}
                 >
-                  <option value="">-- No CTA Button (Display Image Only) --</option>
-                  
-                  <optgroup label="✨ Featured & Storefront Sections">
-                    <option value="/offers">Special Offers Section (/offers)</option>
-                    <option value="/#bestsellers">Best Sellers Section (/#bestsellers)</option>
-                    <option value="/categories">All Collections Grid (/categories)</option>
-                    <option value="/products">All Products Catalog (/products)</option>
-                  </optgroup>
+                  <span style={{ overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                    {getSelectedLabel()}
+                  </span>
+                  <ChevronDown
+                    size={16}
+                    style={{
+                      transform: dropdownOpen ? 'rotate(180deg)' : 'none',
+                      transition: 'transform 0.2s ease',
+                      flexShrink: 0,
+                      color: 'var(--accent-gold, #C9A84C)',
+                    }}
+                  />
+                </button>
 
-                  {categories.length > 0 && (
-                    <optgroup label="💎 Main Categories / Collections (Auto-Updated)">
-                      {categories.map((cat) => (
-                        <option key={cat._id} value={`/category/${encodeURIComponent(cat.name)}`}>
-                          {cat.name} Collection (/category/{cat.name})
-                        </option>
-                      ))}
-                    </optgroup>
-                  )}
+                {/* Scrollable Half-Height Dropdown Menu */}
+                {dropdownOpen && (
+                  <div
+                    style={{
+                      position: 'absolute',
+                      top: 'calc(100% + 6px)',
+                      left: 0,
+                      right: 0,
+                      maxHeight: '220px',
+                      overflowY: 'auto',
+                      background: '#151421',
+                      border: '1px solid rgba(201, 168, 76, 0.35)',
+                      borderRadius: 10,
+                      boxShadow: '0 18px 40px rgba(0, 0, 0, 0.65)',
+                      zIndex: 100,
+                      padding: '6px 0',
+                    }}
+                  >
+                    {/* No CTA option */}
+                    <div
+                      onClick={() => { setLinkTo(''); setDropdownOpen(false); }}
+                      style={{
+                        padding: '9px 14px',
+                        fontSize: '0.86rem',
+                        cursor: 'pointer',
+                        color: !linkTo ? 'var(--accent-gold, #C9A84C)' : 'var(--text-muted)',
+                        background: !linkTo ? 'rgba(201, 168, 76, 0.12)' : 'transparent',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'space-between',
+                        borderBottom: '1px solid rgba(255, 255, 255, 0.06)',
+                      }}
+                      onMouseEnter={(e) => { e.currentTarget.style.background = 'rgba(255, 255, 255, 0.06)'; }}
+                      onMouseLeave={(e) => { e.currentTarget.style.background = !linkTo ? 'rgba(201, 168, 76, 0.12)' : 'transparent'; }}
+                    >
+                      <span>-- No CTA Button (Display Image Only) --</span>
+                      {!linkTo && <Check size={14} color="var(--accent-gold, #C9A84C)" />}
+                    </div>
 
-                  {subcategories.length > 0 && (
-                    <optgroup label="🌸 Subcategory & Product Lines (Auto-Updated)">
-                      {subcategories.map((sub) => (
-                        <option key={sub._id} value={`/category/${encodeURIComponent(sub.name)}`}>
-                          {sub.name} {sub.category?.name ? `(${sub.category.name})` : ''}
-                        </option>
-                      ))}
-                    </optgroup>
-                  )}
-                </select>
+                    {/* Featured Sections Group */}
+                    <div style={{ padding: '8px 14px 4px', fontSize: '0.74rem', fontWeight: 700, color: 'var(--accent-pink, #C4386C)', textTransform: 'uppercase', letterSpacing: '0.08em' }}>
+                      ✨ Featured & Storefront Sections
+                    </div>
+                    {[
+                      { val: '/offers', label: 'Special Offers Section (/offers)' },
+                      { val: '/#bestsellers', label: 'Best Sellers Section (/#bestsellers)' },
+                      { val: '/categories', label: 'All Collections Grid (/categories)' },
+                      { val: '/products', label: 'All Products Catalog (/products)' },
+                    ].map((item) => (
+                      <div
+                        key={item.val}
+                        onClick={() => { setLinkTo(item.val); setDropdownOpen(false); }}
+                        style={{
+                          padding: '8px 14px',
+                          fontSize: '0.86rem',
+                          cursor: 'pointer',
+                          color: linkTo === item.val ? 'var(--accent-gold, #C9A84C)' : 'var(--text-primary)',
+                          background: linkTo === item.val ? 'rgba(201, 168, 76, 0.12)' : 'transparent',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'space-between',
+                        }}
+                        onMouseEnter={(e) => { e.currentTarget.style.background = 'rgba(255, 255, 255, 0.06)'; }}
+                        onMouseLeave={(e) => { e.currentTarget.style.background = linkTo === item.val ? 'rgba(201, 168, 76, 0.12)' : 'transparent'; }}
+                      >
+                        <span>{item.label}</span>
+                        {linkTo === item.val && <Check size={14} color="var(--accent-gold, #C9A84C)" />}
+                      </div>
+                    ))}
+
+                    {/* Dynamic Main Categories */}
+                    {categories.length > 0 && (
+                      <>
+                        <div style={{ padding: '12px 14px 4px', fontSize: '0.74rem', fontWeight: 700, color: 'var(--accent-gold, #C9A84C)', textTransform: 'uppercase', letterSpacing: '0.08em', borderTop: '1px solid rgba(255, 255, 255, 0.06)', marginTop: 4 }}>
+                          💎 Main Categories / Collections
+                        </div>
+                        {categories.map((cat) => {
+                          const val = `/category/${encodeURIComponent(cat.name)}`;
+                          const isSel = linkTo === val;
+                          return (
+                            <div
+                              key={cat._id}
+                              onClick={() => { setLinkTo(val); setDropdownOpen(false); }}
+                              style={{
+                                padding: '8px 14px',
+                                fontSize: '0.86rem',
+                                cursor: 'pointer',
+                                color: isSel ? 'var(--accent-gold, #C9A84C)' : 'var(--text-primary)',
+                                background: isSel ? 'rgba(201, 168, 76, 0.12)' : 'transparent',
+                                display: 'flex',
+                                alignItems: 'center',
+                                justifyContent: 'space-between',
+                              }}
+                              onMouseEnter={(e) => { e.currentTarget.style.background = 'rgba(255, 255, 255, 0.06)'; }}
+                              onMouseLeave={(e) => { e.currentTarget.style.background = isSel ? 'rgba(201, 168, 76, 0.12)' : 'transparent'; }}
+                            >
+                              <span>{cat.name} Collection (/category/{cat.name})</span>
+                              {isSel && <Check size={14} color="var(--accent-gold, #C9A84C)" />}
+                            </div>
+                          );
+                        })}
+                      </>
+                    )}
+
+                    {/* Dynamic Subcategories */}
+                    {subcategories.length > 0 && (
+                      <>
+                        <div style={{ padding: '12px 14px 4px', fontSize: '0.74rem', fontWeight: 700, color: '#A78BFA', textTransform: 'uppercase', letterSpacing: '0.08em', borderTop: '1px solid rgba(255, 255, 255, 0.06)', marginTop: 4 }}>
+                          🌸 Subcategories & Lines
+                        </div>
+                        {subcategories.map((sub) => {
+                          const val = `/category/${encodeURIComponent(sub.name)}`;
+                          const isSel = linkTo === val;
+                          return (
+                            <div
+                              key={sub._id}
+                              onClick={() => { setLinkTo(val); setDropdownOpen(false); }}
+                              style={{
+                                padding: '8px 14px',
+                                fontSize: '0.86rem',
+                                cursor: 'pointer',
+                                color: isSel ? 'var(--accent-gold, #C9A84C)' : 'var(--text-primary)',
+                                background: isSel ? 'rgba(201, 168, 76, 0.12)' : 'transparent',
+                                display: 'flex',
+                                alignItems: 'center',
+                                justifyContent: 'space-between',
+                              }}
+                              onMouseEnter={(e) => { e.currentTarget.style.background = 'rgba(255, 255, 255, 0.06)'; }}
+                              onMouseLeave={(e) => { e.currentTarget.style.background = isSel ? 'rgba(201, 168, 76, 0.12)' : 'transparent'; }}
+                            >
+                              <span>{sub.name} {sub.category?.name ? `(${sub.category.name})` : ''}</span>
+                              {isSel && <Check size={14} color="var(--accent-gold, #C9A84C)" />}
+                            </div>
+                          );
+                        })}
+                      </>
+                    )}
+                  </div>
+                )}
+
                 <p style={{ margin: '6px 0 0', fontSize: '0.74rem', color: 'var(--text-muted)' }}>
                   Selecting a destination automatically adds an "Explore Collection →" button at the bottom centre of this banner. Future categories & subcategories added to your catalog will automatically appear in this list.
                 </p>

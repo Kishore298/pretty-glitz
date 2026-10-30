@@ -24,6 +24,7 @@ const Home = () => {
   const [offers, setOffers] = useState([]);
   const [collections, setCollections] = useState([]);
   const [banners, setBanners] = useState([]);
+  const [loadingBanners, setLoadingBanners] = useState(true);
   const [testimonials, setTestimonials] = useState([]);
   const [viewportWidth, setViewportWidth] = useState(window.innerWidth);
   const [loadingCollections, setLoadingCollections] = useState(true);
@@ -125,6 +126,8 @@ const Home = () => {
       setBanners(Array.isArray(data) ? data : []);
     } catch (err) {
       console.error(err);
+    } finally {
+      setLoadingBanners(false);
     }
   };
 
@@ -271,7 +274,7 @@ const Home = () => {
   return (
     <div className="home-page" style={{ background: 'transparent' }}>
       {/* Storefront Hero Banner Slider (2.5s auto-scroll, manual buttons on desktop, touch swipe on mobile) */}
-      <HeroBannerCarousel banners={banners} />
+      <HeroBannerCarousel banners={banners} loading={loadingBanners} />
 
       {/* Collections Grid — restored to the earlier collection-grid/theme-card design */}
       <section

@@ -5,11 +5,12 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { CartContext } from '../context/CartContext';
 import { useWishlist } from '../context/WishlistContext';
 import { optimizeImageUrl } from '../utils/cloudinary';
-import { Check, ChevronRight, Share2, ZoomIn, Plus, Minus, ShoppingBag, Heart } from 'lucide-react';
+import { Check, ChevronRight, Share2, ZoomIn, Plus, Minus, ShoppingBag, Heart, Ruler } from 'lucide-react';
 import ProductCard from '../components/ProductCard';
 import CollectionProductDetailCard from '../components/CollectionProductDetailCard';
 import LotusDivider from '../components/LotusDivider';
 import ProductDescriptionDisplay from '../components/ProductDescriptionDisplay';
+import BangleSizeChartModal from '../components/BangleSizeChartModal';
 import logoImg from '../assets/pretty-glitz-logo.png';
 
 const ProductDetail = () => {
@@ -25,6 +26,9 @@ const ProductDetail = () => {
   const [addedFeedback, setAddedFeedback] = useState(false);
   const [isZoomed, setIsZoomed] = useState(false);
   const [mousePos, setMousePos] = useState({ x: 0, y: 0 });
+  const [touchStartX, setTouchStartX] = useState(null);
+  const [touchEndX, setTouchEndX] = useState(null);
+  const [showSizeChart, setShowSizeChart] = useState(false);
 
   const { addToCart, updateQuantity, removeFromCart, getCartItemQuantity, isInCart } = useContext(CartContext);
   const { isInWishlist, toggleWishlist } = useWishlist();
@@ -185,37 +189,94 @@ const ProductDetail = () => {
               </div>
             )}
 
-            {/* Main Image with Zoom */}
+            {/* Main Image with Zoom and Mobile Touch Swipe */}
             <div
               className="product-gallery-main"
               onMouseEnter={() => setIsZoomed(true)}
               onMouseLeave={() => setIsZoomed(false)}
               onMouseMove={handleMouseMove}
+              onTouchStart={(e) => {
+                setTouchEndX(null);
+                setTouchStartX(e.targetTouches[0].clientX);
+              }}
+              onTouchMove={(e) => setTouchEndX(e.targetTouches[0].clientX)}
+              onTouchEnd={() => {
+                if (!touchStartX || !touchEndX || !product?.images || product.images.length <= 1) return;
+                const distance = touchStartX - touchEndX;
+                if (distance > 35) {
+                  setActiveImage((prev) => (prev + 1) % product.images.length);
+                } else if (distance < -35) {
+                  setActiveImage((prev) => (prev - 1 + product.images.length) % product.images.length);
+                }
+              }}
+              style={{ touchAction: product?.images?.length > 1 ? 'pan-y' : 'auto' }}
             >
               <AnimatePresence mode="wait">
                 <motion.div
                   key={activeImage}
-                  initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.3 }}
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  exit={{ opacity: 0 }}
+                  transition={{ duration: 0.25 }}
                   style={{ width: '100%', height: '100%' }}
                 >
                   <img
-                    src={product.images?.[activeImage]?.url ? optimizeImageUrl(product.images[activeImage].url, 1000) : logoImg}
+                    src={product.images?.[activeImage]?.url ? optimizeImageUrl(product.images[activeImage].url, 1200) : logoImg}
                     alt={product.name}
                     onError={(e) => {
                       e.currentTarget.onerror = null;
                       e.currentTarget.src = logoImg;
+                      e.currentTarget.style.objectFit = 'contain';
                       e.currentTarget.style.padding = '40px';
                     }}
                     style={{
-                      width: '100%', height: '100%', objectFit: 'contain',
-                      padding: product.images?.[activeImage]?.url ? 0 : '40px',
+                      width: '100%',
+                      height: '100%',
+                      objectFit: product.images?.[activeImage]?.url ? 'cover' : 'contain',
+                      display: 'block',
+                      padding: 0,
                       transform: isZoomed ? 'scale(2)' : 'scale(1)',
                       transformOrigin: `${mousePos.x}% ${mousePos.y}%`,
-                      transition: isZoomed ? 'none' : 'transform 0.3s ease-out'
+                      transition: isZoomed ? 'none' : 'transform 0.3s ease-out',
                     }}
                   />
                 </motion.div>
               </AnimatePresence>
+
+              {/* Dots on mobile when multiple images */}
+              {product.images?.length > 1 && (
+                <div
+                  style={{
+                    position: 'absolute',
+                    bottom: 14,
+                    left: '50%',
+                    transform: 'translateX(-50%)',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: 5,
+                    zIndex: 2,
+                    background: 'rgba(0,0,0,0.35)',
+                    backdropFilter: 'blur(4px)',
+                    WebkitBackdropFilter: 'blur(4px)',
+                    padding: '4px 8px',
+                    borderRadius: 999,
+                    pointerEvents: 'none',
+                  }}
+                >
+                  {product.images.map((_, i) => (
+                    <span
+                      key={i}
+                      style={{
+                        width: i === activeImage ? 14 : 6,
+                        height: 6,
+                        borderRadius: 999,
+                        background: i === activeImage ? '#FFFFFF' : 'rgba(255,255,255,0.45)',
+                        transition: 'all 0.2s ease',
+                      }}
+                    />
+                  ))}
+                </div>
+              )}
 
               {!isZoomed && (
                 <div className="product-gallery-zoom-badge">
@@ -281,11 +342,33 @@ const ProductDetail = () => {
               </div>
 
               {/* Bangle Size Selector */}
-              {(product.category || '').toLowerCase().includes('bangles') && product.sizes?.length > 0 && (
+              {product.sizes?.length > 0 && (
                 <div className="product-detail-section">
-                  <span className="product-detail-label">
-                    Select Size
-                  </span>
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 10 }}>
+                    <span className="product-detail-label" style={{ margin: 0 }}>
+                      Select Size
+                    </span>
+                    <button
+                      type="button"
+                      onClick={() => setShowSizeChart(true)}
+                      style={{
+                        background: 'none',
+                        border: 'none',
+                        cursor: 'pointer',
+                        display: 'inline-flex',
+                        alignItems: 'center',
+                        gap: 5,
+                        fontSize: '0.8rem',
+                        fontWeight: 600,
+                        color: 'var(--accent, #C4386C)',
+                        textDecoration: 'underline',
+                        textUnderlineOffset: 3,
+                        padding: 0,
+                      }}
+                    >
+                      <Ruler size={14} /> Size Guide
+                    </button>
+                  </div>
                   <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
                     {product.sizes.map((s, idx) => (
                       <button
@@ -612,6 +695,12 @@ const ProductDetail = () => {
         )}
 
       </div>
+
+      {/* Bangle Sizing Chart Modal */}
+      <BangleSizeChartModal
+        isOpen={showSizeChart}
+        onClose={() => setShowSizeChart(false)}
+      />
     </div>
   );
 };

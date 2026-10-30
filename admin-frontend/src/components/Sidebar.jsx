@@ -64,46 +64,31 @@ const Sidebar = ({ isOpen, setIsOpen }) => {
       {/* Brand Header */}
       <div style={{ padding: '26px 20px 18px' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
-          <div
+          <img
+            src="/pretty-glitz-logo.png"
+            alt="PrettyGlitz Logo"
             style={{
-              width: 76,
-              height: 76,
-              borderRadius: '50%',
-              background: 'linear-gradient(135deg, #C4386C, #8A2BE2, #C9A84C)',
-              padding: '2.5px',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              boxShadow: '0 8px 24px rgba(196, 56, 108, 0.38)',
+              height: 52,
+              width: 'auto',
+              objectFit: 'contain',
+              display: 'block',
               flexShrink: 0,
-              overflow: 'hidden',
-              backgroundColor: '#FFFFFF',
             }}
-          >
-            <img
-              src="/pritty-glitz-logo1.png"
-              alt="PrettyGlitz Logo"
-              style={{
-                width: '100%',
-                height: '100%',
-                objectFit: 'cover',
-                objectPosition: 'center 25%',
-                borderRadius: '50%',
-                imageRendering: '-webkit-optimize-contrast',
-                filter: 'contrast(1.04) brightness(1.02)',
-              }}
-            />
-          </div>
+          />
           <div style={{ minWidth: 0 }}>
             <div
               style={{
                 fontFamily: 'Outfit, sans-serif',
                 fontWeight: 800,
                 fontSize: '1.45rem',
-                letterSpacing: '-0.02em',
-                color: 'var(--text-primary, #FAF9FC)',
+                letterSpacing: '0.04em',
+                background: 'linear-gradient(90deg, #C4386C, #8A2BE2, #C9A84C)',
+                WebkitBackgroundClip: 'text',
+                WebkitTextFillColor: 'transparent',
+                backgroundClip: 'text',
                 lineHeight: 1.15,
                 whiteSpace: 'nowrap',
+                display: 'inline-block',
               }}
             >
               PrettyGlitz

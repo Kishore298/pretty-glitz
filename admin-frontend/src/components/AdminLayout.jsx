@@ -118,7 +118,18 @@ const AdminLayout = ({ children }) => {
                     flexShrink: 0,
                   }}
                 />
-                <span style={{ fontWeight: 800, fontSize: '1.1rem', letterSpacing: '-0.01em', color: 'var(--text-primary)' }}>
+                <span style={{
+                  fontFamily: 'Outfit, sans-serif',
+                  fontWeight: 800,
+                  fontSize: '1.25rem',
+                  letterSpacing: '0.04em',
+                  background: 'linear-gradient(90deg, #C4386C, #8A2BE2, #C9A84C)',
+                  WebkitBackgroundClip: 'text',
+                  WebkitTextFillColor: 'transparent',
+                  backgroundClip: 'text',
+                  whiteSpace: 'nowrap',
+                  display: 'inline-block',
+                }}>
                   PrettyGlitz
                 </span>
               </Link>

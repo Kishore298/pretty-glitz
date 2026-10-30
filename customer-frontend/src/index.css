@@ -805,8 +805,10 @@ section,
 .product-gallery-main {
   flex: 1;
   width: 100%;
-  aspect-ratio: 4/5;
-  max-height: 480px;
+  aspect-ratio: 1 / 1;
+  max-width: 540px;
+  max-height: 540px;
+  margin: 0 auto;
   background: var(--bg-secondary);
   border-radius: 18px;
   overflow: hidden;
@@ -1400,8 +1402,14 @@ section,
   font-family: 'Outfit', sans-serif;
   font-weight: 800;
   font-size: 1.55rem;
-  letter-spacing: 0.05em;
+  letter-spacing: 0.04em;
   line-height: 1;
+  background: linear-gradient(90deg, #C4386C, #8A2BE2, #C9A84C);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  white-space: nowrap;
+  display: inline-block;
 }
 
 @media (max-width: 900px) {
@@ -1465,26 +1473,15 @@ section,
 
 /* ─── Complete Your Look: Single Product Presentation Layout ── */
 .collection-product-presentation {
-  display: grid;
-  grid-template-columns: minmax(280px, 360px) 1fr;
-  gap: 32px;
-  align-items: start;
-  padding: 24px 0 36px;
+  width: 100%;
+  padding: 28px 0 40px;
   border-bottom: 1px solid var(--border);
   position: relative;
 }
 
 .collection-product-presentation.is-last {
   border-bottom: none;
-  padding-bottom: 8px;
-}
-
-@media (max-width: 768px) {
-  .collection-product-presentation {
-    grid-template-columns: 1fr;
-    gap: 20px;
-    padding: 18px 0 28px;
-  }
+  padding-bottom: 12px;
 }
 
 /* ─── Category Discovery Tab Pills ────────────────────────── */

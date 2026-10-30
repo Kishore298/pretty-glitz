@@ -61,7 +61,7 @@ export const getWhatsAppUrl = (text = WHATSAPP_DEFAULT_MESSAGE) => {
 
 export const BRAND_NAME = 'PrettyGlitz';
 export const BRAND_EMAIL = 'hello@prettyglitz.com';
-export const BRAND_INSTAGRAM = 'https://instagram.com/prettyglitz';
+export const BRAND_INSTAGRAM = 'https://www.instagram.com/prettyglitz_collections?utm_source=ig_web_button_share_sheet&obrf=ZDNlZDc0MzIxNw==';
 
 // ---------------------------------------------------------------------------
 // LocalStorage Keys — centralised to avoid typo-driven storage mismatches

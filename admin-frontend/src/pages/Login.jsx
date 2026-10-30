@@ -129,12 +129,25 @@ const Login = () => {
               fontFamily: 'Outfit, sans-serif',
               fontWeight: 800,
               fontSize: '1.95rem',
-              color: '#FAF9FC',
               margin: 0,
-              letterSpacing: '-0.02em',
+              letterSpacing: '0.02em',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              gap: 8,
             }}
           >
-            PrettyGlitz <span className="glitz-text">Console</span>
+            <span
+              style={{
+                background: 'linear-gradient(90deg, #C4386C, #8A2BE2, #C9A84C)',
+                WebkitBackgroundClip: 'text',
+                WebkitTextFillColor: 'transparent',
+                backgroundClip: 'text',
+              }}
+            >
+              PrettyGlitz
+            </span>
+            <span style={{ color: '#FAF9FC' }}>Console</span>
           </h1>
 
           <p

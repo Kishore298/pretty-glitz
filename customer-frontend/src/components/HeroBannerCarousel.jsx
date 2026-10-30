@@ -41,12 +41,33 @@ const DEFAULT_FALLBACK_BANNERS = [
   },
 ];
 
-const HeroBannerCarousel = ({ banners = [] }) => {
-  // Use DB banners if available, otherwise fallback to curated luxury banner slides
-  const activeSlides = banners.length > 0 ? banners : DEFAULT_FALLBACK_BANNERS;
+const HeroBannerCarousel = ({ banners = [], loading = false }) => {
+  // STRICT LOGIC:
+  // 1. Filter banners from the database that have a valid image URL and are active.
+  const dynamicBanners = Array.isArray(banners)
+    ? banners.filter(
+        (b) => b && b.isActive !== false && (b.desktopImage?.url || b.mobileImage?.url)
+      )
+    : [];
+
+  const hasDynamicBanners = dynamicBanners.length > 0;
+
+  // 2. If ANY dynamic banner exists from the API, ONLY use dynamic banners.
+  // The static unsplash images are 100% vanished / omitted.
+  // If loading and no dynamic banners yet, keep activeSlides empty so static images don't flash.
+  const activeSlides = hasDynamicBanners
+    ? dynamicBanners
+    : (loading ? [] : DEFAULT_FALLBACK_BANNERS);
 
   const [currentIndex, setCurrentIndex] = useState(0);
   const [isPaused, setIsPaused] = useState(false);
+
+  // Auto-clamp / reset currentIndex when activeSlides changes (e.g. from 3 fallbacks to 1 dynamic banner)
+  useEffect(() => {
+    if (currentIndex >= activeSlides.length) {
+      setCurrentIndex(0);
+    }
+  }, [activeSlides.length, currentIndex]);
 
   // Touch tracking for finger swipe on mobile
   const touchStartX = useRef(0);
@@ -55,15 +76,17 @@ const HeroBannerCarousel = ({ banners = [] }) => {
 
   // Advance to next slide
   const handleNext = useCallback(() => {
+    if (activeSlides.length <= 1) return;
     setCurrentIndex((prev) => (prev + 1) % activeSlides.length);
   }, [activeSlides.length]);
 
   // Go to previous slide
   const handlePrev = useCallback(() => {
+    if (activeSlides.length <= 1) return;
     setCurrentIndex((prev) => (prev - 1 + activeSlides.length) % activeSlides.length);
   }, [activeSlides.length]);
 
-  // Auto-scroll every 2.5 seconds (2500ms)
+  // Auto-scroll every 2.5 seconds (2500ms) only when multiple slides exist
   useEffect(() => {
     if (activeSlides.length <= 1 || isPaused) return;
 
@@ -73,6 +96,34 @@ const HeroBannerCarousel = ({ banners = [] }) => {
 
     return () => clearInterval(timer);
   }, [activeSlides.length, isPaused, handleNext]);
+
+  // If loading and awaiting dynamic banners, render a smooth placeholder instead of flashing static images
+  if (loading && activeSlides.length === 0) {
+    return (
+      <section
+        className="hero-banner-section"
+        aria-label="Loading Hero Banners"
+        style={{
+          position: 'relative',
+          width: '100%',
+          overflow: 'hidden',
+          userSelect: 'none',
+        }}
+      >
+        <div
+          className="hero-banner-img"
+          style={{
+            background: 'linear-gradient(135deg, rgba(196, 56, 108, 0.04) 0%, rgba(201, 168, 76, 0.07) 50%, rgba(196, 56, 108, 0.04) 100%)',
+          }}
+        />
+      </section>
+    );
+  }
+
+  // If no slides available at all, return null
+  if (activeSlides.length === 0) {
+    return null;
+  }
 
   // Touch event handlers for mobile finger swipe
   const handleTouchStart = (e) => {

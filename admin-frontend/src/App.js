@@ -38,35 +38,16 @@ const AdminLoadingSplash = () => (
       }}
     />
 
-    {/* Brand Logo Emblem */}
-    <div
-      style={{
-        width: 120,
-        height: 120,
-        borderRadius: '50%',
-        background: 'linear-gradient(135deg, #C4386C, #8A2BE2, #C9A84C)',
-        padding: '3px',
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-        marginBottom: 20,
-        boxShadow: '0 12px 42px rgba(196, 56, 108, 0.45)',
-        animation: 'pulse 2s infinite ease-in-out',
-        overflow: 'hidden',
-        backgroundColor: '#FFFFFF',
-      }}
-    >
+    {/* Brand Logo */}
+    <div style={{ marginBottom: 16 }}>
       <img
-        src="/pritty-glitz-logo1.png"
+        src="/pretty-glitz-logo.png"
         alt="PrettyGlitz Logo"
         style={{
-          width: '100%',
-          height: '100%',
-          objectFit: 'cover',
-          objectPosition: 'center 25%',
-          borderRadius: '50%',
-          imageRendering: '-webkit-optimize-contrast',
-          filter: 'contrast(1.04) brightness(1.02)',
+          height: 80,
+          width: 'auto',
+          objectFit: 'contain',
+          display: 'block',
         }}
       />
     </div>
@@ -74,11 +55,15 @@ const AdminLoadingSplash = () => (
     <div
       style={{
         fontFamily: 'Outfit, sans-serif',
-        fontSize: '1.4rem',
+        fontSize: '1.6rem',
         fontWeight: 800,
-        color: '#FFFFFF',
-        letterSpacing: '-0.01em',
+        letterSpacing: '0.04em',
+        background: 'linear-gradient(90deg, #C4386C, #8A2BE2, #C9A84C)',
+        WebkitBackgroundClip: 'text',
+        WebkitTextFillColor: 'transparent',
+        backgroundClip: 'text',
         marginBottom: 6,
+        display: 'inline-block',
       }}
     >
       PrettyGlitz

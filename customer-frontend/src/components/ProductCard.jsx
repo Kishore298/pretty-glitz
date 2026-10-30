@@ -10,11 +10,39 @@ import logoImg from '../assets/pretty-glitz-logo.png';
 const ProductCard = ({ product, showVariants = false }) => {
   const { isDark } = useTheme();
   const [isHovered, setIsHovered] = useState(false);
+  const [activeImgIndex, setActiveImgIndex] = useState(0);
+  const [touchStartX, setTouchStartX] = useState(null);
+  const [touchEndX, setTouchEndX] = useState(null);
+
   const { addToCart, updateQuantity, removeFromCart, isInCart, getCartItemQuantity } = useContext(CartContext);
   const { isInWishlist, toggleWishlist } = useWishlist();
   const navigate = useNavigate();
 
   const inWishlist = isInWishlist(product._id);
+  const images = product.images && product.images.length > 0 ? product.images : [];
+  const hasMultipleImages = images.length > 1;
+  const currentImage = images[activeImgIndex] || images[0];
+
+  const handleTouchStart = (e) => {
+    setTouchEndX(null);
+    setTouchStartX(e.targetTouches[0].clientX);
+  };
+
+  const handleTouchMove = (e) => {
+    setTouchEndX(e.targetTouches[0].clientX);
+  };
+
+  const handleTouchEnd = (e) => {
+    if (!touchStartX || !touchEndX || !hasMultipleImages) return;
+    const distance = touchStartX - touchEndX;
+    if (distance > 35) {
+      // Swiped left -> next photo
+      setActiveImgIndex((prev) => (prev + 1) % images.length);
+    } else if (distance < -35) {
+      // Swiped right -> prev photo
+      setActiveImgIndex((prev) => (prev - 1 + images.length) % images.length);
+    }
+  };
 
   // Products with sizes/pieceCounts need the detail page for selection
   const needsDetailPage =
@@ -76,19 +104,25 @@ const ProductCard = ({ product, showVariants = false }) => {
           height: '100%',
         }}
       >
-        {/* Image Container */}
-        <div style={{
-          position: 'relative',
-          aspectRatio: '1 / 1',
-          background: isDark ? '#161622' : '#F7F5F2',
-          borderRadius: 10,
-          overflow: 'hidden',
-          marginBottom: 6,
-          transition: 'background 0.35s ease',
-        }}>
-          {product.images && product.images[0] ? (
+        {/* Image Container with Mobile Touch Swipe */}
+        <div
+          onTouchStart={handleTouchStart}
+          onTouchMove={handleTouchMove}
+          onTouchEnd={handleTouchEnd}
+          style={{
+            position: 'relative',
+            aspectRatio: '1 / 1',
+            background: isDark ? '#161622' : '#F7F5F2',
+            borderRadius: 10,
+            overflow: 'hidden',
+            marginBottom: hasMultipleImages ? 4 : 6,
+            transition: 'background 0.35s ease',
+            touchAction: hasMultipleImages ? 'pan-y' : 'auto',
+          }}
+        >
+          {currentImage ? (
             <img
-              src={optimizeImageUrl(product.images[0].url, 400)}
+              src={optimizeImageUrl(currentImage.url, 400)}
               alt={product.name}
               loading="lazy"
               onError={(e) => {
@@ -101,7 +135,7 @@ const ProductCard = ({ product, showVariants = false }) => {
                 width: '100%', height: '100%',
                 objectFit: 'cover',
                 transform: isHovered ? 'scale(1.05)' : 'scale(1)',
-                transition: 'transform 0.45s cubic-bezier(0.16, 1, 0.3, 1)',
+                transition: 'transform 0.45s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.2s ease',
               }}
             />
           ) : (
@@ -121,6 +155,41 @@ const ProductCard = ({ product, showVariants = false }) => {
                   filter: 'contrast(1.04)',
                 }}
               />
+            </div>
+          )}
+
+          {/* Dots Indicator for Mobile Swipe */}
+          {hasMultipleImages && (
+            <div
+              style={{
+                position: 'absolute',
+                bottom: 8,
+                left: '50%',
+                transform: 'translateX(-50%)',
+                display: 'flex',
+                alignItems: 'center',
+                gap: 4,
+                zIndex: 2,
+                background: 'rgba(0,0,0,0.35)',
+                backdropFilter: 'blur(4px)',
+                WebkitBackdropFilter: 'blur(4px)',
+                padding: '3px 7px',
+                borderRadius: 999,
+                pointerEvents: 'none',
+              }}
+            >
+              {images.map((_, i) => (
+                <span
+                  key={i}
+                  style={{
+                    width: i === activeImgIndex ? 12 : 5,
+                    height: 5,
+                    borderRadius: 999,
+                    background: i === activeImgIndex ? '#FFFFFF' : 'rgba(255,255,255,0.45)',
+                    transition: 'all 0.25s ease',
+                  }}
+                />
+              ))}
             </div>
           )}
 
@@ -211,6 +280,61 @@ const ProductCard = ({ product, showVariants = false }) => {
             />
           </button>
         </div>
+
+        {/* Amazon-style Multiple Images Thumbnails Strip */}
+        {hasMultipleImages && (
+          <div
+            onClick={(e) => { e.preventDefault(); e.stopPropagation(); }}
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: 5,
+              overflowX: 'auto',
+              padding: '3px 0 6px',
+              scrollbarWidth: 'none',
+              msOverflowStyle: 'none',
+            }}
+          >
+            {images.slice(0, 5).map((img, idx) => (
+              <button
+                key={idx}
+                type="button"
+                onClick={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  setActiveImgIndex(idx);
+                }}
+                onMouseEnter={() => setActiveImgIndex(idx)}
+                style={{
+                  width: 32,
+                  height: 32,
+                  borderRadius: 6,
+                  overflow: 'hidden',
+                  padding: 0,
+                  border: `1.5px solid ${activeImgIndex === idx ? 'var(--accent, #C4386C)' : 'var(--border)'}`,
+                  boxShadow: activeImgIndex === idx ? '0 0 0 1px var(--accent, #C4386C)' : 'none',
+                  cursor: 'pointer',
+                  background: 'var(--bg-secondary)',
+                  flexShrink: 0,
+                  transition: 'all 0.15s ease',
+                  opacity: activeImgIndex === idx ? 1 : 0.65,
+                }}
+                aria-label={`View photo ${idx + 1}`}
+              >
+                <img
+                  src={optimizeImageUrl(img.url, 100)}
+                  alt=""
+                  style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                />
+              </button>
+            ))}
+            {images.length > 5 && (
+              <span style={{ fontSize: '0.66rem', color: 'var(--text-muted)', fontWeight: 600, padding: '0 2px' }}>
+                +{images.length - 5}
+              </span>
+            )}
+          </div>
+        )}
 
         {/* Content */}
         <div style={{
