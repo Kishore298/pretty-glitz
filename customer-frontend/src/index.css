@@ -28,18 +28,18 @@
 
 /* ─── CSS Custom Properties (Premium Theme Tokens) ────── */
 :root {
-  --bg: #FDFBF7;
-  --bg-secondary: #F5F0EA;
+  --bg: #FEFCF8;
+  --bg-secondary: #F7F3EB;
   --bg-card: #FFFFFF;
-  --bg-card-hover: #FAF7F2;
+  --bg-card-hover: #FAF6EE;
   --text: #1A1118;
   --text-secondary: #6B5E6F;
   --text-muted: #A49BA6;
   --border: rgba(26, 17, 24, 0.08);
   --border-strong: rgba(26, 17, 24, 0.15);
-  --nav-bg: rgba(253, 251, 247, 0.88);
+  --nav-bg: #FEFCF8;
   --shadow: rgba(26, 17, 24, 0.08);
-  --input-bg: #F5F0EA;
+  --input-bg: #F7F3EB;
   --glitter-opacity: 0.3;
   --glitter-blend: normal;
   --accent: #B8305E;
@@ -543,6 +543,26 @@ section,
   padding: 0 3px;
   font-family: 'Outfit', sans-serif;
   box-shadow: 0 2px 6px rgba(196, 56, 108, 0.5);
+}
+
+@media (max-width: 360px) {
+  .bottom-nav-item {
+    padding: 6px 0 2px;
+    gap: 2px;
+    font-size: 0.56rem;
+    letter-spacing: -0.02em;
+  }
+  .bottom-nav-item svg {
+    width: 17px !important;
+    height: 17px !important;
+  }
+  .bottom-nav-badge {
+    top: -4px;
+    right: -6px;
+    min-width: 15px;
+    height: 15px;
+    font-size: 8px;
+  }
 }
 
 /* ─── Homepage Best Sellers Carousel ───────────────────── */
@@ -1073,16 +1093,20 @@ section,
 
 .product-related-title {
   font-family: "Cormorant Garamond", Georgia, serif;
-  font-weight: 600;
-  font-size: clamp(1.5rem, 4vw, 2.4rem);
+  font-weight: 700;
+  font-size: clamp(1.8rem, 4vw, 2.6rem);
   color: var(--text);
   margin: 0;
+  letter-spacing: -0.01em;
 }
 
 .product-related-subtitle {
   color: var(--text-secondary);
   margin-top: 8px;
-  font-size: 0.9rem;
+  font-size: 0.95rem;
+  max-width: 580px;
+  margin-left: auto;
+  margin-right: auto;
 }
 
 /* ── Mobile Compact Tweaks (<= 648px) ───────────────────── */
@@ -1359,6 +1383,13 @@ section,
   image-rendering: -webkit-optimize-contrast;
   image-rendering: crisp-edges;
   display: block;
+  mix-blend-mode: multiply;
+  background-color: transparent;
+}
+
+[data-theme="dark"] .navbar-logo-img {
+  mix-blend-mode: normal;
+  display: block;
 }
 
 .navbar-brand-link:hover .navbar-logo-img {
@@ -1432,40 +1463,27 @@ section,
   }
 }
 
-/* ─── Collection Full Detail Cards ────────────────────────── */
-.collection-full-detail-card {
+/* ─── Complete Your Look: Single Product Presentation Layout ── */
+.collection-product-presentation {
   display: grid;
-  grid-template-columns: minmax(240px, 320px) 1fr;
-  gap: 24px;
-  background: var(--bg-card, #FFFFFF);
-  border: 1px solid var(--border);
-  border-radius: 20px;
-  padding: 24px;
+  grid-template-columns: minmax(280px, 360px) 1fr;
+  gap: 32px;
+  align-items: start;
+  padding: 24px 0 36px;
+  border-bottom: 1px solid var(--border);
   position: relative;
-  transition: transform 0.25s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.25s ease, border-color 0.25s ease;
-  box-shadow: 0 4px 16px rgba(26, 17, 24, 0.04);
 }
 
-.collection-full-detail-card:hover {
-  transform: translateY(-2px);
-  border-color: var(--accent-gold);
-  box-shadow: 0 12px 32px rgba(26, 17, 24, 0.08);
-}
-
-.dark .collection-full-detail-card {
-  background: var(--bg-secondary, #14141C);
-  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.4);
-}
-
-.dark .collection-full-detail-card:hover {
-  box-shadow: 0 14px 36px rgba(0, 0, 0, 0.6), 0 0 0 1px rgba(212, 175, 55, 0.25);
+.collection-product-presentation.is-last {
+  border-bottom: none;
+  padding-bottom: 8px;
 }
 
 @media (max-width: 768px) {
-  .collection-full-detail-card {
+  .collection-product-presentation {
     grid-template-columns: 1fr;
-    gap: 16px;
-    padding: 16px;
+    gap: 20px;
+    padding: 18px 0 28px;
   }
 }
 
@@ -1621,7 +1639,7 @@ section,
 /* ─── Hero Banner Carousel ──────────────────────────────────── */
 .hero-banner-section {
   padding-top: 100px;
-  background: var(--bg-primary);
+  background: var(--bg);
   position: relative;
   overflow: hidden;
   width: 100%;
@@ -1732,4 +1750,64 @@ section,
   width: 24px;
   background: var(--accent-gradient, linear-gradient(135deg, #C4386C, #8A2BE2));
   box-shadow: 0 2px 8px rgba(196, 56, 108, 0.4);
+}
+
+/* Banner Explore Collection CTA */
+.hero-banner-cta-container {
+  position: absolute;
+  bottom: 38px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 9;
+  pointer-events: auto;
+}
+
+.hero-banner-cta-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 10px 24px;
+  border-radius: 999px;
+  background: linear-gradient(135deg, #C4386C, #8A2BE2);
+  color: #FFFFFF !important;
+  font-family: 'Outfit', sans-serif;
+  font-size: 0.88rem;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  text-decoration: none !important;
+  white-space: nowrap;
+  box-shadow: 0 6px 20px rgba(196, 56, 108, 0.45), 0 2px 6px rgba(0, 0, 0, 0.2);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  backdrop-filter: blur(8px);
+  transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+  cursor: pointer;
+}
+
+.hero-banner-cta-btn:hover {
+  transform: translateY(-2px) scale(1.03);
+  box-shadow: 0 10px 28px rgba(196, 56, 108, 0.6), 0 0 16px rgba(201, 168, 76, 0.3);
+  background: linear-gradient(135deg, #D4477B, #9B3DFF);
+}
+
+.hero-banner-cta-btn:active {
+  transform: scale(0.98);
+}
+
+.hero-banner-cta-arrow {
+  transition: transform 0.2s ease;
+}
+
+.hero-banner-cta-btn:hover .hero-banner-cta-arrow {
+  transform: translateX(3px);
+}
+
+@media (max-width: 767px) {
+  .hero-banner-cta-container {
+    bottom: 34px;
+  }
+  .hero-banner-cta-btn {
+    padding: 8px 18px;
+    font-size: 0.8rem;
+  }
 }

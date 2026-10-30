@@ -8,6 +8,8 @@ import { optimizeImageUrl } from '../utils/cloudinary';
 import { Check, ChevronRight, Share2, ZoomIn, Plus, Minus, ShoppingBag, Heart } from 'lucide-react';
 import ProductCard from '../components/ProductCard';
 import CollectionProductDetailCard from '../components/CollectionProductDetailCard';
+import LotusDivider from '../components/LotusDivider';
+import ProductDescriptionDisplay from '../components/ProductDescriptionDisplay';
 import logoImg from '../assets/pretty-glitz-logo.png';
 
 const ProductDetail = () => {
@@ -387,17 +389,13 @@ const ProductDetail = () => {
                 <h3 className="product-details-heading">
                   Product Details
                 </h3>
-                <p className="product-details-body">
-                  {product.description}
-                </p>
+                <ProductDescriptionDisplay description={product.description} />
                 {product.category?.toLowerCase() === 'gift box combo' && product.giftBoxDetails && (
                   <>
                     <h3 className="product-details-heading" style={{ marginTop: 20 }}>
                       Included Items
                     </h3>
-                    <p className="product-details-body">
-                      {product.giftBoxDetails}
-                    </p>
+                    <ProductDescriptionDisplay description={product.giftBoxDetails} />
                   </>
                 )}
 
@@ -426,12 +424,13 @@ const ProductDetail = () => {
               <p className="product-related-subtitle">
                 Other handcrafted designs from the {product.category} collection with complete details & specifications
               </p>
+              <LotusDivider />
             </div>
 
             <div style={{
               display: 'flex',
               flexDirection: 'column',
-              gap: 20,
+              gap: 32,
             }}>
               {relatedProducts.map((relProduct, idx) => (
                 <motion.div
@@ -441,7 +440,10 @@ const ProductDetail = () => {
                   viewport={{ once: true }}
                   transition={{ delay: idx * 0.08 }}
                 >
-                  <CollectionProductDetailCard product={relProduct} />
+                  <CollectionProductDetailCard
+                    product={relProduct}
+                    isLast={idx === relatedProducts.length - 1}
+                  />
                 </motion.div>
               ))}
             </div>

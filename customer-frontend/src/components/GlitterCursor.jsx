@@ -79,7 +79,7 @@ const GlitterBackground = () => {
           ctx.globalAlpha = safeOpacity * 0.15;
           const grad = ctx.createRadialGradient(0, 0, 0, 0, 0, r * 2);
           grad.addColorStop(0, this.color);
-          grad.addColorStop(1, isDark ? 'rgba(0,0,0,0)' : 'rgba(253,251,247,0)');
+          grad.addColorStop(1, isDark ? 'rgba(0,0,0,0)' : 'rgba(254,252,248,0)');
           ctx.fillStyle = grad;
           ctx.beginPath();
           ctx.arc(0, 0, r * 2, 0, Math.PI * 2);
@@ -94,7 +94,7 @@ const GlitterBackground = () => {
             ctx.globalAlpha = safeOpacity * 0.12;
             const grad = ctx.createRadialGradient(0, 0, 0, 0, 0, this.radius * 2.5);
             grad.addColorStop(0, this.color);
-            grad.addColorStop(1, isDark ? 'rgba(0,0,0,0)' : 'rgba(253,251,247,0)');
+            grad.addColorStop(1, isDark ? 'rgba(0,0,0,0)' : 'rgba(254,252,248,0)');
             ctx.fillStyle = grad;
             ctx.beginPath();
             ctx.arc(0, 0, this.radius * 2.5, 0, Math.PI * 2);

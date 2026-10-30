@@ -203,6 +203,8 @@ const Login = () => {
                   color: 'var(--text-muted)',
                   display: 'flex',
                   alignItems: 'center',
+                  pointerEvents: 'none',
+                  zIndex: 2,
                 }}>
                   <Phone size={17} />
                 </span>
@@ -215,7 +217,7 @@ const Login = () => {
                   required
                   style={{
                     width: '100%',
-                    padding: '12px 14px 12px 42px',
+                    padding: '12px 14px 12px 46px',
                     borderRadius: 12,
                     border: `1px solid var(--border)`,
                     background: isDark ? 'rgba(255,255,255,0.04)' : '#FBF9F6',
@@ -253,6 +255,8 @@ const Login = () => {
                   color: 'var(--text-muted)',
                   display: 'flex',
                   alignItems: 'center',
+                  pointerEvents: 'none',
+                  zIndex: 2,
                 }}>
                   <Lock size={17} />
                 </span>
@@ -264,7 +268,7 @@ const Login = () => {
                   required
                   style={{
                     width: '100%',
-                    padding: '12px 42px 12px 42px',
+                    padding: '12px 46px 12px 46px',
                     borderRadius: 12,
                     border: `1px solid var(--border)`,
                     background: isDark ? 'rgba(255,255,255,0.04)' : '#FBF9F6',

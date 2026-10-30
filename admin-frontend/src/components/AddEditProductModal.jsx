@@ -3,7 +3,6 @@ import {
   X,
   Plus,
   Trash2,
-  Sparkles,
   Gem,
   Tag,
   Star,
@@ -338,16 +337,21 @@ const AddEditProductModal = ({ isOpen, onClose, productId, onSuccess, isOfferPre
                   <div style={{ display: 'grid', gridTemplateColumns: '1.5fr 1fr', gap: 14 }}>
                     {field(
                       'Description *',
-                      <textarea
-                        name="description"
-                        required
-                        rows="3"
-                        value={formData.description}
-                        onChange={handleChange}
-                        placeholder="Detailed material, craftsmanship, styling advice..."
-                        className="admin-input"
-                        style={{ resize: 'vertical' }}
-                      />
+                      <div>
+                        <textarea
+                          name="description"
+                          required
+                          rows="3"
+                          value={formData.description}
+                          onChange={handleChange}
+                          placeholder="Detailed material, craftsmanship, styling advice..."
+                          className="admin-input"
+                          style={{ resize: 'vertical' }}
+                        />
+                        <span style={{ fontSize: '0.72rem', color: 'var(--text-muted)', marginTop: 4, display: 'block', lineHeight: 1.35 }}>
+                          Tip: Use separate lines, bullets (•), or "Key: Value" format (e.g. Material: Gold Plated) to automatically format specifications on the customer site.
+                        </span>
+                      </div>
                     )}
 
                     <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>

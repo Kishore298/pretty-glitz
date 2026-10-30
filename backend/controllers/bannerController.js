@@ -27,12 +27,13 @@ const normalizeImage = (img) => {
 
 const createBanner = async (req, res) => {
   try {
-    const { title, mobileImage, tabletImage, desktopImage, isActive, order } = req.body;
+    const { title, mobileImage, tabletImage, desktopImage, isActive, order, linkTo } = req.body;
     const banner = new Banner({
       title: title || 'Homepage Hero Banner',
       mobileImage: normalizeImage(mobileImage),
       tabletImage: normalizeImage(tabletImage),
       desktopImage: normalizeImage(desktopImage),
+      linkTo: linkTo || '',
       isActive: isActive !== undefined ? isActive : true,
       order: typeof order === 'number' ? order : 0,
     });

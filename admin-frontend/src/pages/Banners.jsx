@@ -19,9 +19,14 @@ const Banners = () => {
   const [title, setTitle] = useState('');
   const [desktopImage, setDesktopImage] = useState('');
   const [mobileImage, setMobileImage] = useState('');
+  const [linkTo, setLinkTo] = useState('');
   const [order, setOrder] = useState(0);
   const [isActive, setIsActive] = useState(true);
   const [isSubmitting, setIsSubmitting] = useState(false);
+
+  // Collections for dynamic redirect dropdown
+  const [categories, setCategories] = useState([]);
+  const [subcategories, setSubcategories] = useState([]);
 
   // Delete target
   const [deleteTarget, setDeleteTarget] = useState(null);
@@ -29,7 +34,21 @@ const Banners = () => {
 
   useEffect(() => {
     fetchBanners();
+    fetchCollections();
   }, []);
+
+  const fetchCollections = async () => {
+    try {
+      const [catRes, subRes] = await Promise.all([
+        api.get('/categories').catch(() => ({ data: [] })),
+        api.get('/subcategories').catch(() => ({ data: [] })),
+      ]);
+      setCategories(Array.isArray(catRes.data) ? catRes.data : []);
+      setSubcategories(Array.isArray(subRes.data) ? subRes.data : []);
+    } catch (e) {
+      console.warn('Could not load categories for banner destination dropdown', e);
+    }
+  };
 
   const fetchBanners = async () => {
     setLoading(true);
@@ -55,6 +74,7 @@ const Banners = () => {
     setTitle('');
     setDesktopImage('');
     setMobileImage('');
+    setLinkTo('');
     setOrder(banners.length);
     setIsActive(true);
     setIsModalOpen(true);
@@ -65,6 +85,7 @@ const Banners = () => {
     setTitle(banner.title || '');
     setDesktopImage(banner.desktopImage?.url || '');
     setMobileImage(banner.mobileImage?.url || '');
+    setLinkTo(banner.linkTo || '');
     setOrder(banner.order || 0);
     setIsActive(banner.isActive !== false);
     setIsModalOpen(true);
@@ -73,6 +94,7 @@ const Banners = () => {
   const closeModal = () => {
     setIsModalOpen(false);
     setEditingBanner(null);
+    setLinkTo('');
   };
 
   const handleSubmit = async (e) => {
@@ -88,6 +110,7 @@ const Banners = () => {
         title: title.trim() || 'Homepage Hero Banner',
         desktopImage: desktopImage || mobileImage, // fallback to mobile if desktop not uploaded
         mobileImage: mobileImage || desktopImage,   // fallback to desktop if mobile not uploaded
+        linkTo: linkTo || '',
         order: Number(order) || 0,
         isActive,
       };
@@ -407,6 +430,60 @@ const Banners = () => {
                     fontSize: '0.9rem',
                   }}
                 />
+              </div>
+
+              {/* Banner Destination / CTA Link (Dynamic Dropdown) */}
+              <div>
+                <label style={{ display: 'block', fontSize: '0.84rem', fontWeight: 600, color: 'var(--text-primary)', marginBottom: 6 }}>
+                  Explore Collection Destination (CTA Button on Banner)
+                </label>
+                <select
+                  value={linkTo}
+                  onChange={(e) => setLinkTo(e.target.value)}
+                  className="input-luxury"
+                  style={{
+                    width: '100%',
+                    padding: '10px 14px',
+                    borderRadius: 8,
+                    background: 'var(--surface-secondary, #1B1928)',
+                    border: '1px solid var(--border)',
+                    color: 'var(--text-primary)',
+                    fontSize: '0.9rem',
+                    cursor: 'pointer',
+                  }}
+                >
+                  <option value="">-- No CTA Button (Display Image Only) --</option>
+                  
+                  <optgroup label="✨ Featured & Storefront Sections">
+                    <option value="/offers">Special Offers Section (/offers)</option>
+                    <option value="/#bestsellers">Best Sellers Section (/#bestsellers)</option>
+                    <option value="/categories">All Collections Grid (/categories)</option>
+                    <option value="/products">All Products Catalog (/products)</option>
+                  </optgroup>
+
+                  {categories.length > 0 && (
+                    <optgroup label="💎 Main Categories / Collections (Auto-Updated)">
+                      {categories.map((cat) => (
+                        <option key={cat._id} value={`/category/${encodeURIComponent(cat.name)}`}>
+                          {cat.name} Collection (/category/{cat.name})
+                        </option>
+                      ))}
+                    </optgroup>
+                  )}
+
+                  {subcategories.length > 0 && (
+                    <optgroup label="🌸 Subcategory & Product Lines (Auto-Updated)">
+                      {subcategories.map((sub) => (
+                        <option key={sub._id} value={`/category/${encodeURIComponent(sub.name)}`}>
+                          {sub.name} {sub.category?.name ? `(${sub.category.name})` : ''}
+                        </option>
+                      ))}
+                    </optgroup>
+                  )}
+                </select>
+                <p style={{ margin: '6px 0 0', fontSize: '0.74rem', color: 'var(--text-muted)' }}>
+                  Selecting a destination automatically adds an "Explore Collection →" button at the bottom centre of this banner. Future categories & subcategories added to your catalog will automatically appear in this list.
+                </p>
               </div>
 
               {/* Two Image Upload Fields: Desktop & Mobile */}

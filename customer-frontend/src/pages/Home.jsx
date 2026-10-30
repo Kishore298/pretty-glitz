@@ -43,6 +43,13 @@ const Home = () => {
     fetchCategories();
     fetchBanners();
     fetchTestimonials();
+
+    if (window.location.hash === '#bestsellers') {
+      setTimeout(() => {
+        const el = document.getElementById('bestsellers');
+        if (el) el.scrollIntoView({ behavior: 'smooth' });
+      }, 350);
+    }
   }, []);
 
   useEffect(() => {
@@ -512,6 +519,7 @@ const Home = () => {
       {/* Best Sellers */}
       {(loadingBestsellers || bestsellers.length > 0) && (
         <section
+          id="bestsellers"
           className="section-py"
           style={{ background: 'var(--bg-secondary)', borderTop: '1px solid var(--border)' }}
         >

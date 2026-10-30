@@ -6,6 +6,7 @@ const bannerSchema = new mongoose.Schema({
   mobileImage: { url: String, publicId: String },
   tabletImage: { url: String, publicId: String },
   desktopImage: { url: String, publicId: String },
+  linkTo: { type: String, default: '' },
   isActive: { type: Boolean, default: true },
   order: { type: Number, default: 0 }
 }, { timestamps: true });

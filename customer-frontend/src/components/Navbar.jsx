@@ -1,14 +1,12 @@
 import React, { useState, useContext, useEffect, useRef } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
-import { Menu, X, Sun, Moon, ChevronDown, Gift, Search, ChevronRight, Heart, User, MessageCircle } from 'lucide-react';
+import { Menu, X, ChevronDown, Gift, Search, ChevronRight, User, MessageCircle } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useTheme } from '../context/ThemeContext';
 import { AuthContext } from '../context/AuthContext';
-import { useWishlist } from '../context/WishlistContext';
 import { getWhatsAppUrl, IS_WHATSAPP_CONFIGURED } from '../config/constants';
 import api from '../utils/api';
 import logoImg from '../assets/pretty-glitz-logo.png';
-import primaryLogoImg from '../assets/pritty-glitz-logo1.png';
 
 // Categories that appear as primary nav items
 const PRIMARY_CATEGORIES = ['Bangles', 'Artificial Flowers', 'Gift Box Combo', 'Jumkhas', 'Jewels'];
@@ -25,9 +23,7 @@ const Navbar = () => {
   const { pathname } = useLocation();
   const navigate = useNavigate();
   const { user } = useContext(AuthContext);
-  const { getWishlistCount } = useWishlist();
-  const { isDark, toggleTheme } = useTheme();
-  const wishlistCount = getWishlistCount();
+  const { isDark } = useTheme();
   const [allCategories, setAllCategories] = useState([]);
   const [searchResults, setSearchResults] = useState([]);
   const [isSearching, setIsSearching] = useState(false);
@@ -144,7 +140,7 @@ const Navbar = () => {
 
   const dropdownStyle = {
     position: 'absolute', top: 'calc(100% + 12px)',
-    background: isDark ? 'rgba(14,14,22,0.98)' : 'rgba(253,251,247,0.98)',
+    background: isDark ? 'rgba(14,14,22,0.98)' : 'var(--bg)',
     backdropFilter: 'blur(16px)',
     border: `1px solid var(--border)`,
     borderRadius: 12, overflow: 'hidden',
@@ -165,9 +161,12 @@ const Navbar = () => {
     <>
       <nav style={{
         position: 'fixed', top: 0, width: '100%', zIndex: 50,
-        background: scrolled ? 'var(--nav-bg)' : (isDark ? 'rgba(10,10,15,0.6)' : 'rgba(253,251,247,0.7)'),
-        backdropFilter: 'blur(16px)',
-        WebkitBackdropFilter: 'blur(16px)',
+        background: isDark
+          ? (scrolled ? 'var(--nav-bg)' : 'rgba(10,10,15,0.92)')
+          : 'var(--nav-bg)',
+        boxShadow: scrolled
+          ? (isDark ? '0 4px 20px rgba(0,0,0,0.45)' : '0 4px 20px -2px rgba(26,17,24,0.06)')
+          : 'none',
         borderBottom: `1px solid var(--border)`,
         transition: 'background 0.35s ease, border-color 0.35s ease, box-shadow 0.35s ease',
       }}>
@@ -177,13 +176,9 @@ const Navbar = () => {
             {/* Logo — natural aspect ratio, no circular mask */}
             <Link to="/" className="navbar-brand-link">
               <img
-                src={primaryLogoImg}
+                src={logoImg}
                 alt="PrettyGlitz"
                 className="navbar-logo-img"
-                onError={(e) => {
-                  e.currentTarget.onerror = null;
-                  e.currentTarget.src = logoImg;
-                }}
               />
               <span className="navbar-brand-text" style={{ color: 'var(--text)', transition: 'color 0.3s', whiteSpace: 'nowrap' }}>
                 PRETTY<span style={{
@@ -304,7 +299,7 @@ const Navbar = () => {
                       exit={{ opacity: 0, y: -10 }}
                       transition={{ duration: 0.15 }}
                       style={{
-                        background: isDark ? 'rgba(14,14,22,0.98)' : 'rgba(253,251,247,0.98)',
+                        background: isDark ? 'rgba(14,14,22,0.98)' : 'var(--bg)',
                         backdropFilter: 'blur(16px)',
                         border: `1px solid var(--border)`,
                         borderRadius: 16, overflow: 'hidden',
@@ -435,40 +430,6 @@ const Navbar = () => {
                   )}
                 </AnimatePresence>
               </div>
-
-              {/* Dark/Light Toggle */}
-              <button
-                onClick={toggleTheme}
-                style={iconBtnStyle}
-                title={isDark ? 'Switch to Light Mode' : 'Switch to Dark Mode'}
-              >
-                {isDark ? <Sun size={17} /> : <Moon size={17} />}
-              </button>
-
-              {/* Wishlist Icon */}
-              <Link to="/wishlist" style={{ position: 'relative', color: 'var(--text-secondary)', transition: 'color 0.2s', display: 'flex', alignItems: 'center' }}
-                onMouseEnter={e => e.currentTarget.style.color = 'var(--text)'}
-                onMouseLeave={e => e.currentTarget.style.color = 'var(--text-secondary)'}
-                title="My Wishlist"
-              >
-                <Heart size={20} />
-                {wishlistCount > 0 && (
-                  <motion.span
-                    initial={{ scale: 0 }}
-                    animate={{ scale: 1 }}
-                    style={{
-                      position: 'absolute', top: -6, right: -8,
-                      background: 'linear-gradient(135deg, #E11D48, #C4386C)',
-                      color: 'white', fontSize: '10px', fontWeight: 700,
-                      minWidth: 18, height: 18, padding: '0 4px',
-                      borderRadius: 999, display: 'flex', alignItems: 'center', justifyContent: 'center',
-                      boxShadow: '0 2px 8px rgba(225,29,72,0.5)',
-                    }}
-                  >
-                    {wishlistCount > 99 ? '99+' : wishlistCount}
-                  </motion.span>
-                )}
-              </Link>
 
               {/* User / Account Icon */}
               <Link
@@ -636,17 +597,6 @@ const Navbar = () => {
                   </div>
                   <ChevronRight size={14} opacity={0.6} />
                 </Link>
-              </div>
-
-              <div style={{ marginTop: 16, paddingTop: 24, borderTop: `1px solid var(--border)` }}>
-                <button onClick={() => { toggleTheme(); setIsOpen(false); }} style={{
-                  background: 'none', border: 'none', cursor: 'pointer',
-                  display: 'flex', alignItems: 'center', gap: 10,
-                  color: 'var(--text-secondary)', fontSize: '1rem',
-                }}>
-                  {isDark ? <Sun size={20} /> : <Moon size={20} />}
-                  {isDark ? 'Switch to Light Mode' : 'Switch to Dark Mode'}
-                </button>
               </div>
             </div>
           </motion.div>

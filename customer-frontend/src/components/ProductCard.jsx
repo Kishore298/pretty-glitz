@@ -163,7 +163,7 @@ const ProductCard = ({ product, showVariants = false }) => {
             )}
           </div>
 
-          {/* Top-Right Wishlist Button */}
+          {/* Bottom-Right Wishlist Button */}
           <button
             type="button"
             onClick={(e) => {
@@ -175,8 +175,8 @@ const ProductCard = ({ product, showVariants = false }) => {
             title={inWishlist ? 'Remove from wishlist' : 'Add to wishlist'}
             style={{
               position: 'absolute',
-              top: 6,
-              right: 6,
+              bottom: 8,
+              right: 8,
               width: 30,
               height: 30,
               borderRadius: '50%',

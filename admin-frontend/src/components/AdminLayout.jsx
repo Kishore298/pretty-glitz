@@ -106,36 +106,18 @@ const AdminLayout = ({ children }) => {
                   whiteSpace: 'nowrap',
                 }}
               >
-                <div
+                {/* Brand Logo - clean natural aspect ratio, no circular mask */}
+                <img
+                  src="/pretty-glitz-logo.png"
+                  alt="PrettyGlitz"
                   style={{
-                    width: 42,
-                    height: 42,
-                    borderRadius: '50%',
-                    background: 'linear-gradient(135deg, var(--accent-pink), var(--accent-purple))',
-                    padding: '2px',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    overflow: 'hidden',
+                    height: 38,
+                    width: 'auto',
+                    objectFit: 'contain',
+                    display: 'block',
                     flexShrink: 0,
-                    backgroundColor: '#FFFFFF',
-                    boxShadow: '0 3px 12px rgba(196, 56, 108, 0.3)',
                   }}
-                >
-                  <img
-                    src="/pritty-glitz-logo1.png"
-                    alt="PrettyGlitz"
-                    style={{
-                      width: '100%',
-                      height: '100%',
-                      borderRadius: '50%',
-                      objectFit: 'cover',
-                      objectPosition: 'center 25%',
-                      imageRendering: '-webkit-optimize-contrast',
-                      filter: 'contrast(1.04) brightness(1.02)',
-                    }}
-                  />
-                </div>
+                />
                 <span style={{ fontWeight: 800, fontSize: '1.1rem', letterSpacing: '-0.01em', color: 'var(--text-primary)' }}>
                   PrettyGlitz
                 </span>

@@ -4,7 +4,6 @@ import { useTheme } from '../context/ThemeContext';
 import { MapPin, Mail, Phone, Send } from 'lucide-react';
 import api from '../utils/api';
 import logoImg from '../assets/pretty-glitz-logo.png';
-import primaryLogoImg from '../assets/pritty-glitz-logo1.png';
 import { getWhatsAppUrl, IS_WHATSAPP_CONFIGURED } from '../config/constants';
 
 const Footer = () => {
@@ -55,34 +54,18 @@ const Footer = () => {
           {/* Brand */}
           <div>
             <div style={{ display: 'flex', alignItems: 'center', gap: 16, marginBottom: 18 }}>
-              <div style={{
-                width: 84, height: 84, borderRadius: '50%',
-                background: 'linear-gradient(135deg, #C4386C, #8A2BE2, #C9A84C)',
-                padding: '2.5px',
-                display: 'flex', alignItems: 'center', justifyContent: 'center',
-                boxShadow: '0 6px 24px rgba(196, 56, 108, 0.35)',
-                overflow: 'hidden',
-                flexShrink: 0,
-                backgroundColor: '#FFFFFF',
-              }}>
-                <img
-                  src={primaryLogoImg}
-                  alt="PrettyGlitz Logo"
-                  onError={(e) => {
-                    e.currentTarget.onerror = null;
-                    e.currentTarget.src = logoImg;
-                  }}
-                  style={{
-                    width: '100%',
-                    height: '100%',
-                    objectFit: 'cover',
-                    objectPosition: 'center 25%',
-                    borderRadius: '50%',
-                    imageRendering: '-webkit-optimize-contrast',
-                    filter: 'contrast(1.04) brightness(1.02)',
-                  }}
-                />
-              </div>
+              {/* Brand Logo - natural aspect ratio, no circular mask */}
+              <img
+                src={logoImg}
+                alt="PrettyGlitz Logo"
+                style={{
+                  height: 60,
+                  width: 'auto',
+                  objectFit: 'contain',
+                  display: 'block',
+                  flexShrink: 0,
+                }}
+              />
               <span style={{
                 fontFamily: 'Outfit, sans-serif', fontWeight: 800,
                 letterSpacing: '0.04em', fontSize: '1.65rem',

@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
+import { Link } from 'react-router-dom';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 import { optimizeImageUrl } from '../utils/cloudinary';
 import logoImg from '../assets/pretty-glitz-logo.png';
@@ -8,6 +9,7 @@ const DEFAULT_FALLBACK_BANNERS = [
   {
     _id: 'default-1',
     title: 'Exquisite Handcrafted Bangles Atelier',
+    linkTo: '/category/Bangles',
     desktopImage: {
       url: 'https://images.unsplash.com/photo-1611591475870-74f4b2323a7d?q=80&w=2000&auto=format&fit=crop',
     },
@@ -18,6 +20,7 @@ const DEFAULT_FALLBACK_BANNERS = [
   {
     _id: 'default-2',
     title: 'Royal Bridal Jewels & Accessories',
+    linkTo: '/category/Jewels',
     desktopImage: {
       url: 'https://images.unsplash.com/photo-1599643478518-a784e5dc4c8f?q=80&w=2000&auto=format&fit=crop',
     },
@@ -28,6 +31,7 @@ const DEFAULT_FALLBACK_BANNERS = [
   {
     _id: 'default-3',
     title: 'Everlasting Artificial Floral Accessories',
+    linkTo: '/category/Artificial%20Flowers',
     desktopImage: {
       url: 'https://images.unsplash.com/photo-1535632066927-ab7c9ab60908?q=80&w=2000&auto=format&fit=crop',
     },
@@ -161,6 +165,20 @@ const HeroBannerCarousel = ({ banners = [] }) => {
                   }}
                 />
               </picture>
+
+              {/* Dynamic "Explore Collection" CTA Button at Bottom Center */}
+              {slide.linkTo && (
+                <div className="hero-banner-cta-container">
+                  <Link
+                    to={slide.linkTo}
+                    className="hero-banner-cta-btn"
+                    onClick={(e) => e.stopPropagation()}
+                  >
+                    <span>Explore Collection</span>
+                    <span className="hero-banner-cta-arrow" aria-hidden="true">→</span>
+                  </Link>
+                </div>
+              )}
             </div>
           );
         })}
