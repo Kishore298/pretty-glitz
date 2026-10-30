@@ -1646,9 +1646,10 @@ section,
   width: 100%;
   display: block;
   object-fit: cover;
-  aspect-ratio: 16 / 6;
-  min-height: 340px;
-  max-height: 580px;
+  object-position: center top;
+  aspect-ratio: 16 / 7.8;
+  min-height: 400px;
+  max-height: 650px;
 }
 
 @media (max-width: 900px) {
@@ -1728,6 +1729,17 @@ section,
 }
 
 /* Indicators */
+.hero-carousel-dots {
+  position: absolute;
+  bottom: 16px;
+  left: 50%;
+  transform: translateX(-50%);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  z-index: 10;
+}
+
 .hero-carousel-dot {
   width: 8px;
   height: 8px;
@@ -1801,10 +1813,13 @@ section,
 
 @media (max-width: 767px) {
   .hero-banner-cta-container {
-    bottom: 34px;
+    bottom: 14px;
   }
   .hero-banner-cta-btn {
     padding: 8px 18px;
     font-size: 0.8rem;
+  }
+  .hero-carousel-dots {
+    bottom: 6px;
   }
 }

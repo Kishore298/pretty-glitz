@@ -266,19 +266,7 @@ const HeroBannerCarousel = ({ banners = [], loading = false }) => {
 
       {/* Slide Indicators (Pills / Dots) */}
       {activeSlides.length > 1 && (
-        <div
-          className="hero-carousel-dots"
-          style={{
-            position: 'absolute',
-            bottom: 16,
-            left: '50%',
-            transform: 'translateX(-50%)',
-            display: 'flex',
-            alignItems: 'center',
-            gap: 8,
-            zIndex: 10,
-          }}
-        >
+        <div className="hero-carousel-dots">
           {activeSlides.map((_, idx) => (
             <button
               key={idx}
