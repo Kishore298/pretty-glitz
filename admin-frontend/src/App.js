@@ -10,6 +10,7 @@ import Subcategories from './pages/Subcategories';
 import Offers from './pages/Offers';
 import Testimonials from './pages/Testimonials';
 import Banners from './pages/Banners';
+import ProductAnalytics from './pages/ProductAnalytics';
 import AdminLayout from './components/AdminLayout';
 
 const AdminLoadingSplash = () => (
@@ -140,6 +141,7 @@ function App() {
         <Routes>
           <Route path="/login" element={<Login />} />
           <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
+          <Route path="/analytics" element={<ProtectedRoute><ProductAnalytics /></ProtectedRoute>} />
           <Route path="/products" element={<ProtectedRoute><Products /></ProtectedRoute>} />
           <Route path="/categories" element={<ProtectedRoute><Categories /></ProtectedRoute>} />
           <Route path="/subcategories" element={<ProtectedRoute><Subcategories /></ProtectedRoute>} />

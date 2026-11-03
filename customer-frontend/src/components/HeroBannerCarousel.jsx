@@ -64,9 +64,9 @@ const HeroBannerCarousel = ({ banners = [], loading = false }) => {
         }}
       >
         <div
+          className="hero-banner-viewport"
           style={{
             width: '100%',
-            aspectRatio: '1376 / 768',
             background: 'linear-gradient(135deg, rgba(196, 56, 108, 0.04) 0%, rgba(201, 168, 76, 0.07) 50%, rgba(196, 56, 108, 0.04) 100%)',
           }}
         />
@@ -120,23 +120,11 @@ const HeroBannerCarousel = ({ banners = [], loading = false }) => {
       }}
     >
       {/* Banner Viewport (Image Carousel + Navigation Arrows) */}
-      <div
-        className="hero-banner-viewport"
-        style={{
-          position: 'relative',
-          width: '100%',
-          overflow: 'hidden',
-          height: 'auto',
-        }}
-      >
+      <div className="hero-banner-viewport">
         {/* Banner Slides Container */}
         <div
           className="hero-banner-track"
           style={{
-            display: 'flex',
-            alignItems: 'flex-start',
-            width: '100%',
-            height: 'auto',
             transform: `translateX(-${currentIndex * 100}%)`,
             transition: 'transform 0.5s cubic-bezier(0.25, 1, 0.5, 1)',
           }}
@@ -144,56 +132,18 @@ const HeroBannerCarousel = ({ banners = [], loading = false }) => {
           {activeSlides.map((slide, idx) => {
             const desktopUrl = slide.desktopImage?.url || slide.mobileImage?.url;
             const mobileUrl = slide.mobileImage?.url || slide.desktopImage?.url;
+            const targetLink = slide.linkTo || '/all-products';
 
             return (
               <div
                 key={slide._id || idx}
                 className="hero-banner-slide"
-                style={{
-                  minWidth: '100%',
-                  width: '100%',
-                  position: 'relative',
-                  flexShrink: 0,
-                  height: 'auto',
-                }}
               >
-                {/* Banner image wrapped in Link when linkTo is set */}
-                {slide.linkTo ? (
-                  <Link
-                    to={slide.linkTo}
-                    style={{ display: 'block', width: '100%', height: 'auto', textDecoration: 'none' }}
-                  >
-                    <picture style={{ display: 'block', width: '100%', height: 'auto' }}>
-                      <source
-                        media="(max-width: 767px)"
-                        srcSet={mobileUrl ? optimizeImageUrl(mobileUrl, 1080) : ''}
-                      />
-                      <source
-                        media="(min-width: 768px)"
-                        srcSet={desktopUrl ? optimizeImageUrl(desktopUrl, 2560) : ''}
-                      />
-                      <img
-                        src={desktopUrl || mobileUrl || logoImg}
-                        alt={slide.title || 'PrettyGlitz Banner'}
-                        className="hero-banner-img"
-                        loading={idx === 0 ? 'eager' : 'lazy'}
-                        style={{
-                          width: '100%',
-                          height: 'auto',
-                          display: 'block',
-                          objectFit: 'unset',
-                        }}
-                        onError={(e) => {
-                          e.currentTarget.onerror = null;
-                          e.currentTarget.src = logoImg;
-                          e.currentTarget.style.objectFit = 'contain';
-                          e.currentTarget.style.padding = '40px';
-                        }}
-                      />
-                    </picture>
-                  </Link>
-                ) : (
-                  <picture style={{ display: 'block', width: '100%', height: 'auto' }}>
+                <Link
+                  to={targetLink}
+                  className="hero-banner-link"
+                >
+                  <picture className="hero-banner-picture">
                     <source
                       media="(max-width: 767px)"
                       srcSet={mobileUrl ? optimizeImageUrl(mobileUrl, 1080) : ''}
@@ -207,12 +157,6 @@ const HeroBannerCarousel = ({ banners = [], loading = false }) => {
                       alt={slide.title || 'PrettyGlitz Banner'}
                       className="hero-banner-img"
                       loading={idx === 0 ? 'eager' : 'lazy'}
-                      style={{
-                        width: '100%',
-                        height: 'auto',
-                        display: 'block',
-                        objectFit: 'unset',
-                      }}
                       onError={(e) => {
                         e.currentTarget.onerror = null;
                         e.currentTarget.src = logoImg;
@@ -221,21 +165,19 @@ const HeroBannerCarousel = ({ banners = [], loading = false }) => {
                       }}
                     />
                   </picture>
-                )}
+                </Link>
 
-                {/* Dynamic "Explore Collection" CTA Button at Bottom Center (where dots used to be) */}
-                {slide.linkTo && (
-                  <div className="hero-banner-cta-container">
-                    <Link
-                      to={slide.linkTo}
-                      className="hero-banner-cta-btn"
-                      onClick={(e) => e.stopPropagation()}
-                    >
-                      <span>Explore Collection</span>
-                      <span className="hero-banner-cta-arrow" aria-hidden="true">→</span>
-                    </Link>
-                  </div>
-                )}
+                {/* Dynamic "Explore Collection" CTA Button at Bottom Center */}
+                <div className="hero-banner-cta-container">
+                  <Link
+                    to={targetLink}
+                    className="hero-banner-cta-btn"
+                    onClick={(e) => e.stopPropagation()}
+                  >
+                    <span>Explore Collection</span>
+                    <span className="hero-banner-cta-arrow" aria-hidden="true">→</span>
+                  </Link>
+                </div>
               </div>
             );
           })}

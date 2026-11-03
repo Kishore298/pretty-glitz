@@ -3,6 +3,7 @@ import { NavLink, useLocation } from 'react-router-dom';
 import { AuthContext } from '../context/AuthContext';
 import {
   LayoutDashboard,
+  BarChart3,
   Gem,
   Layers,
   Flower2,
@@ -17,9 +18,10 @@ import {
 
 const navGroups = [
   {
-    label: 'Overview',
+    label: 'Overview & Insights',
     items: [
       { to: '/dashboard', label: 'Dashboard', Icon: LayoutDashboard },
+      { to: '/analytics', label: 'Product Analytics', Icon: BarChart3 },
     ]
   },
   {

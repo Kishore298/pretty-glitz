@@ -33,6 +33,7 @@ app.use('/api/testimonials', require('./routes/testimonialRoutes'));
 app.use('/api/customer/auth', require('./routes/customerAuthRoutes'));
 app.use('/api/cart',          require('./routes/cartRoutes'));
 app.use('/api/wishlist',      require('./routes/wishlistRoutes'));
+app.use('/api/analytics',     require('./routes/analyticsRoutes'));
 
 // Basic Route
 app.get('/api', (req, res) => {

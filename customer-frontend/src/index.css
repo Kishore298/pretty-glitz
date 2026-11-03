@@ -1656,33 +1656,74 @@ section,
   position: relative;
   width: 100%;
   overflow: hidden;
-  height: auto;
+  height: 700px; /* 700px banner height on desktop per requirements */
+  background: var(--bg);
 }
 
 .hero-banner-track {
   display: flex;
-  align-items: flex-start;
+  align-items: center;
   width: 100%;
-  height: auto;
+  height: 100%;
 }
 
 .hero-banner-slide {
   width: 100%;
   min-width: 100%;
+  height: 100%;
   flex-shrink: 0;
   position: relative;
-  height: auto;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--bg);
 }
 
+.hero-banner-link {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  height: 100%;
+  text-decoration: none;
+}
+
+.hero-banner-picture {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  height: 100%;
+}
+
+/* Ensure content fits well within the 700px container without cropping or zooming */
 .hero-banner-img {
   width: 100% !important;
-  height: auto !important;
-  max-width: 100% !important;
+  height: 100% !important;
+  max-height: 700px !important;
   display: block !important;
-  object-fit: unset !important;
+  object-fit: contain !important;
   object-position: center center !important;
   aspect-ratio: auto !important;
   transform: none !important;
+}
+
+@media (min-width: 1440px) {
+  .hero-banner-viewport {
+    height: 700px;
+  }
+  .hero-banner-img {
+    max-height: 700px !important;
+  }
+}
+
+@media (max-width: 1023px) and (min-width: 768px) {
+  .hero-banner-viewport {
+    height: clamp(520px, 58vw, 650px);
+  }
+  .hero-banner-img {
+    max-height: 650px !important;
+  }
 }
 
 @media (max-width: 900px) {
@@ -1691,13 +1732,29 @@ section,
   }
 }
 
+/* Mobile: height equivalent to image dimensions with content fitting inside cleanly */
 @media (max-width: 767px) {
+  .hero-banner-viewport {
+    height: auto;
+    min-height: 360px;
+  }
+  .hero-banner-track {
+    height: auto;
+  }
+  .hero-banner-slide {
+    height: auto;
+    min-height: 360px;
+  }
+  .hero-banner-link,
+  .hero-banner-picture {
+    height: auto;
+  }
   .hero-banner-img {
     width: 100% !important;
     height: auto !important;
-    max-width: 100% !important;
+    max-height: 560px !important;
     display: block !important;
-    object-fit: unset !important;
+    object-fit: contain !important;
     aspect-ratio: auto !important;
     transform: none !important;
   }
@@ -1720,10 +1777,10 @@ section,
   position: absolute;
   top: 50%;
   transform: translateY(-50%);
-  width: 44px;
-  height: 44px;
+  width: 48px;
+  height: 48px;
   border-radius: 50%;
-  background: rgba(255, 255, 255, 0.75);
+  background: rgba(255, 255, 255, 0.85);
   backdrop-filter: blur(8px);
   -webkit-backdrop-filter: blur(8px);
   border: 1px solid var(--border);
@@ -1733,12 +1790,12 @@ section,
   color: var(--text);
   cursor: pointer;
   z-index: 10;
-  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.2);
+  box-shadow: 0 4px 18px rgba(0, 0, 0, 0.22);
   transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 .dark-theme .hero-carousel-nav-btn {
-  background: rgba(20, 20, 28, 0.75);
+  background: rgba(20, 20, 28, 0.85);
   color: #FAF9FC;
 }
 
@@ -1747,15 +1804,15 @@ section,
   background: var(--accent);
   color: #FFFFFF;
   border-color: var(--accent);
-  box-shadow: 0 6px 20px rgba(196, 56, 108, 0.4);
+  box-shadow: 0 6px 22px rgba(196, 56, 108, 0.45);
 }
 
 .hero-carousel-btn-prev {
-  left: 20px;
+  left: 24px;
 }
 
 .hero-carousel-btn-next {
-  right: 20px;
+  right: 24px;
 }
 
 /* Hide manual navigation buttons on mobile screens (< 768px) per requirements */
@@ -1799,10 +1856,10 @@ section,
   box-shadow: 0 2px 8px rgba(196, 56, 108, 0.4);
 }
 
-/* Banner Explore Collection CTA — placed exactly where the dot indicator of image changing was */
+/* Banner Explore Collection CTA — Progressively scaled larger according to screen size */
 .hero-banner-cta-container {
   position: absolute;
-  bottom: 16px;
+  bottom: 24px;
   left: 50%;
   transform: translateX(-50%);
   z-index: 9;
@@ -1813,27 +1870,28 @@ section,
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  gap: 8px;
-  padding: 10px 24px;
+  gap: 12px;
+  padding: 15px 38px;
   border-radius: 999px;
   background: linear-gradient(135deg, #C4386C, #8A2BE2);
   color: #FFFFFF !important;
   font-family: 'Outfit', sans-serif;
-  font-size: 0.88rem;
+  font-size: 1.12rem;
   font-weight: 700;
-  letter-spacing: 0.02em;
+  letter-spacing: 0.03em;
   text-decoration: none !important;
   white-space: nowrap;
-  box-shadow: 0 6px 20px rgba(196, 56, 108, 0.45), 0 2px 6px rgba(0, 0, 0, 0.2);
-  border: 1px solid rgba(255, 255, 255, 0.2);
+  box-shadow: 0 8px 28px rgba(196, 56, 108, 0.45), 0 3px 8px rgba(0, 0, 0, 0.2);
+  border: 1px solid rgba(255, 255, 255, 0.25);
   backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
   transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1);
   cursor: pointer;
 }
 
 .hero-banner-cta-btn:hover {
-  transform: translateY(-2px) scale(1.03);
-  box-shadow: 0 10px 28px rgba(196, 56, 108, 0.6), 0 0 16px rgba(201, 168, 76, 0.3);
+  transform: translateY(-2px) scale(1.04);
+  box-shadow: 0 12px 34px rgba(196, 56, 108, 0.6), 0 0 20px rgba(201, 168, 76, 0.35);
   background: linear-gradient(135deg, #D4477B, #9B3DFF);
 }
 
@@ -1842,24 +1900,76 @@ section,
 }
 
 .hero-banner-cta-arrow {
-  transition: transform 0.2s ease;
+  font-size: 1.3rem;
+  line-height: 1;
+  transition: transform 0.25s ease;
 }
 
 .hero-banner-cta-btn:hover .hero-banner-cta-arrow {
-  transform: translateX(3px);
+  transform: translateX(4px);
 }
 
+/* Extra Large Desktops (>= 1440px): Bigger CTA size */
+@media (min-width: 1440px) {
+  .hero-banner-cta-container {
+    bottom: 28px;
+  }
+  .hero-banner-cta-btn {
+    padding: 16px 44px;
+    font-size: 1.22rem;
+    gap: 14px;
+  }
+  .hero-banner-cta-arrow {
+    font-size: 1.45rem;
+  }
+}
+
+/* Tablet Screens (768px - 1023px) */
+@media (max-width: 1023px) and (min-width: 768px) {
+  .hero-banner-cta-container {
+    bottom: 20px;
+  }
+  .hero-banner-cta-btn {
+    padding: 13px 32px;
+    font-size: 1.02rem;
+    gap: 10px;
+  }
+  .hero-banner-cta-arrow {
+    font-size: 1.18rem;
+  }
+}
+
+/* Mobile Screens (481px - 767px) */
 @media (max-width: 767px) {
   .hero-banner-cta-container {
-    bottom: 14px;
+    bottom: 16px;
     left: 50%;
     transform: translateX(-50%);
   }
   .hero-banner-cta-btn {
-    padding: 8px 18px;
-    font-size: 0.8rem;
+    padding: 11px 26px;
+    font-size: 0.94rem;
+    gap: 8px;
+  }
+  .hero-banner-cta-arrow {
+    font-size: 1.05rem;
   }
   .hero-carousel-dots {
     padding: 10px 0 6px;
+  }
+}
+
+/* Small Mobile Screens (<= 480px) */
+@media (max-width: 480px) {
+  .hero-banner-cta-container {
+    bottom: 14px;
+  }
+  .hero-banner-cta-btn {
+    padding: 10px 22px;
+    font-size: 0.88rem;
+    gap: 7px;
+  }
+  .hero-banner-cta-arrow {
+    font-size: 0.98rem;
   }
 }

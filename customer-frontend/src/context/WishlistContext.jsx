@@ -1,6 +1,7 @@
 import React, { createContext, useContext, useState, useEffect, useCallback, useRef } from 'react';
 import api from '../utils/api';
 import { LS_WISHLIST_KEY } from '../config/constants';
+import { trackProductEvent } from '../utils/analytics';
 
 export const WishlistContext = createContext();
 
@@ -60,6 +61,9 @@ export const WishlistProvider = ({ children }) => {
         return [...prev, product];
       });
 
+      // Track wishlist event (deduplicated on backend)
+      trackProductEvent(productId, 'WISHLIST_ADD', 1);
+
       const token = localStorage.getItem('customerToken');
       if (token) {
         try {
@@ -82,6 +86,9 @@ export const WishlistProvider = ({ children }) => {
 
       // Optimistic update
       setWishlist((prev) => prev.filter((p) => toId(p) !== id));
+
+      // Track removal event
+      trackProductEvent(id, 'WISHLIST_REMOVE', 1);
 
       const token = localStorage.getItem('customerToken');
       if (token) {

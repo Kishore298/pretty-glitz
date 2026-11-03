@@ -1,6 +1,7 @@
 import React, { createContext, useState, useEffect, useCallback, useRef, useContext } from 'react';
 import api from '../utils/api';
 import { LS_CART_KEY } from '../config/constants';
+import { trackProductEvent } from '../utils/analytics';
 
 export const CartContext = createContext();
 
@@ -60,6 +61,9 @@ export const CartProvider = ({ children }) => {
       return [...prev, { product, variantKey, size, quantity, pieceCount, price }];
     });
 
+    // Track analytics event (fire-and-forget, deduplicated on backend)
+    trackProductEvent(productId, 'CART_ADD', quantity, { size, pieceCount, price });
+
     const token = localStorage.getItem('customerToken');
     if (token) {
       try {
@@ -80,6 +84,9 @@ export const CartProvider = ({ children }) => {
     const variantKey = buildVariantKey(productId, size, pieceCount);
 
     setCartItems(prev => prev.filter(i => i.variantKey !== variantKey));
+
+    // Track analytics removal (does not decrement lifetime additions)
+    trackProductEvent(productId, 'CART_REMOVE', 1, { size, pieceCount });
 
     const token = localStorage.getItem('customerToken');
     if (token) {
