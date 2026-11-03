@@ -1,12 +1,13 @@
 import React, { useState, useContext } from 'react';
 import { Link } from 'react-router-dom';
-import { Heart, ShoppingBag, Plus, Minus, Check, Sparkles, Ruler } from 'lucide-react';
+import { Heart, ShoppingBag, Plus, Minus, Check, Sparkles, Ruler, ZoomIn } from 'lucide-react';
 import { CartContext } from '../context/CartContext';
 import { useWishlist } from '../context/WishlistContext';
 import { useTheme } from '../context/ThemeContext';
 import { optimizeImageUrl } from '../utils/cloudinary';
 import ProductDescriptionDisplay from './ProductDescriptionDisplay';
 import BangleSizeChartModal from './BangleSizeChartModal';
+import ProductImageModal from './ProductImageModal';
 import logoImg from '../assets/pretty-glitz-logo.png';
 
 const CollectionProductDetailCard = ({ product, isLast = false }) => {
@@ -17,6 +18,8 @@ const CollectionProductDetailCard = ({ product, isLast = false }) => {
   const [activeImg, setActiveImg] = useState(0);
   const [touchStartX, setTouchStartX] = useState(null);
   const [touchEndX, setTouchEndX] = useState(null);
+  const [didSwipe, setDidSwipe] = useState(false);
+  const [isEnlargedModalOpen, setIsEnlargedModalOpen] = useState(false);
 
   const [selectedSize, setSelectedSize] = useState(
     product.sizes?.length > 0 ? product.sizes[0].size : null
@@ -72,18 +75,34 @@ const CollectionProductDetailCard = ({ product, isLast = false }) => {
   const handleTouchStart = (e) => {
     setTouchEndX(null);
     setTouchStartX(e.targetTouches[0].clientX);
+    setDidSwipe(false);
   };
   const handleTouchMove = (e) => {
     setTouchEndX(e.targetTouches[0].clientX);
+    if (touchStartX && Math.abs(e.targetTouches[0].clientX - touchStartX) > 10) {
+      setDidSwipe(true);
+    }
   };
   const handleTouchEnd = () => {
     if (!touchStartX || !touchEndX || !hasMultipleImages) return;
     const distance = touchStartX - touchEndX;
-    if (distance > 35) {
-      setActiveImg((prev) => (prev + 1) % images.length);
-    } else if (distance < -35) {
-      setActiveImg((prev) => (prev - 1 + images.length) % images.length);
+    if (Math.abs(distance) > 35) {
+      setDidSwipe(true);
+      if (distance > 35) {
+        setActiveImg((prev) => (prev + 1) % images.length);
+      } else {
+        setActiveImg((prev) => (prev - 1 + images.length) % images.length);
+      }
     }
+  };
+
+  const handleImageClick = (e) => {
+    e.preventDefault();
+    if (didSwipe) {
+      setDidSwipe(false);
+      return;
+    }
+    setIsEnlargedModalOpen(true);
   };
 
   const currentImageUrl = images[activeImg]?.url || images[0]?.url;
@@ -129,6 +148,7 @@ const CollectionProductDetailCard = ({ product, isLast = false }) => {
             onTouchStart={handleTouchStart}
             onTouchMove={handleTouchMove}
             onTouchEnd={handleTouchEnd}
+            onClick={handleImageClick}
             style={{
               position: 'relative',
               touchAction: hasMultipleImages ? 'pan-y' : 'auto',
@@ -138,32 +158,60 @@ const CollectionProductDetailCard = ({ product, isLast = false }) => {
               aspectRatio: '1 / 1',
               width: '100%',
               maxWidth: 540,
+              cursor: 'zoom-in',
             }}
+            role="button"
+            tabIndex={0}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter' || e.key === ' ') {
+                e.preventDefault();
+                setIsEnlargedModalOpen(true);
+              }
+            }}
+            aria-label={`View enlarged images for ${product.name}`}
           >
-            <Link
-              to={`/product/${product._id}`}
-              style={{ display: 'block', width: '100%', height: '100%' }}
-              aria-label={`View ${product.name}`}
+            <img
+              src={currentImageUrl ? optimizeImageUrl(currentImageUrl, 1000) : logoImg}
+              alt={product.name}
+              loading="lazy"
+              onError={(e) => {
+                e.currentTarget.onerror = null;
+                e.currentTarget.src = logoImg;
+                e.currentTarget.style.objectFit = 'contain';
+                e.currentTarget.style.padding = '40px';
+              }}
+              style={{
+                width: '100%',
+                height: '100%',
+                objectFit: currentImageUrl ? 'cover' : 'contain',
+                display: 'block',
+                transition: 'transform 0.35s ease',
+              }}
+            />
+
+            {/* Tap to Enlarge Indicator */}
+            <div
+              style={{
+                position: 'absolute',
+                top: 12,
+                right: 12,
+                zIndex: 2,
+                width: 32,
+                height: 32,
+                borderRadius: '50%',
+                background: 'rgba(0,0,0,0.4)',
+                backdropFilter: 'blur(4px)',
+                WebkitBackdropFilter: 'blur(4px)',
+                color: '#FFFFFF',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                pointerEvents: 'none',
+              }}
+              title="Click to enlarge"
             >
-              <img
-                src={currentImageUrl ? optimizeImageUrl(currentImageUrl, 1000) : logoImg}
-                alt={product.name}
-                loading="lazy"
-                onError={(e) => {
-                  e.currentTarget.onerror = null;
-                  e.currentTarget.src = logoImg;
-                  e.currentTarget.style.objectFit = 'contain';
-                  e.currentTarget.style.padding = '40px';
-                }}
-                style={{
-                  width: '100%',
-                  height: '100%',
-                  objectFit: currentImageUrl ? 'cover' : 'contain',
-                  display: 'block',
-                  transition: 'transform 0.35s ease',
-                }}
-              />
-            </Link>
+              <ZoomIn size={16} />
+            </div>
 
             {/* Mobile swipe dot indicators */}
             {hasMultipleImages && (
@@ -526,54 +574,8 @@ const CollectionProductDetailCard = ({ product, isLast = false }) => {
             </div>
           )}
 
-          {/* Structured Product Details */}
-          <div
-            style={{
-              marginBottom: 20,
-              padding: '14px 16px',
-              borderRadius: 14,
-              background: isDark ? 'rgba(255,255,255,0.025)' : 'rgba(26,17,24,0.02)',
-              border: '1px solid var(--border)',
-            }}
-          >
-            <span
-              style={{
-                fontSize: '0.74rem',
-                fontWeight: 700,
-                color: 'var(--text)',
-                textTransform: 'uppercase',
-                letterSpacing: '0.08em',
-                display: 'block',
-                marginBottom: 8,
-              }}
-            >
-              Product Details
-            </span>
-            <ProductDescriptionDisplay description={product.description} />
-
-            {/* Gift Box Items if applicable */}
-            {product.category?.toLowerCase() === 'gift box combo' && product.giftBoxDetails && (
-              <div style={{ marginTop: 12, paddingTop: 10, borderTop: '1px solid var(--border)' }}>
-                <span
-                  style={{
-                    fontSize: '0.72rem',
-                    fontWeight: 700,
-                    color: 'var(--text)',
-                    textTransform: 'uppercase',
-                    letterSpacing: '0.06em',
-                    display: 'block',
-                    marginBottom: 6,
-                  }}
-                >
-                  Included Items:
-                </span>
-                <ProductDescriptionDisplay description={product.giftBoxDetails} />
-              </div>
-            )}
-          </div>
-
-          {/* Add to Cart Action Area */}
-          <div style={{ display: 'flex', alignItems: 'center', gap: 14, flexWrap: 'wrap', marginBottom: 14 }}>
+          {/* Add to Cart Action Area (Rendered first before Product Details, matching single product details layout) */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: 14, flexWrap: 'wrap', marginBottom: 18, marginTop: 4 }}>
             {variantInCart ? (
               <div style={{ display: 'flex', alignItems: 'center', gap: 12, width: '100%', maxWidth: 400 }}>
                 <div className="product-cart-stepper" style={{ height: 48 }}>
@@ -635,18 +637,60 @@ const CollectionProductDetailCard = ({ product, isLast = false }) => {
             )}
           </div>
 
-          {/* Shipping Guarantee Pill */}
+          {/* Structured Product Details */}
           <div
             style={{
-              display: 'inline-flex',
-              alignItems: 'center',
-              gap: 6,
-              fontSize: '0.78rem',
-              color: 'var(--text-secondary)',
+              marginBottom: 16,
+              padding: '14px 16px',
+              borderRadius: 14,
+              background: isDark ? 'rgba(255,255,255,0.025)' : 'rgba(26,17,24,0.02)',
+              border: '1px solid var(--border)',
             }}
           >
-            <span>🚚</span>
-            <span>All-India Delivery • Handcrafted Packaging</span>
+            <span
+              style={{
+                fontSize: '0.74rem',
+                fontWeight: 700,
+                color: 'var(--text)',
+                textTransform: 'uppercase',
+                letterSpacing: '0.08em',
+                display: 'block',
+                marginBottom: 8,
+              }}
+            >
+              Product Details
+            </span>
+            <ProductDescriptionDisplay description={product.description} />
+
+            {/* Gift Box Items if applicable */}
+            {product.category?.toLowerCase() === 'gift box combo' && product.giftBoxDetails && (
+              <div style={{ marginTop: 12, paddingTop: 10, borderTop: '1px solid var(--border)' }}>
+                <span
+                  style={{
+                    fontSize: '0.72rem',
+                    fontWeight: 700,
+                    color: 'var(--text)',
+                    textTransform: 'uppercase',
+                    letterSpacing: '0.06em',
+                    display: 'block',
+                    marginBottom: 6,
+                  }}
+                >
+                  Included Items:
+                </span>
+                <ProductDescriptionDisplay description={product.giftBoxDetails} />
+              </div>
+            )}
+          </div>
+
+          {/* Shipping & Returns Card */}
+          <div className="product-shipping-card" style={{ marginTop: 0 }}>
+            <h4 className="product-shipping-title">
+              <span>🚚</span> Shipping & Returns
+            </h4>
+            <p className="product-shipping-text">
+              All-India delivery available. We take extreme care in packaging your products to ensure they arrive in perfect condition.
+            </p>
           </div>
         </div>
 
@@ -656,6 +700,14 @@ const CollectionProductDetailCard = ({ product, isLast = false }) => {
       <BangleSizeChartModal
         isOpen={showSizeChart}
         onClose={() => setShowSizeChart(false)}
+      />
+
+      {/* Enlarged Product Image Modal with Swipe */}
+      <ProductImageModal
+        isOpen={isEnlargedModalOpen}
+        onClose={() => setIsEnlargedModalOpen(false)}
+        product={product}
+        initialIndex={activeImg}
       />
     </div>
   );

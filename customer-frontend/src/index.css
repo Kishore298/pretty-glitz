@@ -1652,10 +1652,37 @@ section,
   width: 100%;
 }
 
-.hero-banner-img {
+.hero-banner-viewport {
+  position: relative;
+  width: 100%;
+  overflow: hidden;
+  height: auto;
+}
+
+.hero-banner-track {
+  display: flex;
+  align-items: flex-start;
   width: 100%;
   height: auto;
-  display: block;
+}
+
+.hero-banner-slide {
+  width: 100%;
+  min-width: 100%;
+  flex-shrink: 0;
+  position: relative;
+  height: auto;
+}
+
+.hero-banner-img {
+  width: 100% !important;
+  height: auto !important;
+  max-width: 100% !important;
+  display: block !important;
+  object-fit: unset !important;
+  object-position: center center !important;
+  aspect-ratio: auto !important;
+  transform: none !important;
 }
 
 @media (max-width: 900px) {
@@ -1666,8 +1693,13 @@ section,
 
 @media (max-width: 767px) {
   .hero-banner-img {
-    width: 100%;
-    height: auto;
+    width: 100% !important;
+    height: auto !important;
+    max-width: 100% !important;
+    display: block !important;
+    object-fit: unset !important;
+    aspect-ratio: auto !important;
+    transform: none !important;
   }
 }
 

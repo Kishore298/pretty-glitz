@@ -4,7 +4,8 @@ import { useTheme } from '../context/ThemeContext';
 import { CartContext } from '../context/CartContext';
 import { useWishlist } from '../context/WishlistContext';
 import { optimizeImageUrl } from '../utils/cloudinary';
-import { ShoppingBag, Plus, Minus, Sparkles, Heart } from 'lucide-react';
+import { ShoppingBag, Plus, Minus, Sparkles, Heart, ZoomIn } from 'lucide-react';
+import ProductImageModal from './ProductImageModal';
 import logoImg from '../assets/pretty-glitz-logo.png';
 
 const ProductCard = ({ product, showVariants = false }) => {
@@ -13,6 +14,8 @@ const ProductCard = ({ product, showVariants = false }) => {
   const [activeImgIndex, setActiveImgIndex] = useState(0);
   const [touchStartX, setTouchStartX] = useState(null);
   const [touchEndX, setTouchEndX] = useState(null);
+  const [didSwipe, setDidSwipe] = useState(false);
+  const [isEnlargedModalOpen, setIsEnlargedModalOpen] = useState(false);
 
   const { addToCart, updateQuantity, removeFromCart, isInCart, getCartItemQuantity } = useContext(CartContext);
   const { isInWishlist, toggleWishlist } = useWishlist();
@@ -26,22 +29,39 @@ const ProductCard = ({ product, showVariants = false }) => {
   const handleTouchStart = (e) => {
     setTouchEndX(null);
     setTouchStartX(e.targetTouches[0].clientX);
+    setDidSwipe(false);
   };
 
   const handleTouchMove = (e) => {
     setTouchEndX(e.targetTouches[0].clientX);
+    if (touchStartX && Math.abs(e.targetTouches[0].clientX - touchStartX) > 10) {
+      setDidSwipe(true);
+    }
   };
 
   const handleTouchEnd = (e) => {
     if (!touchStartX || !touchEndX || !hasMultipleImages) return;
     const distance = touchStartX - touchEndX;
-    if (distance > 35) {
-      // Swiped left -> next photo
-      setActiveImgIndex((prev) => (prev + 1) % images.length);
-    } else if (distance < -35) {
-      // Swiped right -> prev photo
-      setActiveImgIndex((prev) => (prev - 1 + images.length) % images.length);
+    if (Math.abs(distance) > 35) {
+      setDidSwipe(true);
+      if (distance > 35) {
+        // Swiped left -> next photo
+        setActiveImgIndex((prev) => (prev + 1) % images.length);
+      } else {
+        // Swiped right -> prev photo
+        setActiveImgIndex((prev) => (prev - 1 + images.length) % images.length);
+      }
     }
+  };
+
+  const handleImageClick = (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    if (didSwipe) {
+      setDidSwipe(false);
+      return;
+    }
+    setIsEnlargedModalOpen(true);
   };
 
   // Products with sizes/pieceCounts need the detail page for selection
@@ -84,8 +104,9 @@ const ProductCard = ({ product, showVariants = false }) => {
   };
 
   return (
-    <Link to={`/product/${product._id}`} style={{ textDecoration: 'none', display: 'block', height: '100%' }}>
-      <div
+    <>
+      <Link to={`/product/${product._id}`} style={{ textDecoration: 'none', display: 'block', height: '100%' }}>
+        <div
         onMouseEnter={() => setIsHovered(true)}
         onMouseLeave={() => setIsHovered(false)}
         style={{
@@ -104,11 +125,20 @@ const ProductCard = ({ product, showVariants = false }) => {
           height: '100%',
         }}
       >
-        {/* Image Container with Mobile Touch Swipe */}
+        {/* Image Container with Mobile Touch Swipe & Enlarged Preview */}
         <div
           onTouchStart={handleTouchStart}
           onTouchMove={handleTouchMove}
           onTouchEnd={handleTouchEnd}
+          onClick={handleImageClick}
+          role="button"
+          tabIndex={0}
+          onKeyDown={(e) => {
+            if (e.key === 'Enter' || e.key === ' ') {
+              handleImageClick(e);
+            }
+          }}
+          aria-label={`View enlarged images for ${product.name}`}
           style={{
             position: 'relative',
             aspectRatio: '1 / 1',
@@ -118,6 +148,7 @@ const ProductCard = ({ product, showVariants = false }) => {
             marginBottom: hasMultipleImages ? 4 : 6,
             transition: 'background 0.35s ease',
             touchAction: hasMultipleImages ? 'pan-y' : 'auto',
+            cursor: 'zoom-in',
           }}
         >
           {currentImage ? (
@@ -230,6 +261,32 @@ const ProductCard = ({ product, showVariants = false }) => {
                 Sold Out
               </span>
             )}
+          </div>
+
+          {/* Top-Right Zoom Hint Badge */}
+          <div
+            style={{
+              position: 'absolute',
+              top: 6,
+              right: 6,
+              zIndex: 2,
+              width: 22,
+              height: 22,
+              borderRadius: '50%',
+              background: 'rgba(0,0,0,0.35)',
+              backdropFilter: 'blur(3px)',
+              WebkitBackdropFilter: 'blur(3px)',
+              color: '#FFFFFF',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              pointerEvents: 'none',
+              opacity: isHovered ? 1 : 0.65,
+              transition: 'opacity 0.2s',
+            }}
+            title="Click to enlarge"
+          >
+            <ZoomIn size={12} />
           </div>
 
           {/* Bottom-Right Wishlist Button */}
@@ -524,6 +581,15 @@ const ProductCard = ({ product, showVariants = false }) => {
         </div>
       </div>
     </Link>
+
+    {/* Enlarged Product Image Lightbox Modal with Swipe */}
+    <ProductImageModal
+      isOpen={isEnlargedModalOpen}
+      onClose={() => setIsEnlargedModalOpen(false)}
+      product={product}
+      initialIndex={activeImgIndex}
+    />
+  </>
   );
 };
 

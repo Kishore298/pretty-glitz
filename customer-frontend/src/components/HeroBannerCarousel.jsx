@@ -66,8 +66,7 @@ const HeroBannerCarousel = ({ banners = [], loading = false }) => {
         <div
           style={{
             width: '100%',
-            aspectRatio: '16 / 7',
-            minHeight: 240,
+            aspectRatio: '1376 / 768',
             background: 'linear-gradient(135deg, rgba(196, 56, 108, 0.04) 0%, rgba(201, 168, 76, 0.07) 50%, rgba(196, 56, 108, 0.04) 100%)',
           }}
         />
@@ -127,6 +126,7 @@ const HeroBannerCarousel = ({ banners = [], loading = false }) => {
           position: 'relative',
           width: '100%',
           overflow: 'hidden',
+          height: 'auto',
         }}
       >
         {/* Banner Slides Container */}
@@ -134,7 +134,9 @@ const HeroBannerCarousel = ({ banners = [], loading = false }) => {
           className="hero-banner-track"
           style={{
             display: 'flex',
+            alignItems: 'flex-start',
             width: '100%',
+            height: 'auto',
             transform: `translateX(-${currentIndex * 100}%)`,
             transition: 'transform 0.5s cubic-bezier(0.25, 1, 0.5, 1)',
           }}
@@ -152,15 +154,16 @@ const HeroBannerCarousel = ({ banners = [], loading = false }) => {
                   width: '100%',
                   position: 'relative',
                   flexShrink: 0,
+                  height: 'auto',
                 }}
               >
                 {/* Banner image wrapped in Link when linkTo is set */}
                 {slide.linkTo ? (
                   <Link
                     to={slide.linkTo}
-                    style={{ display: 'block', width: '100%', textDecoration: 'none' }}
+                    style={{ display: 'block', width: '100%', height: 'auto', textDecoration: 'none' }}
                   >
-                    <picture style={{ display: 'block', width: '100%' }}>
+                    <picture style={{ display: 'block', width: '100%', height: 'auto' }}>
                       <source
                         media="(max-width: 767px)"
                         srcSet={mobileUrl ? optimizeImageUrl(mobileUrl, 1080) : ''}
@@ -174,6 +177,12 @@ const HeroBannerCarousel = ({ banners = [], loading = false }) => {
                         alt={slide.title || 'PrettyGlitz Banner'}
                         className="hero-banner-img"
                         loading={idx === 0 ? 'eager' : 'lazy'}
+                        style={{
+                          width: '100%',
+                          height: 'auto',
+                          display: 'block',
+                          objectFit: 'unset',
+                        }}
                         onError={(e) => {
                           e.currentTarget.onerror = null;
                           e.currentTarget.src = logoImg;
@@ -184,7 +193,7 @@ const HeroBannerCarousel = ({ banners = [], loading = false }) => {
                     </picture>
                   </Link>
                 ) : (
-                  <picture style={{ display: 'block', width: '100%' }}>
+                  <picture style={{ display: 'block', width: '100%', height: 'auto' }}>
                     <source
                       media="(max-width: 767px)"
                       srcSet={mobileUrl ? optimizeImageUrl(mobileUrl, 1080) : ''}
@@ -198,6 +207,12 @@ const HeroBannerCarousel = ({ banners = [], loading = false }) => {
                       alt={slide.title || 'PrettyGlitz Banner'}
                       className="hero-banner-img"
                       loading={idx === 0 ? 'eager' : 'lazy'}
+                      style={{
+                        width: '100%',
+                        height: 'auto',
+                        display: 'block',
+                        objectFit: 'unset',
+                      }}
                       onError={(e) => {
                         e.currentTarget.onerror = null;
                         e.currentTarget.src = logoImg;

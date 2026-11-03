@@ -1,11 +1,10 @@
 import React, { useState, useContext, useEffect, useRef } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
-import { Menu, X, ChevronDown, Gift, Search, ChevronRight, User, MessageCircle, Heart } from 'lucide-react';
+import { Menu, X, ChevronDown, Gift, Search, ChevronRight, User, Heart } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useTheme } from '../context/ThemeContext';
 import { AuthContext } from '../context/AuthContext';
 import { useWishlist } from '../context/WishlistContext';
-import { getWhatsAppUrl, IS_WHATSAPP_CONFIGURED } from '../config/constants';
 import api from '../utils/api';
 import logoImg from '../assets/pretty-glitz-logo.png';
 
@@ -487,25 +486,6 @@ const Navbar = () => {
               >
                 <User size={20} />
               </Link>
-
-              {/* WhatsApp Support Icon — only rendered when configured */}
-              {IS_WHATSAPP_CONFIGURED && (
-                <a
-                  href={getWhatsAppUrl() || '#'}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  title="Chat on WhatsApp"
-                  style={{
-                    ...iconBtnStyle,
-                    color: '#25D366',
-                    borderColor: 'rgba(37,211,102,0.2)',
-                    background: isDark ? 'rgba(37,211,102,0.08)' : 'rgba(37,211,102,0.06)',
-                    display: 'flex', alignItems: 'center', justifyContent: 'center',
-                  }}
-                >
-                  <MessageCircle size={17} />
-                </a>
-              )}
 
               {/* Mobile Hamburger */}
               <button
