@@ -1,9 +1,10 @@
 import React, { useState, useContext, useEffect, useRef } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
-import { Menu, X, ChevronDown, Gift, Search, ChevronRight, User, MessageCircle } from 'lucide-react';
+import { Menu, X, ChevronDown, Gift, Search, ChevronRight, User, MessageCircle, Heart } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useTheme } from '../context/ThemeContext';
 import { AuthContext } from '../context/AuthContext';
+import { useWishlist } from '../context/WishlistContext';
 import { getWhatsAppUrl, IS_WHATSAPP_CONFIGURED } from '../config/constants';
 import api from '../utils/api';
 import logoImg from '../assets/pretty-glitz-logo.png';
@@ -24,6 +25,8 @@ const Navbar = () => {
   const navigate = useNavigate();
   const { user } = useContext(AuthContext);
   const { isDark } = useTheme();
+  const { getWishlistCount } = useWishlist();
+  const wishlistCount = getWishlistCount();
   const [allCategories, setAllCategories] = useState([]);
   const [searchResults, setSearchResults] = useState([]);
   const [isSearching, setIsSearching] = useState(false);
@@ -426,6 +429,54 @@ const Navbar = () => {
                 </AnimatePresence>
               </div>
 
+              {/* Wishlist Link with Live Badge Counter */}
+              <Link
+                to="/wishlist"
+                style={{
+                  position: 'relative',
+                  color: pathname === '/wishlist' ? 'var(--accent)' : 'var(--text-secondary)',
+                  transition: 'color 0.2s',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  padding: '4px',
+                }}
+                onMouseEnter={e => e.currentTarget.style.color = 'var(--text)'}
+                onMouseLeave={e => e.currentTarget.style.color = pathname === '/wishlist' ? 'var(--accent)' : 'var(--text-secondary)'}
+                title="Wishlist"
+                aria-label="Wishlist"
+              >
+                <Heart
+                  size={20}
+                  style={pathname === '/wishlist' ? { fill: 'var(--accent)', stroke: 'var(--accent)' } : {}}
+                />
+                {wishlistCount > 0 && (
+                  <motion.span
+                    initial={{ scale: 0 }}
+                    animate={{ scale: 1 }}
+                    style={{
+                      position: 'absolute',
+                      top: -4,
+                      right: -7,
+                      background: 'var(--accent-gradient, linear-gradient(135deg, #C4386C, #8A2BE2))',
+                      color: '#ffffff',
+                      fontSize: '0.62rem',
+                      fontWeight: 700,
+                      minWidth: 16,
+                      height: 16,
+                      borderRadius: 999,
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      padding: '0 4px',
+                      boxShadow: '0 2px 6px rgba(196, 56, 108, 0.4)',
+                    }}
+                  >
+                    {wishlistCount > 99 ? '99+' : wishlistCount}
+                  </motion.span>
+                )}
+              </Link>
+
               {/* User / Account Icon */}
               <Link
                 to={user ? '/account' : '/login'}
@@ -577,6 +628,34 @@ const Navbar = () => {
                     </Link>
                   )
                 })}
+
+                {/* Wishlist */}
+                <Link to="/wishlist" onClick={() => setIsOpen(false)} style={{
+                  display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+                  padding: '8px 10px', borderRadius: 8, marginTop: 4,
+                  background: pathname === '/wishlist' ? 'var(--bg-secondary)' : 'transparent',
+                  color: pathname === '/wishlist' ? 'var(--accent)' : 'var(--text)',
+                  textDecoration: 'none', transition: 'background 0.2s',
+                }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                    <Heart size={18} style={pathname === '/wishlist' ? { fill: 'var(--accent)', stroke: 'var(--accent)' } : {}} />
+                    <span style={{ fontSize: '1rem', fontFamily: 'Outfit, sans-serif', fontWeight: 600 }}>Wishlist</span>
+                  </div>
+                  {wishlistCount > 0 ? (
+                    <span style={{
+                      background: 'var(--accent-gradient, linear-gradient(135deg, #C4386C, #8A2BE2))',
+                      color: '#ffffff',
+                      fontSize: '0.7rem',
+                      fontWeight: 700,
+                      padding: '2px 8px',
+                      borderRadius: 999,
+                    }}>
+                      {wishlistCount}
+                    </span>
+                  ) : (
+                    <ChevronRight size={14} opacity={0.4} />
+                  )}
+                </Link>
 
                 {/* Offers */}
                 <Link to="/offers" onClick={() => setIsOpen(false)} style={{

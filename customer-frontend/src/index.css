@@ -239,6 +239,16 @@ section,
   }
 }
 
+.collection-card-title {
+  font-size: 1.2rem;
+}
+
+@media (max-width: 767px) {
+  .collection-card-title {
+    font-size: calc(1.2rem - 2px);
+  }
+}
+
 /* ─── Skeleton loading ─────────────────────────────────── */
 .skeleton {
   background: linear-gradient(90deg,
@@ -1644,12 +1654,8 @@ section,
 
 .hero-banner-img {
   width: 100%;
+  height: auto;
   display: block;
-  object-fit: cover;
-  object-position: center top;
-  aspect-ratio: 16 / 7.8;
-  min-height: 400px;
-  max-height: 650px;
 }
 
 @media (max-width: 900px) {
@@ -1660,9 +1666,8 @@ section,
 
 @media (max-width: 767px) {
   .hero-banner-img {
-    aspect-ratio: 4 / 3;
-    min-height: 250px;
-    max-height: 440px;
+    width: 100%;
+    height: auto;
   }
 }
 
@@ -1681,7 +1686,7 @@ section,
 /* Floating Navigation Buttons (Desktop & Tablets Only) */
 .hero-carousel-nav-btn {
   position: absolute;
-  top: 55%;
+  top: 50%;
   transform: translateY(-50%);
   width: 44px;
   height: 44px;
@@ -1728,15 +1733,14 @@ section,
   }
 }
 
-/* Indicators */
+/* Slide Indicators (Pills / Dots) — Placed right below the banner */
 .hero-carousel-dots {
-  position: absolute;
-  bottom: 16px;
-  left: 50%;
-  transform: translateX(-50%);
   display: flex;
   align-items: center;
+  justify-content: center;
   gap: 8px;
+  padding: 14px 0 8px;
+  position: relative;
   z-index: 10;
 }
 
@@ -1744,27 +1748,29 @@ section,
   width: 8px;
   height: 8px;
   border-radius: 999px;
-  background: rgba(255, 255, 255, 0.5);
-  border: 1px solid rgba(0, 0, 0, 0.1);
+  background: var(--text-secondary);
+  opacity: 0.35;
+  border: none;
   padding: 0;
   cursor: pointer;
   transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
 }
 
 .hero-carousel-dot:hover {
-  background: rgba(255, 255, 255, 0.8);
+  opacity: 0.75;
 }
 
 .hero-carousel-dot.active {
   width: 24px;
+  opacity: 1;
   background: var(--accent-gradient, linear-gradient(135deg, #C4386C, #8A2BE2));
   box-shadow: 0 2px 8px rgba(196, 56, 108, 0.4);
 }
 
-/* Banner Explore Collection CTA */
+/* Banner Explore Collection CTA — placed exactly where the dot indicator of image changing was */
 .hero-banner-cta-container {
   position: absolute;
-  bottom: 38px;
+  bottom: 16px;
   left: 50%;
   transform: translateX(-50%);
   z-index: 9;
@@ -1814,12 +1820,14 @@ section,
 @media (max-width: 767px) {
   .hero-banner-cta-container {
     bottom: 14px;
+    left: 50%;
+    transform: translateX(-50%);
   }
   .hero-banner-cta-btn {
     padding: 8px 18px;
     font-size: 0.8rem;
   }
   .hero-carousel-dots {
-    bottom: 6px;
+    padding: 10px 0 6px;
   }
 }

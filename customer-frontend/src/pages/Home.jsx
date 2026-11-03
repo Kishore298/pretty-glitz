@@ -416,10 +416,10 @@ const Home = () => {
                       }}
                     >
                       <h3
+                        className="collection-card-title"
                         style={{
                           fontFamily: 'Outfit, sans-serif',
                           fontWeight: 700,
-                          fontSize: '1.2rem',
                           color: 'var(--text)',
                           margin: '0 0 8px',
                         }}

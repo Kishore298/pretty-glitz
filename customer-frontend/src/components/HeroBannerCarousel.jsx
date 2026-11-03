@@ -4,65 +4,18 @@ import { ChevronLeft, ChevronRight } from 'lucide-react';
 import { optimizeImageUrl } from '../utils/cloudinary';
 import logoImg from '../assets/pretty-glitz-logo.png';
 
-// Fallback high-fashion atelier banners when no banners are uploaded in DB yet
-const DEFAULT_FALLBACK_BANNERS = [
-  {
-    _id: 'default-1',
-    title: 'Exquisite Handcrafted Bangles Atelier',
-    linkTo: '/category/Bangles',
-    desktopImage: {
-      url: 'https://images.unsplash.com/photo-1611591475870-74f4b2323a7d?q=80&w=2000&auto=format&fit=crop',
-    },
-    mobileImage: {
-      url: 'https://images.unsplash.com/photo-1611591475870-74f4b2323a7d?q=80&w=1000&auto=format&fit=crop',
-    },
-  },
-  {
-    _id: 'default-2',
-    title: 'Royal Bridal Jewels & Accessories',
-    linkTo: '/category/Jewels',
-    desktopImage: {
-      url: 'https://images.unsplash.com/photo-1599643478518-a784e5dc4c8f?q=80&w=2000&auto=format&fit=crop',
-    },
-    mobileImage: {
-      url: 'https://images.unsplash.com/photo-1599643478518-a784e5dc4c8f?q=80&w=1000&auto=format&fit=crop',
-    },
-  },
-  {
-    _id: 'default-3',
-    title: 'Everlasting Artificial Floral Accessories',
-    linkTo: '/category/Artificial%20Flowers',
-    desktopImage: {
-      url: 'https://images.unsplash.com/photo-1535632066927-ab7c9ab60908?q=80&w=2000&auto=format&fit=crop',
-    },
-    mobileImage: {
-      url: 'https://images.unsplash.com/photo-1535632066927-ab7c9ab60908?q=80&w=1000&auto=format&fit=crop',
-    },
-  },
-];
-
 const HeroBannerCarousel = ({ banners = [], loading = false }) => {
-  // STRICT LOGIC:
-  // 1. Filter banners from the database that have a valid image URL and are active.
-  const dynamicBanners = Array.isArray(banners)
+  // Only display real, active banners from the database that have a valid image URL
+  const activeSlides = Array.isArray(banners)
     ? banners.filter(
         (b) => b && b.isActive !== false && (b.desktopImage?.url || b.mobileImage?.url)
       )
     : [];
 
-  const hasDynamicBanners = dynamicBanners.length > 0;
-
-  // 2. If ANY dynamic banner exists from the API, ONLY use dynamic banners.
-  // The static unsplash images are 100% vanished / omitted.
-  // If loading and no dynamic banners yet, keep activeSlides empty so static images don't flash.
-  const activeSlides = hasDynamicBanners
-    ? dynamicBanners
-    : (loading ? [] : DEFAULT_FALLBACK_BANNERS);
-
   const [currentIndex, setCurrentIndex] = useState(0);
   const [isPaused, setIsPaused] = useState(false);
 
-  // Auto-clamp / reset currentIndex when activeSlides changes (e.g. from 3 fallbacks to 1 dynamic banner)
+  // Auto-clamp / reset currentIndex when activeSlides changes
   useEffect(() => {
     if (currentIndex >= activeSlides.length) {
       setCurrentIndex(0);
@@ -111,8 +64,10 @@ const HeroBannerCarousel = ({ banners = [], loading = false }) => {
         }}
       >
         <div
-          className="hero-banner-img"
           style={{
+            width: '100%',
+            aspectRatio: '16 / 7',
+            minHeight: 240,
             background: 'linear-gradient(135deg, rgba(196, 56, 108, 0.04) 0%, rgba(201, 168, 76, 0.07) 50%, rgba(196, 56, 108, 0.04) 100%)',
           }}
         />
@@ -162,109 +117,146 @@ const HeroBannerCarousel = ({ banners = [], loading = false }) => {
       style={{
         position: 'relative',
         width: '100%',
-        overflow: 'hidden',
         userSelect: 'none',
       }}
     >
-      {/* Banner Slides Container */}
+      {/* Banner Viewport (Image Carousel + Navigation Arrows) */}
       <div
-        className="hero-banner-track"
+        className="hero-banner-viewport"
         style={{
-          display: 'flex',
+          position: 'relative',
           width: '100%',
-          transform: `translateX(-${currentIndex * 100}%)`,
-          transition: 'transform 0.5s cubic-bezier(0.25, 1, 0.5, 1)',
+          overflow: 'hidden',
         }}
       >
-        {activeSlides.map((slide, idx) => {
-          const desktopUrl = slide.desktopImage?.url || slide.mobileImage?.url;
-          const mobileUrl = slide.mobileImage?.url || slide.desktopImage?.url;
+        {/* Banner Slides Container */}
+        <div
+          className="hero-banner-track"
+          style={{
+            display: 'flex',
+            width: '100%',
+            transform: `translateX(-${currentIndex * 100}%)`,
+            transition: 'transform 0.5s cubic-bezier(0.25, 1, 0.5, 1)',
+          }}
+        >
+          {activeSlides.map((slide, idx) => {
+            const desktopUrl = slide.desktopImage?.url || slide.mobileImage?.url;
+            const mobileUrl = slide.mobileImage?.url || slide.desktopImage?.url;
 
-          return (
-            <div
-              key={slide._id || idx}
-              className="hero-banner-slide"
-              style={{
-                minWidth: '100%',
-                width: '100%',
-                position: 'relative',
-                flexShrink: 0,
-              }}
-            >
-              {/* Responsive <picture> tag: automatically renders mobile image on smaller devices and desktop image on bigger devices */}
-              <picture style={{ display: 'block', width: '100%', height: '100%' }}>
-                {/* Smaller devices breakpoint: < 768px */}
-                <source
-                  media="(max-width: 767px)"
-                  srcSet={mobileUrl ? optimizeImageUrl(mobileUrl, 800) : ''}
-                />
-                {/* Desktop and larger devices: >= 768px */}
-                <source
-                  media="(min-width: 768px)"
-                  srcSet={desktopUrl ? optimizeImageUrl(desktopUrl, 1920) : ''}
-                />
-                <img
-                  src={desktopUrl || mobileUrl || logoImg}
-                  alt={slide.title || 'PrettyGlitz Banner'}
-                  className="hero-banner-img"
-                  loading={idx === 0 ? 'eager' : 'lazy'}
-                  onError={(e) => {
-                    e.currentTarget.onerror = null;
-                    e.currentTarget.src = logoImg;
-                    e.currentTarget.style.objectFit = 'contain';
-                    e.currentTarget.style.padding = '40px';
-                  }}
-                />
-              </picture>
-
-              {/* Dynamic "Explore Collection" CTA Button at Bottom Center */}
-              {slide.linkTo && (
-                <div className="hero-banner-cta-container">
+            return (
+              <div
+                key={slide._id || idx}
+                className="hero-banner-slide"
+                style={{
+                  minWidth: '100%',
+                  width: '100%',
+                  position: 'relative',
+                  flexShrink: 0,
+                }}
+              >
+                {/* Banner image wrapped in Link when linkTo is set */}
+                {slide.linkTo ? (
                   <Link
                     to={slide.linkTo}
-                    className="hero-banner-cta-btn"
-                    onClick={(e) => e.stopPropagation()}
+                    style={{ display: 'block', width: '100%', textDecoration: 'none' }}
                   >
-                    <span>Explore Collection</span>
-                    <span className="hero-banner-cta-arrow" aria-hidden="true">→</span>
+                    <picture style={{ display: 'block', width: '100%' }}>
+                      <source
+                        media="(max-width: 767px)"
+                        srcSet={mobileUrl ? optimizeImageUrl(mobileUrl, 1080) : ''}
+                      />
+                      <source
+                        media="(min-width: 768px)"
+                        srcSet={desktopUrl ? optimizeImageUrl(desktopUrl, 2560) : ''}
+                      />
+                      <img
+                        src={desktopUrl || mobileUrl || logoImg}
+                        alt={slide.title || 'PrettyGlitz Banner'}
+                        className="hero-banner-img"
+                        loading={idx === 0 ? 'eager' : 'lazy'}
+                        onError={(e) => {
+                          e.currentTarget.onerror = null;
+                          e.currentTarget.src = logoImg;
+                          e.currentTarget.style.objectFit = 'contain';
+                          e.currentTarget.style.padding = '40px';
+                        }}
+                      />
+                    </picture>
                   </Link>
-                </div>
-              )}
-            </div>
-          );
-        })}
+                ) : (
+                  <picture style={{ display: 'block', width: '100%' }}>
+                    <source
+                      media="(max-width: 767px)"
+                      srcSet={mobileUrl ? optimizeImageUrl(mobileUrl, 1080) : ''}
+                    />
+                    <source
+                      media="(min-width: 768px)"
+                      srcSet={desktopUrl ? optimizeImageUrl(desktopUrl, 2560) : ''}
+                    />
+                    <img
+                      src={desktopUrl || mobileUrl || logoImg}
+                      alt={slide.title || 'PrettyGlitz Banner'}
+                      className="hero-banner-img"
+                      loading={idx === 0 ? 'eager' : 'lazy'}
+                      onError={(e) => {
+                        e.currentTarget.onerror = null;
+                        e.currentTarget.src = logoImg;
+                        e.currentTarget.style.objectFit = 'contain';
+                        e.currentTarget.style.padding = '40px';
+                      }}
+                    />
+                  </picture>
+                )}
+
+                {/* Dynamic "Explore Collection" CTA Button at Bottom Center (where dots used to be) */}
+                {slide.linkTo && (
+                  <div className="hero-banner-cta-container">
+                    <Link
+                      to={slide.linkTo}
+                      className="hero-banner-cta-btn"
+                      onClick={(e) => e.stopPropagation()}
+                    >
+                      <span>Explore Collection</span>
+                      <span className="hero-banner-cta-arrow" aria-hidden="true">→</span>
+                    </Link>
+                  </div>
+                )}
+              </div>
+            );
+          })}
+        </div>
+
+        {/* Manual Scroll Buttons (Bigger Devices Only — Hidden on mobile via CSS) */}
+        {activeSlides.length > 1 && (
+          <>
+            <button
+              type="button"
+              onClick={(e) => {
+                e.preventDefault();
+                handlePrev();
+              }}
+              className="hero-carousel-nav-btn hero-carousel-btn-prev"
+              aria-label="Previous Banner"
+            >
+              <ChevronLeft size={22} />
+            </button>
+
+            <button
+              type="button"
+              onClick={(e) => {
+                e.preventDefault();
+                handleNext();
+              }}
+              className="hero-carousel-nav-btn hero-carousel-btn-next"
+              aria-label="Next Banner"
+            >
+              <ChevronRight size={22} />
+            </button>
+          </>
+        )}
       </div>
 
-      {/* Manual Scroll Buttons (Bigger Devices Only — Hidden on mobile via CSS) */}
-      {activeSlides.length > 1 && (
-        <>
-          <button
-            type="button"
-            onClick={(e) => {
-              e.preventDefault();
-              handlePrev();
-            }}
-            className="hero-carousel-nav-btn hero-carousel-btn-prev"
-            aria-label="Previous Banner"
-          >
-            <ChevronLeft size={22} />
-          </button>
-
-          <button
-            type="button"
-            onClick={(e) => {
-              e.preventDefault();
-              handleNext();
-            }}
-            className="hero-carousel-nav-btn hero-carousel-btn-next"
-            aria-label="Next Banner"
-          >
-            <ChevronRight size={22} />
-          </button>
-        </>
-      )}
-
-      {/* Slide Indicators (Pills / Dots) */}
+      {/* Slide Indicators (Pills / Dots) — Placed right below the banner! */}
       {activeSlides.length > 1 && (
         <div className="hero-carousel-dots">
           {activeSlides.map((_, idx) => (

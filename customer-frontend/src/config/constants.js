@@ -10,7 +10,7 @@
 // WhatsApp Configuration
 // ---------------------------------------------------------------------------
 
-const _rawNumber = (process.env.REACT_APP_WHATSAPP_NUMBER || '').trim().replace(/\D/g, '');
+const _rawNumber = (process.env.REACT_APP_WHATSAPP_NUMBER || '917010737706').trim().replace(/\D/g, '');
 
 /**
  * True only when the env variable is set to a valid 10-15 digit phone number.
@@ -22,6 +22,11 @@ export const IS_WHATSAPP_CONFIGURED = _rawNumber.length >= 10 && _rawNumber.leng
  * The validated E.164-style phone number (digits only), or null when unconfigured.
  */
 export const WHATSAPP_NUMBER = IS_WHATSAPP_CONFIGURED ? _rawNumber : null;
+
+/**
+ * Clean human-readable display format for the official WhatsApp number.
+ */
+export const WHATSAPP_DISPLAY_NUMBER = '+91 70107 37706';
 
 export const WHATSAPP_DEFAULT_MESSAGE =
   'Hello PrettyGlitz, I would like to inquire about your jewellery collections.';
@@ -60,7 +65,7 @@ export const getWhatsAppUrl = (text = WHATSAPP_DEFAULT_MESSAGE) => {
 // ---------------------------------------------------------------------------
 
 export const BRAND_NAME = 'PrettyGlitz';
-export const BRAND_EMAIL = 'hello@prettyglitz.com';
+export const BRAND_EMAIL = 'PrettyGlitzcollections@gmail.com';
 export const BRAND_INSTAGRAM = 'https://www.instagram.com/prettyglitz_collections?utm_source=ig_web_button_share_sheet&obrf=ZDNlZDc0MzIxNw==';
 
 // ---------------------------------------------------------------------------
