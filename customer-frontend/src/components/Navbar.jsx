@@ -8,14 +8,6 @@ import { useWishlist } from '../context/WishlistContext';
 import api from '../utils/api';
 import logoImg from '../assets/pretty-glitz-logo.png';
 
-// The 4 Bangle categories grouped under parent "Bangles"
-const BANGLE_CATEGORIES = [
-  'Designer Glass Bangles',
-  'Valaikaappu Bangles',
-  'Antique Bangles',
-  'Wedding Bangles',
-];
-
 // Fallback non-bangle categories in desired display order
 const NON_BANGLE_CATEGORIES = [
   'Artificial Flowers',
@@ -182,23 +174,6 @@ const Navbar = () => {
       paddingBottom: isActive ? 4 : 0,
       borderBottom: isActive ? '2px solid var(--accent)' : '2px solid transparent',
     };
-  };
-
-  const dropdownItemStyle = {
-    display: 'block', padding: '10px 20px',
-    fontSize: '0.85rem', fontWeight: 500, textDecoration: 'none',
-    transition: 'background 0.15s, color 0.15s',
-    whiteSpace: 'nowrap',
-  };
-
-  const dropdownStyle = {
-    position: 'absolute', top: 'calc(100% + 12px)',
-    background: isDark ? 'rgba(14,14,22,0.98)' : 'var(--bg)',
-    backdropFilter: 'blur(16px)',
-    border: `1px solid var(--border)`,
-    borderRadius: 12, overflow: 'hidden',
-    boxShadow: isDark ? '0 20px 40px rgba(0,0,0,0.5)' : '0 20px 40px rgba(26,17,24,0.1)',
-    zIndex: 100, minWidth: 200,
   };
 
   const iconBtnStyle = {
