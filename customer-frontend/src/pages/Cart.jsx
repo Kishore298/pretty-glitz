@@ -113,25 +113,30 @@ const Cart = () => {
                             {item.product.category}
                           </p>
                           
+                          {item.colorName && (
+                            <p style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', margin: '0 0 4px' }}>
+                              Colour: <span style={{ fontWeight: 600, color: 'var(--text)', background: 'var(--bg-secondary)', padding: '2px 6px', borderRadius: 4, marginLeft: 6 }}>{item.colorName}</span>
+                            </p>
+                          )}
                           {item.size && (
                             <p style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', margin: 0 }}>
                               Size: <span style={{ fontWeight: 600, color: 'var(--text)', background: 'var(--bg-secondary)', padding: '2px 6px', borderRadius: 4, marginLeft: 6 }}>{item.size}</span>
                             </p>
                           )}
                           <p style={{ fontSize: '1.1rem', fontWeight: 700, color: 'var(--text)', marginTop: 12, fontFamily: 'Outfit, sans-serif' }}>
-                            ₹{item.product.price}
+                            ₹{item.price || item.product.price}
                           </p>
                         </div>
 
                         <div style={{ display: 'flex', alignItems: 'center', gap: 24, marginLeft: 'auto' }}>
                           <div style={{ display: 'flex', alignItems: 'center', border: `1px solid var(--border-strong)`, borderRadius: 8, height: 40, width: 110, background: 'var(--bg)' }}>
-                            <button onClick={() => updateQuantity(item.product._id, item.size, item.quantity - 1)} style={{ flex: 1, height: '100%', background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-secondary)' }}>-</button>
+                            <button onClick={() => updateQuantity(item.product._id, item.size, item.quantity - 1, item.pieceCount, item.colorVariantId)} style={{ flex: 1, height: '100%', background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-secondary)' }}>-</button>
                             <span style={{ flex: 1, textAlign: 'center', fontSize: '0.9rem', fontWeight: 600, color: 'var(--text)' }}>{item.quantity}</span>
-                            <button onClick={() => updateQuantity(item.product._id, item.size, item.quantity + 1)} style={{ flex: 1, height: '100%', background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-secondary)' }}>+</button>
+                            <button onClick={() => updateQuantity(item.product._id, item.size, item.quantity + 1, item.pieceCount, item.colorVariantId)} style={{ flex: 1, height: '100%', background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-secondary)' }}>+</button>
                           </div>
                           
                           <button 
-                            onClick={() => removeFromCart(item.product._id, item.size)}
+                            onClick={() => removeFromCart(item.product._id, item.size, item.pieceCount, item.colorVariantId)}
                             style={{ background: 'var(--bg-secondary)', border: 'none', borderRadius: '50%', cursor: 'pointer', color: 'var(--text-muted)', transition: 'all 0.2s', display: 'flex', alignItems: 'center', justifyContent: 'center', width: 40, height: 40 }}
                             onMouseEnter={e => { e.currentTarget.style.color = '#ef4444'; e.currentTarget.style.background = 'rgba(239,68,68,0.1)'; }}
                             onMouseLeave={e => { e.currentTarget.style.color = 'var(--text-muted)'; e.currentTarget.style.background = 'var(--bg-secondary)'; }}

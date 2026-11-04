@@ -6,11 +6,15 @@ const mongoose          = require('mongoose');
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
 /**
- * Build a normalised variant key so that each product+size+pieceCount
+ * Build a normalised variant key so that each product+size+pieceCount+colorVariantId
  * combination maps to exactly one string. Used for atomic conditional updates.
  */
-const buildVariantKey = (productId, size, pieceCount) =>
-  `${productId}::${size || 'NOSIZE'}::${pieceCount ?? 'NOCOUNT'}`;
+const buildVariantKey = (productId, size, pieceCount, colorVariantId = null) => {
+  const p = productId?.toString() || '';
+  const s = size || 'NOSIZE';
+  const pc = pieceCount != null ? pieceCount : 'NOCOUNT';
+  return (colorVariantId && colorVariantId !== 'NOCOLOR') ? `${p}::${s}::${pc}::${colorVariantId}` : `${p}::${s}::${pc}`;
+};
 
 /**
  * Resolve authoritative price from the database record.
@@ -27,23 +31,101 @@ const resolvePrice = (product, pieceCount) => {
 /**
  * Validate a product can be added to cart.
  * Strict check — never treats inStockCount: 0 as a fallback.
- * Returns { ok: true, availableStock } or { ok: false, reason }.
+ * Checks colorVariants and size-specific inventory where applicable.
+ * Returns { ok: true, availableStock, allowedQty, colorVariantId, colorName, sizeVariantId, size, price }
+ * or { ok: false, reason }.
  */
-const validateStock = (product, requestedQty = 1) => {
+const validateStock = (product, requestedQty = 1, colorVariantId = null, sizeVariantId = null, size = null) => {
   if (!product || product.isActive === false || product.inStock === false) {
     return { ok: false, reason: 'Product is not available.' };
   }
-  // If inStockCount is tracked, enforce it strictly.
+
+  // 1. If product has color variations, enforce variant stock rules
+  if (product.colorVariants && product.colorVariants.length > 0) {
+    let colorVar = null;
+    if (colorVariantId) {
+      colorVar = (product.colorVariants.id && product.colorVariants.id(colorVariantId)) ||
+                 product.colorVariants.find((c) => c._id?.toString() === colorVariantId.toString());
+    } else {
+      colorVar = product.colorVariants.find((c) => c.isDefault) || product.colorVariants[0];
+    }
+
+    if (!colorVar) {
+      return { ok: false, reason: 'Selected colour variant is not available.' };
+    }
+    if (colorVar.inStock === false) {
+      return { ok: false, reason: `Colour variant "${colorVar.colorName}" is currently out of stock.` };
+    }
+
+    let sizeVar = null;
+    if (sizeVariantId) {
+      sizeVar = (colorVar.sizes.id && colorVar.sizes.id(sizeVariantId)) ||
+                colorVar.sizes.find((s) => s._id?.toString() === sizeVariantId.toString());
+    } else if (size) {
+      sizeVar = colorVar.sizes.find((s) => s.size === size);
+    }
+
+    if (sizeVar) {
+      if (sizeVar.inStock === false || (typeof sizeVar.stockCount === 'number' && sizeVar.stockCount <= 0)) {
+        return { ok: false, reason: `Size ${sizeVar.size} for ${colorVar.colorName} is out of stock.` };
+      }
+      const available = typeof sizeVar.stockCount === 'number' ? sizeVar.stockCount : 9999;
+      const allowed = Math.min(requestedQty, available);
+      return {
+        ok: true,
+        availableStock: available,
+        allowedQty: allowed,
+        colorVariantId: colorVar._id,
+        colorName: colorVar.colorName,
+        sizeVariantId: sizeVar._id,
+        size: sizeVar.size,
+        price: sizeVar.price != null ? sizeVar.price : product.price,
+      };
+    }
+
+    // Color variant with no specific size matched
+    return {
+      ok: true,
+      availableStock: null,
+      allowedQty: requestedQty,
+      colorVariantId: colorVar._id,
+      colorName: colorVar.colorName,
+      sizeVariantId: null,
+      size: size || null,
+      price: product.price,
+    };
+  }
+
+  // 2. Standard product stock check
   if (typeof product.inStockCount === 'number') {
     if (product.inStockCount <= 0) {
       return { ok: false, reason: 'Product is out of stock.' };
     }
     const available = product.inStockCount;
-    const allowed   = Math.min(requestedQty, available);
-    return { ok: true, availableStock: available, allowedQty: allowed };
+    const allowed = Math.min(requestedQty, available);
+    return {
+      ok: true,
+      availableStock: available,
+      allowedQty: allowed,
+      colorVariantId: null,
+      colorName: null,
+      sizeVariantId: null,
+      size: size || null,
+      price: resolvePrice(product),
+    };
   }
+
   // inStockCount not tracked — rely on the boolean flag only.
-  return { ok: true, availableStock: null, allowedQty: requestedQty };
+  return {
+    ok: true,
+    availableStock: null,
+    allowedQty: requestedQty,
+    colorVariantId: null,
+    colorName: null,
+    sizeVariantId: null,
+    size: size || null,
+    price: resolvePrice(product),
+  };
 };
 
 // ─── GET /api/cart ────────────────────────────────────────────────────────────
@@ -52,7 +134,7 @@ const getCart = async (req, res) => {
   try {
     const cart = await Cart.findOne({ userId: req.user.userId }).populate(
       'items.product',
-      'name price originalPrice images inStock inStockCount category subcategoryId pieceCounts sizes isActive'
+      'name price originalPrice images inStock inStockCount category subcategoryId pieceCounts sizes isActive colorVariants'
     );
     return res.status(200).json({ cart: cart || { userId: req.user.userId, items: [] } });
   } catch (err) {
@@ -65,32 +147,51 @@ const getCart = async (req, res) => {
 
 const addItem = async (req, res) => {
   try {
-    const { productId, size = null, pieceCount = null, quantity = 1 } = req.body;
+    const {
+      productId,
+      size = null,
+      pieceCount = null,
+      quantity = 1,
+      colorVariantId = null,
+      colorName = null,
+      sizeVariantId = null,
+    } = req.body;
     if (!productId) return res.status(400).json({ message: 'productId is required.' });
 
     const product = await Product.findById(productId);
-    const check   = validateStock(product, quantity);
+    const check = validateStock(product, quantity, colorVariantId, sizeVariantId, size);
     if (!check.ok) return res.status(400).json({ message: check.reason });
 
-    const variantKey      = buildVariantKey(productId, size, pieceCount);
-    const authPrice       = resolvePrice(product, pieceCount);
-    const allowedQty      = check.allowedQty;
-    const availableStock  = check.availableStock;
+    const effectiveColorId = check.colorVariantId || colorVariantId;
+    const effectiveColorName = check.colorName || colorName;
+    const effectiveSizeId = check.sizeVariantId || sizeVariantId;
+    const effectiveSize = check.size || size;
+
+    const variantKey = buildVariantKey(productId, effectiveSize, pieceCount, effectiveColorId);
+    const authPrice = check.price ?? resolvePrice(product, pieceCount);
+    const allowedQty = check.allowedQty;
+    const availableStock = check.availableStock;
 
     // Attempt to increment existing variant without exceeding stock.
     const stockCeil = availableStock ?? 9999;
     let updated = await Cart.findOneAndUpdate(
       {
-        userId:            req.user.userId,
+        userId: req.user.userId,
         'items.variantKey': variantKey,
-        'items.quantity':   { $lte: stockCeil - allowedQty },
+        'items.quantity': { $lte: stockCeil - allowedQty },
       },
       {
         $inc: { 'items.$.quantity': allowedQty },
-        $set: { 'items.$.price': authPrice },
+        $set: {
+          'items.$.price': authPrice,
+          'items.$.colorVariantId': effectiveColorId || null,
+          'items.$.colorName': effectiveColorName || null,
+          'items.$.sizeVariantId': effectiveSizeId || null,
+          'items.$.size': effectiveSize || null,
+        },
       },
       { new: true }
-    ).populate('items.product', 'name price images inStock category');
+    ).populate('items.product', 'name price images inStock inStockCount category subcategoryId pieceCounts sizes isActive colorVariants');
 
     if (!updated) {
       // Variant doesn't exist yet — push it (guarded against duplicate variantKey).
@@ -99,17 +200,20 @@ const addItem = async (req, res) => {
         {
           $push: {
             items: {
-              product:    product._id,
+              product: product._id,
               variantKey,
-              size,
+              colorVariantId: effectiveColorId || null,
+              colorName: effectiveColorName || null,
+              sizeVariantId: effectiveSizeId || null,
+              size: effectiveSize || null,
               pieceCount,
-              quantity:   allowedQty,
-              price:      authPrice,
+              quantity: allowedQty,
+              price: authPrice,
             },
           },
         },
         { new: true, upsert: true }
-      ).populate('items.product', 'name price images inStock category');
+      ).populate('items.product', 'name price images inStock inStockCount category subcategoryId pieceCounts sizes isActive colorVariants');
     }
 
     return res.status(200).json({ cart: updated });
@@ -124,7 +228,7 @@ const addItem = async (req, res) => {
 const updateItem = async (req, res) => {
   try {
     const { variantKey } = req.params;
-    const { quantity }   = req.body;
+    const { quantity } = req.body;
 
     if (quantity == null) return res.status(400).json({ message: 'quantity is required.' });
 
@@ -134,7 +238,7 @@ const updateItem = async (req, res) => {
         { userId: req.user.userId },
         { $pull: { items: { variantKey } } },
         { new: true }
-      ).populate('items.product', 'name price images inStock category');
+      ).populate('items.product', 'name price images inStock inStockCount category subcategoryId pieceCounts sizes isActive colorVariants');
       return res.status(200).json({ cart: updated });
     }
 
@@ -142,9 +246,9 @@ const updateItem = async (req, res) => {
     const cartDoc = await Cart.findOne({ userId: req.user.userId, 'items.variantKey': variantKey });
     if (!cartDoc) return res.status(404).json({ message: 'Cart item not found.' });
 
-    const item    = cartDoc.items.find((i) => i.variantKey === variantKey);
+    const item = cartDoc.items.find((i) => i.variantKey === variantKey);
     const product = await Product.findById(item.product);
-    const check   = validateStock(product, quantity);
+    const check = validateStock(product, quantity, item.colorVariantId, item.sizeVariantId, item.size);
     if (!check.ok) return res.status(400).json({ message: check.reason });
 
     const finalQty = check.availableStock != null
@@ -155,7 +259,7 @@ const updateItem = async (req, res) => {
       { userId: req.user.userId, 'items.variantKey': variantKey },
       { $set: { 'items.$.quantity': finalQty } },
       { new: true }
-    ).populate('items.product', 'name price images inStock category');
+    ).populate('items.product', 'name price images inStock inStockCount category subcategoryId pieceCounts sizes isActive colorVariants');
 
     return res.status(200).json({ cart: updated });
   } catch (err) {
@@ -232,30 +336,45 @@ const mergeCart = async (req, res) => {
       const productId = gItem.product?._id || gItem.product;
       if (!productId) continue;
 
+      const size = gItem.size || null;
+      const pieceCount = gItem.pieceCount ?? null;
+      const colorVariantId = gItem.colorVariantId || null;
+      const sizeVariantId = gItem.sizeVariantId || null;
+
       const product = await Product.findById(productId).session(session);
-      const check   = validateStock(product, gItem.quantity || 1);
+      const check = validateStock(product, gItem.quantity || 1, colorVariantId, sizeVariantId, size);
       if (!check.ok) { skipped.push({ productId, reason: check.reason }); continue; }
 
-      const size       = gItem.size       || null;
-      const pieceCount = gItem.pieceCount ?? null;
-      const variantKey = buildVariantKey(productId, size, pieceCount);
-      const authPrice  = resolvePrice(product, pieceCount);
-      const gQty       = gItem.quantity || 1;
-      const stockCeil  = check.availableStock ?? 9999;
+      const effectiveColorId = check.colorVariantId || colorVariantId;
+      const effectiveColorName = check.colorName || gItem.colorName;
+      const effectiveSizeId = check.sizeVariantId || sizeVariantId;
+      const effectiveSize = check.size || size;
+
+      const variantKey = buildVariantKey(productId, effectiveSize, pieceCount, effectiveColorId);
+      const authPrice = check.price ?? resolvePrice(product, pieceCount);
+      const gQty = gItem.quantity || 1;
+      const stockCeil = check.availableStock ?? 9999;
 
       const idx = userCart.items.findIndex((i) => i.variantKey === variantKey);
       if (idx >= 0) {
         const combined = userCart.items[idx].quantity + gQty;
         userCart.items[idx].quantity = Math.min(combined, stockCeil);
-        userCart.items[idx].price    = authPrice; // refresh to live price
+        userCart.items[idx].price = authPrice; // refresh to live price
+        userCart.items[idx].colorVariantId = effectiveColorId || userCart.items[idx].colorVariantId || null;
+        userCart.items[idx].colorName = effectiveColorName || userCart.items[idx].colorName || null;
+        userCart.items[idx].sizeVariantId = effectiveSizeId || userCart.items[idx].sizeVariantId || null;
+        userCart.items[idx].size = effectiveSize || userCart.items[idx].size || null;
       } else {
         userCart.items.push({
-          product:    product._id,
+          product: product._id,
           variantKey,
-          size,
+          colorVariantId: effectiveColorId || null,
+          colorName: effectiveColorName || null,
+          sizeVariantId: effectiveSizeId || null,
+          size: effectiveSize || null,
           pieceCount,
-          quantity:   Math.min(gQty, stockCeil),
-          price:      authPrice,
+          quantity: Math.min(gQty, stockCeil),
+          price: authPrice,
         });
       }
     }
@@ -263,7 +382,7 @@ const mergeCart = async (req, res) => {
     await userCart.save({ session });
 
     const populated = await Cart.findById(userCart._id)
-      .populate('items.product', 'name price images inStock category subcategoryId')
+      .populate('items.product', 'name price images inStock category subcategoryId colorVariants')
       .session(session);
 
     const responsePayload = {

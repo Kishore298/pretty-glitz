@@ -109,13 +109,13 @@ const Login = () => {
         />
 
         {/* Brand Logo & Title - Natural Aspect Ratio, No Circular Mask */}
-        <div style={{ textAlign: 'center', marginBottom: 28 }}>
-          <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', marginBottom: 18 }}>
+        <div style={{ textAlign: 'center', marginBottom: 22 }}>
+          <div style={{ display: 'flex', justifyContent: 'center', alignItems: 'center', marginBottom: 12 }}>
             <img
               src="/pretty-glitz-logo.png"
               alt="PrettyGlitz Logo"
               style={{
-                height: 85,
+                height: 54,
                 width: 'auto',
                 maxWidth: '100%',
                 objectFit: 'contain',

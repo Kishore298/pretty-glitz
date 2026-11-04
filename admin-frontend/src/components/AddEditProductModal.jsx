@@ -40,6 +40,7 @@ const AddEditProductModal = ({ isOpen, onClose, productId, onSuccess, isOfferPre
     isActive: true,
     inStock: true,
     sizes: [],
+    colorVariants: [],
     images: [],
     giftBoxDetails: '',
   });
@@ -68,6 +69,7 @@ const AddEditProductModal = ({ isOpen, onClose, productId, onSuccess, isOfferPre
           isActive: true,
           inStock: true,
           sizes: [],
+          colorVariants: [],
           images: [],
           giftBoxDetails: '',
         });
@@ -98,6 +100,7 @@ const AddEditProductModal = ({ isOpen, onClose, productId, onSuccess, isOfferPre
       const { data } = await api.get(`/products/${productId}`);
       setFormData({
         ...data,
+        colorVariants: data.colorVariants || [],
         isBestseller: Boolean(data.isBestseller || data.isFlagship),
       });
     } catch (err) {
@@ -128,6 +131,116 @@ const AddEditProductModal = ({ isOpen, onClose, productId, onSuccess, isOfferPre
       ...prev,
       sizes: prev.sizes.filter((_, i) => i !== index),
     }));
+
+  const handleAddColorVariant = () => {
+    const isFirst = !formData.colorVariants || formData.colorVariants.length === 0;
+    const newVariant = {
+      colorName: '',
+      colorCode: '#C4386C',
+      images: [],
+      sizes: [
+        { size: '2.4', stockCount: 0, inStock: false },
+        { size: '2.6', stockCount: 0, inStock: false },
+        { size: '2.8', stockCount: 0, inStock: false },
+      ],
+      inStock: false,
+      isDefault: isFirst,
+    };
+    setFormData((prev) => ({
+      ...prev,
+      colorVariants: [...(prev.colorVariants || []), newVariant],
+    }));
+  };
+
+  const handleRemoveColorVariant = (cIdx) => {
+    setFormData((prev) => ({
+      ...prev,
+      colorVariants: (prev.colorVariants || []).filter((_, i) => i !== cIdx),
+    }));
+  };
+
+  const handleColorVariantChange = (cIdx, fieldName, value) => {
+    setFormData((prev) => {
+      const cv = [...(prev.colorVariants || [])];
+      cv[cIdx] = { ...cv[cIdx], [fieldName]: value };
+      if (fieldName === 'isDefault' && value === true) {
+        cv.forEach((v, i) => {
+          if (i !== cIdx) v.isDefault = false;
+        });
+      }
+      return { ...prev, colorVariants: cv };
+    });
+  };
+
+  const handleAddColorSize = (cIdx) => {
+    setFormData((prev) => {
+      const cv = [...(prev.colorVariants || [])];
+      const sizes = cv[cIdx].sizes || [];
+      cv[cIdx] = {
+        ...cv[cIdx],
+        sizes: [...sizes, { size: '', stockCount: 0, inStock: false }],
+      };
+      return { ...prev, colorVariants: cv };
+    });
+  };
+
+  const handleRemoveColorSize = (cIdx, sIdx) => {
+    setFormData((prev) => {
+      const cv = [...(prev.colorVariants || [])];
+      cv[cIdx] = {
+        ...cv[cIdx],
+        sizes: (cv[cIdx].sizes || []).filter((_, i) => i !== sIdx),
+      };
+      return { ...prev, colorVariants: cv };
+    });
+  };
+
+  const handleColorSizeChange = (cIdx, sIdx, fieldName, value) => {
+    setFormData((prev) => {
+      const cv = [...(prev.colorVariants || [])];
+      const sizes = [...(cv[cIdx].sizes || [])];
+      sizes[sIdx] = { ...sizes[sIdx], [fieldName]: value };
+      cv[cIdx] = { ...cv[cIdx], sizes };
+      return { ...prev, colorVariants: cv };
+    });
+  };
+
+  const handleColorImageUpload = async (cIdx, e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+
+    const form = new FormData();
+    form.append('image', file);
+
+    try {
+      const { data } = await api.post('/upload', form, {
+        headers: { 'Content-Type': 'multipart/form-data' },
+      });
+      setFormData((prev) => {
+        const cv = [...(prev.colorVariants || [])];
+        cv[cIdx] = {
+          ...cv[cIdx],
+          images: [...(cv[cIdx].images || []), { url: data.url }],
+        };
+        return { ...prev, colorVariants: cv };
+      });
+    } catch (err) {
+      setError('Failed to upload image for colour variant.');
+    } finally {
+      e.target.value = null;
+    }
+  };
+
+  const handleRemoveColorImage = (cIdx, imgIdx) => {
+    setFormData((prev) => {
+      const cv = [...(prev.colorVariants || [])];
+      cv[cIdx] = {
+        ...cv[cIdx],
+        images: (cv[cIdx].images || []).filter((_, i) => i !== imgIdx),
+      };
+      return { ...prev, colorVariants: cv };
+    });
+  };
 
   const handleImageUpload = async (e) => {
     const file = e.target.files[0];
@@ -356,7 +469,8 @@ const AddEditProductModal = ({ isOpen, onClose, productId, onSuccess, isOfferPre
 
                     <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
                       {(formData.category?.toLowerCase() === 'artificial flowers' ||
-                        formData.category?.toLowerCase() === 'bangles') &&
+                        formData.category?.toLowerCase().includes('flower') ||
+                        formData.category?.toLowerCase().includes('bangle')) &&
                         field(
                           'Subcategory / Type',
                           <select
@@ -368,9 +482,13 @@ const AddEditProductModal = ({ isOpen, onClose, productId, onSuccess, isOfferPre
                             <option value="">-- Choose Subcategory --</option>
                             {subcategories
                               .filter((s) => {
+                                if (!formData.category) return false;
+                                const sCat = (typeof s.category === 'object' ? s.category?.name : s.category) || '';
+                                if (sCat.toLowerCase() === formData.category.toLowerCase()) return true;
+                                if (formData.category.toLowerCase().includes('bangle') && sCat.toLowerCase().includes('bangle')) return true;
+                                if (formData.category.toLowerCase().includes('flower') && sCat.toLowerCase().includes('flower')) return true;
                                 const c = categories.find((cat) => cat.name === formData.category);
-                                const sCatId = typeof s.category === 'object' ? s.category?._id : s.category;
-                                return c && sCatId === c._id;
+                                return c && (s.category === c._id || s.category === c.name);
                               })
                               .map((s) => (
                                 <option key={s._id} value={s._id}>
@@ -425,68 +543,300 @@ const AddEditProductModal = ({ isOpen, onClose, productId, onSuccess, isOfferPre
                 </div>
               </div>
 
-              {/* Bangle Sizes */}
-              {(formData.category || '').toLowerCase().includes('bangles') && (
-                <div style={{ ...sectionStyle, display: 'flex', flexDirection: 'column', gap: 14 }}>
-                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                    <span style={{ fontSize: '0.74rem', color: 'var(--accent-gold)', fontWeight: 700, letterSpacing: '0.08em', textTransform: 'uppercase' }}>
-                      2. Available Bangle Sizes
-                    </span>
+              {/* Colour Variations & Size-Wise Stock for Bangles */}
+              {(formData.category || '').toLowerCase().includes('bangle') && (
+                <div style={{ ...sectionStyle, display: 'flex', flexDirection: 'column', gap: 18 }}>
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 10 }}>
+                    <div>
+                      <span style={{ fontSize: '0.74rem', color: 'var(--accent-gold)', fontWeight: 700, letterSpacing: '0.08em', textTransform: 'uppercase', display: 'block' }}>
+                        2. Colour Variations & Size-Wise Inventory
+                      </span>
+                      <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>
+                        Manage colourways with dedicated gallery photos and size-level stock counts.
+                      </span>
+                    </div>
                     <button
                       type="button"
-                      onClick={handleAddSize}
-                      className="btn-secondary"
-                      style={{ padding: '5px 12px', fontSize: '0.75rem', gap: 5 }}
+                      onClick={handleAddColorVariant}
+                      className="btn-primary"
+                      style={{ padding: '6px 14px', fontSize: '0.78rem', gap: 6 }}
                     >
-                      <Plus size={13} /> Add Size Option
+                      <Plus size={14} /> Add Colour Variant
                     </button>
                   </div>
-                  {formData.sizes.length === 0 ? (
-                    <p style={{ color: 'var(--text-muted)', fontSize: '0.84rem', fontStyle: 'italic', margin: 0 }}>
-                      No sizes added yet. Customers will need a size selector on the detail page to place orders.
-                    </p>
-                  ) : (
-                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(180px, 1fr))', gap: 10 }}>
-                      {formData.sizes.map((sizeObj, idx) => (
+
+                  {formData.colorVariants && formData.colorVariants.length > 0 ? (
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
+                      {formData.colorVariants.map((cVar, cIdx) => (
                         <div
-                          key={idx}
+                          key={cIdx}
                           style={{
+                            background: 'rgba(255, 255, 255, 0.02)',
+                            border: cVar.isDefault ? '1px solid var(--accent-gold)' : '1px solid var(--card-border)',
+                            borderRadius: 14,
+                            padding: 16,
                             display: 'flex',
-                            alignItems: 'center',
-                            gap: 10,
-                            background: 'rgba(255, 255, 255, 0.03)',
-                            borderRadius: 10,
-                            padding: '8px 12px',
-                            border: '1px solid var(--card-border)',
+                            flexDirection: 'column',
+                            gap: 14,
                           }}
                         >
-                          <span style={{ color: 'var(--accent-gold)', fontWeight: 700, fontSize: '0.78rem' }}>#{idx + 1}</span>
-                          <input
-                            type="text"
-                            value={sizeObj.size}
-                            onChange={(e) => handleSizeChange(idx, e.target.value)}
-                            placeholder="e.g. 2.4, 2.6"
-                            required
-                            className="admin-input"
-                            style={{ padding: '6px 10px', height: 34, fontSize: '0.84rem' }}
-                          />
-                          <button
-                            type="button"
-                            onClick={() => handleRemoveSize(idx)}
-                            style={{
-                              background: 'transparent',
-                              border: 'none',
-                              color: 'var(--text-muted)',
-                              cursor: 'pointer',
-                              padding: 4,
-                            }}
-                            onMouseEnter={(e) => (e.currentTarget.style.color = '#EF4444')}
-                            onMouseLeave={(e) => (e.currentTarget.style.color = 'var(--text-muted)')}
-                          >
-                            <Trash2 size={14} />
-                          </button>
+                          {/* Variant Top Bar */}
+                          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 12 }}>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: 10, flex: 1, minWidth: 240 }}>
+                              <input
+                                type="color"
+                                value={cVar.colorCode || '#C4386C'}
+                                onChange={(e) => handleColorVariantChange(cIdx, 'colorCode', e.target.value)}
+                                style={{
+                                  width: 36,
+                                  height: 36,
+                                  borderRadius: 8,
+                                  border: '1px solid var(--card-border)',
+                                  padding: 2,
+                                  cursor: 'pointer',
+                                  background: 'transparent',
+                                }}
+                                title="Pick swatch colour"
+                              />
+                              <input
+                                type="text"
+                                value={cVar.colorName}
+                                onChange={(e) => handleColorVariantChange(cIdx, 'colorName', e.target.value)}
+                                placeholder="e.g. Ruby Red, Emerald Green..."
+                                required
+                                className="admin-input"
+                                style={{ flex: 1, height: 36, fontSize: '0.85rem' }}
+                              />
+                            </div>
+
+                            <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
+                              <label style={{ display: 'flex', alignItems: 'center', gap: 6, cursor: 'pointer', fontSize: '0.78rem', color: cVar.isDefault ? 'var(--accent-gold)' : 'var(--text-muted)' }}>
+                                <input
+                                  type="radio"
+                                  name="defaultColorVariant"
+                                  checked={Boolean(cVar.isDefault)}
+                                  onChange={() => handleColorVariantChange(cIdx, 'isDefault', true)}
+                                />
+                                <span>Default Colour</span>
+                              </label>
+
+                              <label style={{ display: 'flex', alignItems: 'center', gap: 6, cursor: 'pointer', fontSize: '0.78rem', color: cVar.inStock ? '#10B981' : '#EF4444' }}>
+                                <input
+                                  type="checkbox"
+                                  checked={Boolean(cVar.inStock)}
+                                  onChange={(e) => handleColorVariantChange(cIdx, 'inStock', e.target.checked)}
+                                />
+                                <span>{cVar.inStock ? 'In Stock' : 'Out of Stock'}</span>
+                              </label>
+
+                              <button
+                                type="button"
+                                onClick={() => handleRemoveColorVariant(cIdx)}
+                                style={{
+                                  background: 'transparent',
+                                  border: 'none',
+                                  color: '#EF4444',
+                                  cursor: 'pointer',
+                                  padding: 4,
+                                }}
+                                title="Remove colour variant"
+                              >
+                                <Trash2 size={16} />
+                              </button>
+                            </div>
+                          </div>
+
+                          {/* Photos for this Colour */}
+                          <div>
+                            <div style={{ fontSize: '0.72rem', color: 'var(--text-secondary)', fontWeight: 600, marginBottom: 8, textTransform: 'uppercase' }}>
+                              Photos for {cVar.colorName || 'Colour'} ({cVar.images?.length || 0})
+                            </div>
+                            <div style={{ display: 'flex', flexWrap: 'wrap', gap: 10, alignItems: 'center' }}>
+                              {(cVar.images || []).map((img, imgIdx) => (
+                                <div
+                                  key={imgIdx}
+                                  style={{
+                                    position: 'relative',
+                                    width: 68,
+                                    height: 68,
+                                    borderRadius: 10,
+                                    overflow: 'hidden',
+                                    border: imgIdx === 0 ? '2px solid var(--accent-gold)' : '1px solid var(--card-border)',
+                                  }}
+                                >
+                                  <img src={img.url} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                                  <button
+                                    type="button"
+                                    onClick={() => handleRemoveColorImage(cIdx, imgIdx)}
+                                    style={{
+                                      position: 'absolute',
+                                      top: 2,
+                                      right: 2,
+                                      width: 20,
+                                      height: 20,
+                                      borderRadius: '50%',
+                                      background: 'rgba(0,0,0,0.7)',
+                                      border: 'none',
+                                      color: '#EF4444',
+                                      cursor: 'pointer',
+                                      display: 'flex',
+                                      alignItems: 'center',
+                                      justifyContent: 'center',
+                                    }}
+                                  >
+                                    <Trash2 size={11} />
+                                  </button>
+                                </div>
+                              ))}
+
+                              <label
+                                style={{
+                                  display: 'flex',
+                                  flexDirection: 'column',
+                                  alignItems: 'center',
+                                  justifyContent: 'center',
+                                  width: 68,
+                                  height: 68,
+                                  borderRadius: 10,
+                                  border: '1px dashed rgba(201, 168, 76, 0.4)',
+                                  cursor: 'pointer',
+                                  background: 'rgba(201, 168, 76, 0.04)',
+                                  color: 'var(--accent-gold)',
+                                  gap: 2,
+                                }}
+                              >
+                                <input
+                                  type="file"
+                                  accept="image/*"
+                                  onChange={(e) => handleColorImageUpload(cIdx, e)}
+                                  style={{ display: 'none' }}
+                                />
+                                <Upload size={16} />
+                                <span style={{ fontSize: '0.62rem', fontWeight: 600 }}>Add Photo</span>
+                              </label>
+                            </div>
+                          </div>
+
+                          {/* Sizes & Stock Counts for this Colour */}
+                          <div>
+                            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8 }}>
+                              <span style={{ fontSize: '0.72rem', color: 'var(--text-secondary)', fontWeight: 600, textTransform: 'uppercase' }}>
+                                Sizes & Inventory for {cVar.colorName || 'Colour'}
+                              </span>
+                              <button
+                                type="button"
+                                onClick={() => handleAddColorSize(cIdx)}
+                                className="btn-secondary"
+                                style={{ padding: '3px 8px', fontSize: '0.72rem', gap: 4 }}
+                              >
+                                <Plus size={12} /> Add Size
+                              </button>
+                            </div>
+
+                            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(210px, 1fr))', gap: 8 }}>
+                              {(cVar.sizes || []).map((sObj, sIdx) => (
+                                <div
+                                  key={sIdx}
+                                  style={{
+                                    background: 'rgba(255, 255, 255, 0.03)',
+                                    border: '1px solid var(--card-border)',
+                                    borderRadius: 8,
+                                    padding: '8px 10px',
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    gap: 8,
+                                  }}
+                                >
+                                  <input
+                                    type="text"
+                                    value={sObj.size}
+                                    onChange={(e) => handleColorSizeChange(cIdx, sIdx, 'size', e.target.value)}
+                                    placeholder="Size"
+                                    required
+                                    className="admin-input"
+                                    style={{ width: 55, padding: '4px 6px', height: 28, fontSize: '0.78rem' }}
+                                  />
+                                  <div style={{ display: 'flex', alignItems: 'center', gap: 4, flex: 1 }}>
+                                    <span style={{ fontSize: '0.7rem', color: 'var(--text-muted)' }}>Stock:</span>
+                                    <input
+                                      type="number"
+                                      min="0"
+                                      value={sObj.stockCount ?? 0}
+                                      onChange={(e) => handleColorSizeChange(cIdx, sIdx, 'stockCount', Math.max(0, parseInt(e.target.value, 10) || 0))}
+                                      className="admin-input"
+                                      style={{ width: 55, padding: '4px 6px', height: 28, fontSize: '0.78rem' }}
+                                    />
+                                  </div>
+                                  <label style={{ display: 'flex', alignItems: 'center', gap: 3, cursor: 'pointer', fontSize: '0.68rem', color: sObj.inStock ? '#10B981' : 'var(--text-muted)' }} title="In stock toggle">
+                                    <input
+                                      type="checkbox"
+                                      checked={Boolean(sObj.inStock)}
+                                      onChange={(e) => handleColorSizeChange(cIdx, sIdx, 'inStock', e.target.checked)}
+                                    />
+                                    <span>In</span>
+                                  </label>
+                                  <button
+                                    type="button"
+                                    onClick={() => handleRemoveColorSize(cIdx, sIdx)}
+                                    style={{ background: 'transparent', border: 'none', color: 'var(--text-muted)', cursor: 'pointer', padding: 2 }}
+                                  >
+                                    <Trash2 size={12} />
+                                  </button>
+                                </div>
+                              ))}
+                            </div>
+                          </div>
                         </div>
                       ))}
+                    </div>
+                  ) : (
+                    <div>
+                      <p style={{ color: 'var(--text-muted)', fontSize: '0.84rem', margin: '0 0 10px' }}>
+                        No colour variations added yet. You can either click "Add Colour Variant" above for colour-specific inventory and photography, or configure simple sizes below:
+                      </p>
+                      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8 }}>
+                        <span style={{ fontSize: '0.74rem', color: 'var(--text-secondary)', fontWeight: 600 }}>Standard Single Sizes</span>
+                        <button
+                          type="button"
+                          onClick={handleAddSize}
+                          className="btn-secondary"
+                          style={{ padding: '4px 10px', fontSize: '0.75rem', gap: 4 }}
+                        >
+                          <Plus size={13} /> Add Size
+                        </button>
+                      </div>
+                      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(160px, 1fr))', gap: 8 }}>
+                        {formData.sizes.map((sizeObj, idx) => (
+                          <div
+                            key={idx}
+                            style={{
+                              display: 'flex',
+                              alignItems: 'center',
+                              gap: 8,
+                              background: 'rgba(255, 255, 255, 0.03)',
+                              borderRadius: 8,
+                              padding: '6px 10px',
+                              border: '1px solid var(--card-border)',
+                            }}
+                          >
+                            <input
+                              type="text"
+                              value={sizeObj.size}
+                              onChange={(e) => handleSizeChange(idx, e.target.value)}
+                              placeholder="e.g. 2.4"
+                              className="admin-input"
+                              style={{ padding: '4px 8px', height: 30, fontSize: '0.82rem' }}
+                            />
+                            <button
+                              type="button"
+                              onClick={() => handleRemoveSize(idx)}
+                              style={{ background: 'transparent', border: 'none', color: 'var(--text-muted)', cursor: 'pointer' }}
+                            >
+                              <Trash2 size={13} />
+                            </button>
+                          </div>
+                        ))}
+                      </div>
                     </div>
                   )}
                 </div>

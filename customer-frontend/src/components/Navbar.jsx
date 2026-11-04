@@ -457,7 +457,7 @@ const Navbar = () => {
                       position: 'absolute',
                       top: -4,
                       right: -7,
-                      background: 'var(--accent-gradient, linear-gradient(135deg, #C4386C, #8A2BE2))',
+                      background: '#E11D48',
                       color: '#ffffff',
                       fontSize: '0.62rem',
                       fontWeight: 700,
@@ -468,7 +468,7 @@ const Navbar = () => {
                       alignItems: 'center',
                       justifyContent: 'center',
                       padding: '0 4px',
-                      boxShadow: '0 2px 6px rgba(196, 56, 108, 0.4)',
+                      boxShadow: '0 2px 8px rgba(225, 29, 72, 0.45)',
                     }}
                   >
                     {wishlistCount > 99 ? '99+' : wishlistCount}
@@ -623,12 +623,13 @@ const Navbar = () => {
                   </div>
                   {wishlistCount > 0 ? (
                     <span style={{
-                      background: 'var(--accent-gradient, linear-gradient(135deg, #C4386C, #8A2BE2))',
+                      background: '#E11D48',
                       color: '#ffffff',
                       fontSize: '0.7rem',
                       fontWeight: 700,
                       padding: '2px 8px',
                       borderRadius: 999,
+                      boxShadow: '0 2px 8px rgba(225, 29, 72, 0.45)',
                     }}>
                       {wishlistCount}
                     </span>

@@ -4,7 +4,7 @@ import { useTheme } from '../context/ThemeContext';
 import { CartContext } from '../context/CartContext';
 import { useWishlist } from '../context/WishlistContext';
 import { optimizeImageUrl } from '../utils/cloudinary';
-import { ShoppingBag, Plus, Minus, Sparkles, Heart, ZoomIn } from 'lucide-react';
+import { ShoppingBag, Plus, Minus, Sparkles, Heart, ZoomIn, ChevronLeft, ChevronRight } from 'lucide-react';
 import ProductImageModal from './ProductImageModal';
 import logoImg from '../assets/pretty-glitz-logo.png';
 
@@ -222,6 +222,76 @@ const ProductCard = ({ product, showVariants = false }) => {
                 />
               ))}
             </div>
+          )}
+
+          {/* Desktop Hover Navigation Chevron Arrows */}
+          {hasMultipleImages && isHovered && (
+            <>
+              <button
+                type="button"
+                onClick={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  setActiveImgIndex((prev) => (prev - 1 + images.length) % images.length);
+                }}
+                aria-label="Previous photo"
+                style={{
+                  position: 'absolute',
+                  left: 6,
+                  top: '50%',
+                  transform: 'translateY(-50%)',
+                  width: 28,
+                  height: 28,
+                  borderRadius: '50%',
+                  background: 'rgba(10, 10, 16, 0.72)',
+                  backdropFilter: 'blur(4px)',
+                  border: '1px solid rgba(255, 255, 255, 0.2)',
+                  color: '#FFFFFF',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  cursor: 'pointer',
+                  zIndex: 5,
+                  transition: 'all 0.15s ease',
+                }}
+                onMouseEnter={(e) => (e.currentTarget.style.background = 'rgba(196, 56, 108, 0.95)')}
+                onMouseLeave={(e) => (e.currentTarget.style.background = 'rgba(10, 10, 16, 0.72)')}
+              >
+                <ChevronLeft size={16} />
+              </button>
+              <button
+                type="button"
+                onClick={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  setActiveImgIndex((prev) => (prev + 1) % images.length);
+                }}
+                aria-label="Next photo"
+                style={{
+                  position: 'absolute',
+                  right: 6,
+                  top: '50%',
+                  transform: 'translateY(-50%)',
+                  width: 28,
+                  height: 28,
+                  borderRadius: '50%',
+                  background: 'rgba(10, 10, 16, 0.72)',
+                  backdropFilter: 'blur(4px)',
+                  border: '1px solid rgba(255, 255, 255, 0.2)',
+                  color: '#FFFFFF',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  cursor: 'pointer',
+                  zIndex: 5,
+                  transition: 'all 0.15s ease',
+                }}
+                onMouseEnter={(e) => (e.currentTarget.style.background = 'rgba(196, 56, 108, 0.95)')}
+                onMouseLeave={(e) => (e.currentTarget.style.background = 'rgba(10, 10, 16, 0.72)')}
+              >
+                <ChevronRight size={16} />
+              </button>
+            </>
           )}
 
           {/* Badges */}

@@ -20,6 +20,11 @@ import EmptyState from '../components/EmptyState';
 import { SkeletonCategories } from '../components/SkeletonLoader';
 import toast from 'react-hot-toast';
 
+const CATEGORIES = [
+  { id: 'Designer Glass Bangles', label: 'Designer Glass Bangles', icon: Sparkles },
+  { id: 'Artificial Flowers', label: 'Artificial Flowers', icon: Flower2 },
+];
+
 const flowerGradients = [
   { from: 'rgba(236, 72, 153, 0.22)', to: 'rgba(196, 56, 108, 0.08)', accent: '#EC4899' },
   { from: 'rgba(138, 43, 226, 0.22)', to: 'rgba(201, 168, 76, 0.08)', accent: '#8A2BE2' },
@@ -32,13 +37,18 @@ const optimizeImageUrl = (url, opts = {}) => {
   const parts = url.split('/upload/');
   if (parts.length !== 2) return url;
   const transforms = ['f_auto', 'q_auto'];
-  if (opts.width) transforms.push(`w_${opts.width}`);
-  if (opts.height) transforms.push(`h_${opts.height}`);
-  if (opts.crop) transforms.push(`c_${opts.crop}`);
+  if (typeof opts === 'number') {
+    transforms.push(`w_${opts}`);
+  } else if (typeof opts === 'object') {
+    if (opts.width) transforms.push(`w_${opts.width}`);
+    if (opts.height) transforms.push(`h_${opts.height}`);
+    if (opts.crop) transforms.push(`c_${opts.crop}`);
+  }
   return `${parts[0]}/upload/${transforms.join(',')}/${parts[1]}`;
 };
 
 const Subcategories = () => {
+  const [selectedCategory, setSelectedCategory] = useState('Designer Glass Bangles');
   const [subcategories, setSubcategories] = useState([]);
   const [loading, setLoading] = useState(true);
   const [name, setName] = useState('');
@@ -49,8 +59,8 @@ const Subcategories = () => {
   const [activeMenu, setActiveMenu] = useState(null);
 
   useEffect(() => {
-    fetchSubcategories();
-  }, []);
+    fetchSubcategories(selectedCategory);
+  }, [selectedCategory]);
 
   // Close menus on outside click
   useEffect(() => {
@@ -63,10 +73,10 @@ const Subcategories = () => {
     return () => document.removeEventListener('mousedown', handleOutside);
   }, []);
 
-  const fetchSubcategories = async () => {
+  const fetchSubcategories = async (category) => {
     setLoading(true);
     try {
-      const { data } = await api.get('/subcategories');
+      const { data } = await api.get(`/subcategories?category=${encodeURIComponent(category)}`);
       setSubcategories(Array.isArray(data) ? data.sort((a, b) => (a.order || 0) - (b.order || 0)) : []);
     } catch (err) {
       console.error(err);
@@ -85,11 +95,11 @@ const Subcategories = () => {
     setSubcategories(updatedWithOrder);
     try {
       await api.put('/subcategories/reorder', { items: updatedWithOrder.map(c => ({ id: c._id, order: c.order })) });
-      toast.success('Flower subcategory order updated');
+      toast.success(`${selectedCategory} subcategory order updated`);
     } catch (err) {
       console.error(err);
       toast.error('Failed to reorder: ' + (err.response?.data?.message || err.message));
-      fetchSubcategories();
+      fetchSubcategories(selectedCategory);
     }
   };
 
@@ -101,14 +111,14 @@ const Subcategories = () => {
     }
     try {
       if (editId) {
-        await api.put(`/subcategories/${editId}`, { name, bannerImage, category: 'artifical flowers' });
+        await api.put(`/subcategories/${editId}`, { name, bannerImage, category: selectedCategory });
         toast.success('Subcategory updated successfully');
       } else {
-        await api.post('/subcategories', { name, bannerImage, category: 'artifical flowers' });
+        await api.post('/subcategories', { name, bannerImage, category: selectedCategory, order: subcategories.length });
         toast.success('Subcategory created successfully');
       }
       closeModal();
-      fetchSubcategories();
+      fetchSubcategories(selectedCategory);
     } catch (err) {
       console.error(err);
       toast.error(err.response?.data?.message || 'Failed to save subcategory');
@@ -135,19 +145,21 @@ const Subcategories = () => {
       await api.delete(`/subcategories/${deleteConfirm}`);
       toast.success('Subcategory deleted successfully');
       setDeleteConfirm(null);
-      fetchSubcategories();
+      fetchSubcategories(selectedCategory);
     } catch (err) {
       console.error(err);
       toast.error('Failed to delete subcategory');
     }
   };
 
+  const isBangles = selectedCategory === 'Designer Glass Bangles';
+
   return (
     <PageWrapper>
       <PageHeader
-        title="Flower Subcategories"
-        subtitle="Manage artificial flower arrangements, bridal veni, garlands, and accessories display order."
-        badge={`${subcategories.length} Flower Varieties`}
+        title={isBangles ? "Designer Glass Bangles Subcategories" : "Artificial Flowers Subcategories"}
+        subtitle={isBangles ? "Curate bridal chura, velvet finish, daily casuals, and festive bangle collections." : "Manage artificial flower arrangements, bridal veni, garlands, and accessories display order."}
+        badge={`${subcategories.length} ${isBangles ? 'Collections' : 'Varieties'}`}
         actions={
           <button
             onClick={() => setIsModalOpen(true)}
@@ -168,13 +180,44 @@ const Subcategories = () => {
         }
       />
 
+      {/* Category Filter Tabs */}
+      <div style={{ display: 'flex', gap: 10, marginBottom: 20 }}>
+        {CATEGORIES.map((cat) => {
+          const Icon = cat.icon;
+          const active = selectedCategory === cat.id;
+          return (
+            <button
+              key={cat.id}
+              onClick={() => setSelectedCategory(cat.id)}
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: 8,
+                padding: '10px 18px',
+                borderRadius: 12,
+                cursor: 'pointer',
+                background: active ? 'linear-gradient(135deg, rgba(201, 168, 76, 0.2), rgba(196, 56, 108, 0.2))' : 'rgba(255, 255, 255, 0.04)',
+                border: active ? '1px solid var(--accent-gold)' : '1px solid var(--card-border)',
+                color: active ? '#FFFFFF' : 'var(--text-secondary)',
+                fontWeight: active ? 700 : 500,
+                fontSize: '0.88rem',
+                transition: 'all 0.2s ease',
+              }}
+            >
+              <Icon size={16} color={active ? 'var(--accent-gold)' : 'var(--text-muted)'} />
+              <span>{cat.label}</span>
+            </button>
+          );
+        })}
+      </div>
+
       {/* Sync Status Info Banner */}
       <div
         style={{
           marginBottom: 28,
           padding: '14px 20px',
-          background: 'rgba(236, 72, 153, 0.08)',
-          border: '1px solid rgba(236, 72, 153, 0.22)',
+          background: isBangles ? 'rgba(201, 168, 76, 0.08)' : 'rgba(236, 72, 153, 0.08)',
+          border: isBangles ? '1px solid rgba(201, 168, 76, 0.25)' : '1px solid rgba(236, 72, 153, 0.22)',
           borderRadius: 14,
           fontSize: '0.85rem',
           color: 'var(--text-secondary)',
@@ -186,8 +229,12 @@ const Subcategories = () => {
         }}
       >
         <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-          <Flower2 size={16} color="var(--accent-pink)" />
-          <span>Subcategories appear under Artificial Flowers in the customer navigation and category browsing filters.</span>
+          {isBangles ? <Sparkles size={16} color="var(--accent-gold)" /> : <Flower2 size={16} color="var(--accent-pink)" />}
+          <span>
+            {isBangles
+              ? 'Subcategories appear on the Designer Glass Bangles page, categorizing styles for easy shopping.'
+              : 'Subcategories appear under Artificial Flowers in the customer navigation and category browsing filters.'}
+          </span>
         </div>
         <div style={{ fontSize: '0.78rem', color: 'var(--accent-gold-light)', fontWeight: 600 }}>
           Auto-Saved
@@ -199,9 +246,9 @@ const Subcategories = () => {
         <SkeletonCategories count={4} />
       ) : subcategories.length === 0 ? (
         <EmptyState
-          icon={Flower2}
-          title="No Flower Subcategories Found"
-          message="Create your first flower subcategory (e.g. Bridal Veni, Jasmine Garlands) to organize flowers on the storefront."
+          icon={isBangles ? Sparkles : Flower2}
+          title={`No ${selectedCategory} Subcategories Found`}
+          message={`Create your first ${selectedCategory} subcategory (e.g. ${isBangles ? 'Bridal Velvet Sets, Daily Wear Classics' : 'Bridal Veni, Jasmine Garlands'}) to organize products on the storefront.`}
           action={{
             label: 'Add First Subcategory',
             onClick: () => setIsModalOpen(true),
@@ -248,14 +295,14 @@ const Subcategories = () => {
                               overflow: 'hidden',
                               background: 'var(--surface-primary, #14131E)',
                               border: snapshot.isDragging
-                                ? '1px solid var(--accent-pink)'
+                                ? '1px solid var(--accent-gold)'
                                 : '1px solid var(--card-border, rgba(201, 168, 76, 0.12))',
                               display: 'flex',
                               flexDirection: 'column',
                               height: '100%',
                               position: 'relative',
                               boxShadow: snapshot.isDragging
-                                ? '0 16px 40px rgba(0, 0, 0, 0.5), 0 0 24px rgba(196, 56, 108, 0.25)'
+                                ? '0 16px 40px rgba(0, 0, 0, 0.5), 0 0 24px rgba(201, 168, 76, 0.25)'
                                 : '0 4px 16px rgba(0, 0, 0, 0.2)',
                               transform: snapshot.isDragging ? 'translateY(-6px)' : undefined,
                               transition: 'border-color 0.2s, box-shadow 0.2s',
@@ -293,7 +340,7 @@ const Subcategories = () => {
                                 fontWeight: 700,
                               }}
                             >
-                              <GripVertical size={13} color="var(--accent-pink)" />
+                              <GripVertical size={13} color="var(--accent-gold)" />
                               <span>#{index + 1}</span>
                             </div>
 
@@ -343,8 +390,8 @@ const Subcategories = () => {
                                 >
                                   {col.name}
                                 </h3>
-                                <div style={{ fontSize: '0.75rem', color: 'var(--accent-pink)', marginTop: 3, fontWeight: 500 }}>
-                                  Artificial Flowers Subcategory
+                                <div style={{ fontSize: '0.75rem', color: isBangles ? 'var(--accent-gold)' : 'var(--accent-pink)', marginTop: 3, fontWeight: 500 }}>
+                                  {selectedCategory}
                                 </div>
                               </div>
 
@@ -485,7 +532,7 @@ const Subcategories = () => {
               onClick={(e) => e.stopPropagation()}
               style={{
                 background: 'linear-gradient(180deg, #181726 0%, #12111A 100%)',
-                border: '1px solid rgba(236, 72, 153, 0.3)',
+                border: '1px solid rgba(201, 168, 76, 0.3)',
                 borderRadius: 22,
                 padding: '32px 30px',
                 width: '100%',
@@ -521,14 +568,14 @@ const Subcategories = () => {
                     width: 36,
                     height: 36,
                     borderRadius: 10,
-                    background: 'rgba(236, 72, 153, 0.12)',
+                    background: isBangles ? 'rgba(201, 168, 76, 0.15)' : 'rgba(236, 72, 153, 0.12)',
                     display: 'flex',
                     alignItems: 'center',
                     justifyContent: 'center',
-                    color: 'var(--accent-pink)',
+                    color: isBangles ? 'var(--accent-gold)' : 'var(--accent-pink)',
                   }}
                 >
-                  <Flower2 size={18} />
+                  {isBangles ? <Sparkles size={18} /> : <Flower2 size={18} />}
                 </div>
                 <h3
                   style={{
@@ -539,14 +586,14 @@ const Subcategories = () => {
                     fontWeight: 700,
                   }}
                 >
-                  {editId ? 'Edit Flower Variety' : 'New Flower Subcategory'}
+                  {editId ? `Edit ${selectedCategory} Subcategory` : `New ${selectedCategory} Subcategory`}
                 </h3>
               </div>
 
               <p style={{ margin: '0 0 24px', color: 'var(--text-secondary)', fontSize: '0.86rem' }}>
                 {editId
-                  ? 'Update flower subcategory title or representative image.'
-                  : 'Add a new artificial flower type to the catalog.'}
+                  ? 'Update subcategory title or showcase banner photo.'
+                  : `Add a new collection type under ${selectedCategory}.`}
               </p>
 
               <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
@@ -560,7 +607,7 @@ const Subcategories = () => {
                     onChange={(e) => setName(e.target.value)}
                     required
                     className="admin-input"
-                    placeholder="e.g. Bridal Veni, Jasmine Garlands, Rose Strings..."
+                    placeholder={isBangles ? "e.g. Bridal Chura Sets, Velvet Touch, Daily Casuals..." : "e.g. Bridal Veni, Jasmine Garlands, Rose Strings..."}
                   />
                 </div>
 
@@ -568,7 +615,7 @@ const Subcategories = () => {
                   <label style={{ display: 'block', fontSize: '0.82rem', color: 'var(--text-secondary)', marginBottom: 8, fontWeight: 600 }}>
                     Showcase Banner Image
                   </label>
-                  <ImageUpload value={bannerImage} onChange={setBannerImage} placeholder="Upload Flower Banner" />
+                  <ImageUpload value={bannerImage} onChange={setBannerImage} placeholder={`Upload ${isBangles ? 'Bangle' : 'Flower'} Banner`} />
                 </div>
 
                 <div style={{ display: 'flex', gap: 12, marginTop: 12 }}>
@@ -590,8 +637,8 @@ const Subcategories = () => {
         isOpen={!!deleteConfirm}
         onClose={() => setDeleteConfirm(null)}
         onConfirm={handleDelete}
-        title="Delete Flower Subcategory?"
-        message="Are you sure you want to delete this flower subcategory? Existing flower products linked to this subcategory will lose this filter tag."
+        title={`Delete ${selectedCategory} Subcategory?`}
+        message={`Are you sure you want to delete this subcategory? Existing products linked to this subcategory will lose this filter tag.`}
         itemName={subcategories.find((c) => c._id === deleteConfirm)?.name}
         confirmText="Delete Subcategory"
         cancelText="Keep Subcategory"

@@ -2,6 +2,7 @@ import React, { useContext } from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { Toaster } from 'react-hot-toast';
 import { AuthProvider, AuthContext } from './context/AuthContext';
+import { SocketProvider } from './context/SocketContext';
 import Login from './pages/Login';
 import Dashboard from './pages/Dashboard';
 import Products from './pages/Products';
@@ -11,6 +12,7 @@ import Offers from './pages/Offers';
 import Testimonials from './pages/Testimonials';
 import Banners from './pages/Banners';
 import ProductAnalytics from './pages/ProductAnalytics';
+import Orders from './pages/Orders';
 import AdminLayout from './components/AdminLayout';
 
 const AdminLoadingSplash = () => (
@@ -40,12 +42,12 @@ const AdminLoadingSplash = () => (
     />
 
     {/* Brand Logo */}
-    <div style={{ marginBottom: 16 }}>
+    <div style={{ marginBottom: 14 }}>
       <img
         src="/pretty-glitz-logo.png"
         alt="PrettyGlitz Logo"
         style={{
-          height: 80,
+          height: 54,
           width: 'auto',
           objectFit: 'contain',
           display: 'block',
@@ -108,49 +110,52 @@ const ProtectedRoute = ({ children }) => {
 function App() {
   return (
     <AuthProvider>
-      <Router>
-        <Toaster
-          position="top-right"
-          toastOptions={{
-            duration: 3500,
-            style: {
-              background: '#181722',
-              color: '#FAF9FC',
-              border: '1px solid rgba(255, 255, 255, 0.1)',
-              borderRadius: '14px',
-              padding: '12px 18px',
-              fontSize: '0.88rem',
-              fontWeight: 500,
-              boxShadow: '0 16px 36px rgba(0, 0, 0, 0.5), 0 0 20px rgba(236, 22, 140, 0.15)',
-              fontFamily: 'Inter, sans-serif',
-            },
-            success: {
-              iconTheme: {
-                primary: '#10B981',
-                secondary: '#FFFFFF',
+      <SocketProvider>
+        <Router>
+          <Toaster
+            position="top-right"
+            toastOptions={{
+              duration: 3500,
+              style: {
+                background: '#181722',
+                color: '#FAF9FC',
+                border: '1px solid rgba(255, 255, 255, 0.1)',
+                borderRadius: '14px',
+                padding: '12px 18px',
+                fontSize: '0.88rem',
+                fontWeight: 500,
+                boxShadow: '0 16px 36px rgba(0, 0, 0, 0.5), 0 0 20px rgba(236, 22, 140, 0.15)',
+                fontFamily: 'Inter, sans-serif',
               },
-            },
-            error: {
-              iconTheme: {
-                primary: '#EF4444',
-                secondary: '#FFFFFF',
+              success: {
+                iconTheme: {
+                  primary: '#10B981',
+                  secondary: '#FFFFFF',
+                },
               },
-            },
-          }}
-        />
-        <Routes>
-          <Route path="/login" element={<Login />} />
-          <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
-          <Route path="/analytics" element={<ProtectedRoute><ProductAnalytics /></ProtectedRoute>} />
-          <Route path="/products" element={<ProtectedRoute><Products /></ProtectedRoute>} />
-          <Route path="/categories" element={<ProtectedRoute><Categories /></ProtectedRoute>} />
-          <Route path="/subcategories" element={<ProtectedRoute><Subcategories /></ProtectedRoute>} />
-          <Route path="/banners" element={<ProtectedRoute><Banners /></ProtectedRoute>} />
-          <Route path="/offers" element={<ProtectedRoute><Offers /></ProtectedRoute>} />
-          <Route path="/testimonials" element={<ProtectedRoute><Testimonials /></ProtectedRoute>} />
-          <Route path="*" element={<Navigate to="/dashboard" replace />} />
-        </Routes>
-      </Router>
+              error: {
+                iconTheme: {
+                  primary: '#EF4444',
+                  secondary: '#FFFFFF',
+                },
+              },
+            }}
+          />
+          <Routes>
+            <Route path="/login" element={<Login />} />
+            <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
+            <Route path="/orders" element={<ProtectedRoute><Orders /></ProtectedRoute>} />
+            <Route path="/analytics" element={<ProtectedRoute><ProductAnalytics /></ProtectedRoute>} />
+            <Route path="/products" element={<ProtectedRoute><Products /></ProtectedRoute>} />
+            <Route path="/categories" element={<ProtectedRoute><Categories /></ProtectedRoute>} />
+            <Route path="/subcategories" element={<ProtectedRoute><Subcategories /></ProtectedRoute>} />
+            <Route path="/banners" element={<ProtectedRoute><Banners /></ProtectedRoute>} />
+            <Route path="/offers" element={<ProtectedRoute><Offers /></ProtectedRoute>} />
+            <Route path="/testimonials" element={<ProtectedRoute><Testimonials /></ProtectedRoute>} />
+            <Route path="*" element={<Navigate to="/dashboard" replace />} />
+          </Routes>
+        </Router>
+      </SocketProvider>
     </AuthProvider>
   );
 }

@@ -6,7 +6,6 @@ import {
   BarChart3,
   Gem,
   Layers,
-  Flower2,
   LogOut,
   Tag,
   MessageSquareQuote,
@@ -21,6 +20,7 @@ const navGroups = [
     label: 'Overview & Insights',
     items: [
       { to: '/dashboard', label: 'Dashboard', Icon: LayoutDashboard },
+      { to: '/orders', label: 'Orders & Requests', Icon: ShoppingBag },
       { to: '/analytics', label: 'Product Analytics', Icon: BarChart3 },
     ]
   },
@@ -28,7 +28,7 @@ const navGroups = [
     label: 'Catalog & Inventory',
     items: [
       { to: '/categories', label: 'Categories', Icon: Layers },
-      { to: '/subcategories', label: 'Flower Subcategories', Icon: Flower2 },
+      { to: '/subcategories', label: 'Collection Subcategories', Icon: Layers },
       { to: '/products', label: 'Products & Inventory', Icon: Gem },
     ]
   },
@@ -64,13 +64,13 @@ const Sidebar = ({ isOpen, setIsOpen }) => {
       }}
     >
       {/* Brand Header */}
-      <div style={{ padding: '26px 20px 18px' }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
+      <div style={{ padding: '22px 18px 16px' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
           <img
             src="/pretty-glitz-logo.png"
             alt="PrettyGlitz Logo"
             style={{
-              height: 52,
+              height: 38,
               width: 'auto',
               objectFit: 'contain',
               display: 'block',

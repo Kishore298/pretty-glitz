@@ -15,7 +15,7 @@ const COOLDOWN_MS = COOLDOWN_HOURS * 60 * 60 * 1000;
 // Helper: Safely extract customer userId from optional Authorization header
 const extractUserId = (req) => {
   if (req.user && req.user.userId) return req.user.userId;
-  const authHeader = req.headers.authorization;
+  const authHeader = req.headers?.authorization;
   if (authHeader && authHeader.startsWith('Bearer ')) {
     try {
       const token = authHeader.split(' ')[1];
@@ -121,14 +121,14 @@ const trackEvent = async (req, res) => {
         await ProductAnalytics.findOneAndUpdate(
           { productId },
           updateQuery,
-          { upsert: true, new: true, session }
+          { upsert: true, returnDocument: 'after', session }
         );
         await session.commitTransaction();
       } else {
         await ProductAnalytics.findOneAndUpdate(
           { productId },
           updateQuery,
-          { upsert: true, new: true }
+          { upsert: true, returnDocument: 'after' }
         );
       }
 

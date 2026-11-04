@@ -21,8 +21,9 @@ export const AuthProvider = ({ children }) => {
   const [user,    setUser]    = useState(null);
   const [token,   setToken]   = useState(null);
   const [loading, setLoading] = useState(true);
+  const [isWhatsAppOtpEnabled, setIsWhatsAppOtpEnabled] = useState(false);
 
-  // Restore session from localStorage on mount
+  // Restore session from localStorage on mount and check WhatsApp OTP feature flag
   useEffect(() => {
     const storedToken = localStorage.getItem(LS_CUSTOMER_TOKEN);
     const storedUser  = localStorage.getItem(LS_CUSTOMER_INFO);
@@ -39,6 +40,18 @@ export const AuthProvider = ({ children }) => {
       }
     }
     setLoading(false);
+
+    // Fetch feature flag status from backend
+    api.get('/customer/whatsapp-auth/config')
+      .then((res) => {
+        if (res.data && typeof res.data.enabled === 'boolean') {
+          setIsWhatsAppOtpEnabled(res.data.enabled);
+        }
+      })
+      .catch(() => {
+        // Safe default: remains false
+        setIsWhatsAppOtpEnabled(false);
+      });
   }, []);
 
   // ── Internal helper to persist a new session ─────────────────────────────────
@@ -105,6 +118,35 @@ export const AuthProvider = ({ children }) => {
     }
   }, [_persistSession]);
 
+  // ── WhatsApp OTP Authentication (Side-by-Side Feature-Flagged) ──────────────
+
+  const sendWhatsAppOtp = useCallback(async (mobile) => {
+    try {
+      const { data } = await api.post('/customer/whatsapp-auth/send-otp', { mobile });
+      return {
+        success: true,
+        message: data.message,
+        cooldownSeconds: data.cooldownSeconds || 60,
+        simulated: data.simulated,
+        devOtp: data.devOtp,
+      };
+    } catch (err) {
+      const message = err.response?.data?.message || 'Failed to dispatch WhatsApp OTP.';
+      return { success: false, message, retryAfter: err.response?.data?.retryAfter };
+    }
+  }, []);
+
+  const verifyWhatsAppOtp = useCallback(async (mobile, otp) => {
+    try {
+      const { data } = await api.post('/customer/whatsapp-auth/verify-otp', { mobile, otp });
+      _persistSession(data.token, data.user);
+      return { success: true, token: data.token, user: data.user };
+    } catch (err) {
+      const message = err.response?.data?.message || 'Invalid or expired OTP.';
+      return { success: false, message };
+    }
+  }, [_persistSession]);
+
   // ── Logout ───────────────────────────────────────────────────────────────────
 
   const logout = useCallback(() => {
@@ -120,7 +162,19 @@ export const AuthProvider = ({ children }) => {
 
   return (
     <AuthContext.Provider
-      value={{ user, token, loading, login, register, setPassword, logout, getToken }}
+      value={{
+        user,
+        token,
+        loading,
+        isWhatsAppOtpEnabled,
+        login,
+        register,
+        setPassword,
+        sendWhatsAppOtp,
+        verifyWhatsAppOtp,
+        logout,
+        getToken,
+      }}
     >
       {children}
     </AuthContext.Provider>

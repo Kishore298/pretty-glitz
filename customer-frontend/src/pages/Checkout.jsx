@@ -1,4 +1,4 @@
-import React, { useContext, useState } from 'react';
+import React, { useContext, useState, useRef } from 'react';
 import { useNavigate, Navigate, Link } from 'react-router-dom';
 import { CartContext } from '../context/CartContext';
 import { motion } from 'framer-motion';
@@ -6,6 +6,7 @@ import { optimizeImageUrl } from '../utils/cloudinary';
 import logoImg from '../assets/pretty-glitz-logo.png';
 import { ChevronRight, ShieldCheck, CheckCircle2 } from 'lucide-react';
 import { getWhatsAppUrl, IS_WHATSAPP_CONFIGURED } from '../config/constants';
+import api from '../utils/api';
 
 const Checkout = () => {
   const { cartItems, getCartTotal, clearCart } = useContext(CartContext);
@@ -21,17 +22,22 @@ const Checkout = () => {
   });
 
   const [redirecting, setRedirecting] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
+  const [createdOrderId, setCreatedOrderId] = useState(null);
+  const idempotencyKeyRef = useRef('pg_ord_' + Date.now() + '_' + Math.random().toString(36).slice(2, 8));
 
   if (cartItems.length === 0 && !redirecting) return <Navigate to="/cart" />;
 
   const handleChange = (e) => setFormData({...formData, [e.target.name]: e.target.value});
 
-  const constructWhatsAppMessage = () => {
-    let msg = `*New Order*\n\n*Customer:* ${formData.name}\n*Mobile:* +91 ${formData.mobile}\n\n*Products:*\n`;
+  const constructWhatsAppMessage = (orderId) => {
+    let msg = `*New Order Request*\n*Order ID:* ${orderId || 'PENDING'}\n\n*Customer:* ${formData.name}\n*Mobile:* +91 ${formData.mobile}\n\n*Products:*\n`;
     cartItems.forEach((item, index) => {
       msg += `\n${index + 1}. ${item.product.name}\n`;
+      if (item.colorName) msg += `   Colour: ${item.colorName}\n`;
       if (item.size) msg += `   Size: ${item.size}\n`;
-      msg += `   Quantity: ${item.quantity}\n   Price: ₹${item.product.price}\n`;
+      if (item.pieceCount) msg += `   Pieces: ${item.pieceCount}\n`;
+      msg += `   Quantity: ${item.quantity}\n   Price: ₹${item.price || item.product.price}\n`;
       if (item.product.inStock === false) {
         msg += `   Status: OUT OF STOCK\n`;
       }
@@ -41,7 +47,7 @@ const Checkout = () => {
     return encodeURIComponent(msg);
   };
 
-  const handlePlaceOrder = (e) => {
+  const handlePlaceOrder = async (e) => {
     e.preventDefault();
 
     if (!IS_WHATSAPP_CONFIGURED) {
@@ -49,12 +55,57 @@ const Checkout = () => {
       return;
     }
 
-    const message = constructWhatsAppMessage();
-    const whatsappUrl = getWhatsAppUrl(decodeURIComponent(message));
-    if (!whatsappUrl) return;
-    window.open(whatsappUrl, '_blank');
-    clearCart();
-    setRedirecting(true);
+    if (submitting) return;
+    setSubmitting(true);
+
+    try {
+      // 1. Save authoritative Order in MongoDB before redirect
+      const payload = {
+        customer: formData,
+        items: cartItems.map((item) => ({
+          productId: item.product?._id || item.product,
+          name: item.product?.name,
+          price: item.price || item.product?.price,
+          quantity: item.quantity,
+          colorVariantId: item.colorVariantId || null,
+          colorName: item.colorName || null,
+          sizeVariantId: item.sizeVariantId || null,
+          size: item.size || null,
+          pieceCount: item.pieceCount || null,
+          image: item.product?.images?.[0]?.url,
+          variantKey: item.variantKey,
+        })),
+        totalAmount: getCartTotal(),
+        idempotencyKey: idempotencyKeyRef.current,
+      };
+
+      const { data } = await api.post('/orders', payload);
+      const orderId = data.orderId || 'PG-ORDER';
+      setCreatedOrderId(orderId);
+
+      // 2. Format WhatsApp message containing the exact Order ID
+      const message = constructWhatsAppMessage(orderId);
+      const whatsappUrl = getWhatsAppUrl(decodeURIComponent(message));
+      if (whatsappUrl) {
+        window.open(whatsappUrl, '_blank');
+      }
+
+      // 3. Set redirecting screen (WITHOUT wiping cart immediately)
+      setRedirecting(true);
+    } catch (err) {
+      console.error('[Checkout] Order submission error:', err);
+      // Fallback: still allow WhatsApp checkout even if server had a momentary network error
+      const fallbackOrderId = 'PG-' + Date.now().toString().slice(-6);
+      setCreatedOrderId(fallbackOrderId);
+      const message = constructWhatsAppMessage(fallbackOrderId);
+      const whatsappUrl = getWhatsAppUrl(decodeURIComponent(message));
+      if (whatsappUrl) {
+        window.open(whatsappUrl, '_blank');
+      }
+      setRedirecting(true);
+    } finally {
+      setSubmitting(false);
+    }
   };
 
   const inputStyle = {
@@ -66,17 +117,65 @@ const Checkout = () => {
   if (redirecting) {
     return (
       <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 24 }}>
-        <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} style={{ background: 'var(--bg-card)', border: `1px solid var(--border)`, borderRadius: 24, padding: '64px 40px', maxWidth: 500, width: '100%', textAlign: 'center', boxShadow: '0 20px 60px var(--shadow)' }}>
-          <div style={{ width: 80, height: 80, borderRadius: '50%', background: 'rgba(37,211,102,0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 32px' }}>
+        <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }} style={{ background: 'var(--bg-card)', border: `1px solid var(--border)`, borderRadius: 24, padding: '48px 36px', maxWidth: 540, width: '100%', textAlign: 'center', boxShadow: '0 20px 60px var(--shadow)' }}>
+          <div style={{ width: 80, height: 80, borderRadius: '50%', background: 'rgba(37,211,102,0.12)', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 24px' }}>
             <span style={{ fontSize: '2.5rem' }}>📱</span>
           </div>
-          <h2 style={{ fontSize: '1.8rem', fontFamily: 'Outfit, sans-serif', fontWeight: 800, color: 'var(--text)', textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: 16 }}>Almost Done!</h2>
-          <p style={{ color: 'var(--text-secondary)', fontSize: '1rem', lineHeight: 1.6, marginBottom: 40 }}>
-            Your order details are ready in WhatsApp. <br/><strong style={{ color: 'var(--text)' }}>Please press Send in WhatsApp to complete your order.</strong>
+
+          <div style={{ display: 'inline-block', padding: '6px 16px', borderRadius: 999, background: 'rgba(201, 168, 76, 0.12)', border: '1px solid rgba(201, 168, 76, 0.25)', color: '#C9A84C', fontWeight: 700, fontSize: '0.85rem', marginBottom: 16 }}>
+            Order Request: #{createdOrderId || 'PENDING'}
+          </div>
+
+          <h2 style={{ fontSize: '1.7rem', fontFamily: 'Outfit, sans-serif', fontWeight: 800, color: 'var(--text)', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 14 }}>
+            Almost Done!
+          </h2>
+
+          <p style={{ color: 'var(--text-secondary)', fontSize: '0.96rem', lineHeight: 1.6, marginBottom: 28 }}>
+            Your order details are pre-filled in WhatsApp.<br/>
+            <strong style={{ color: 'var(--text)' }}>Please press &quot;Send&quot; in WhatsApp to submit your order request.</strong>
           </p>
-          <button onClick={() => navigate('/')} style={{ background: 'none', border: 'none', borderBottom: '2px solid var(--text)', color: 'var(--text)', paddingBottom: 4, fontWeight: 700, fontSize: '0.85rem', letterSpacing: '0.1em', textTransform: 'uppercase', cursor: 'pointer' }}>
-            Return to Store
-          </button>
+
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+            <button
+              onClick={() => {
+                clearCart();
+                navigate('/');
+              }}
+              style={{
+                width: '100%',
+                padding: '14px',
+                borderRadius: 12,
+                background: '#25D366',
+                color: '#FFFFFF',
+                fontWeight: 700,
+                fontSize: '0.9rem',
+                border: 'none',
+                cursor: 'pointer',
+                boxShadow: '0 4px 18px rgba(37,211,102,0.3)',
+              }}
+            >
+              ✓ I have sent the message (Complete Order)
+            </button>
+
+            <button
+              onClick={() => {
+                setRedirecting(false);
+              }}
+              style={{
+                width: '100%',
+                padding: '12px',
+                borderRadius: 12,
+                background: 'transparent',
+                color: 'var(--text-secondary)',
+                fontWeight: 600,
+                fontSize: '0.85rem',
+                border: '1px solid var(--border)',
+                cursor: 'pointer',
+              }}
+            >
+              ← Didn&apos;t send? Return to review details &amp; keep cart
+            </button>
+          </div>
         </motion.div>
       </div>
     );

@@ -5,7 +5,19 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { CartContext } from '../context/CartContext';
 import { useWishlist } from '../context/WishlistContext';
 import { optimizeImageUrl } from '../utils/cloudinary';
-import { Check, ChevronRight, Share2, ZoomIn, Plus, Minus, ShoppingBag, Heart, Ruler } from 'lucide-react';
+import {
+  Check,
+  ChevronRight,
+  ChevronLeft,
+  ChevronDown,
+  Share2,
+  ZoomIn,
+  Plus,
+  Minus,
+  ShoppingBag,
+  Heart,
+  Ruler,
+} from 'lucide-react';
 import ProductCard from '../components/ProductCard';
 import CollectionProductDetailCard from '../components/CollectionProductDetailCard';
 import LotusDivider from '../components/LotusDivider';
@@ -19,8 +31,12 @@ const ProductDetail = () => {
   const [relatedProducts, setRelatedProducts] = useState([]);
   const [productsByCategory, setProductsByCategory] = useState({});
   const [activeCategoryTab, setActiveCategoryTab] = useState('ALL');
+
+  // Variation States
+  const [selectedColor, setSelectedColor] = useState(null);
   const [selectedSize, setSelectedSize] = useState(null);
   const [selectedPieceCount, setSelectedPieceCount] = useState(null);
+
   const [error, setError] = useState('');
   const [activeImage, setActiveImage] = useState(0);
   const [addedFeedback, setAddedFeedback] = useState(false);
@@ -29,6 +45,11 @@ const ProductDetail = () => {
   const [touchStartX, setTouchStartX] = useState(null);
   const [touchEndX, setTouchEndX] = useState(null);
   const [showSizeChart, setShowSizeChart] = useState(false);
+
+  // Accordion States (Collapsed by default as required)
+  const [detailsOpen, setDetailsOpen] = useState(false);
+  const [shippingOpen, setShippingOpen] = useState(false);
+  const [copyToast, setCopyToast] = useState(false);
 
   const { addToCart, updateQuantity, removeFromCart, getCartItemQuantity, isInCart } = useContext(CartContext);
   const { isInWishlist, toggleWishlist } = useWishlist();
@@ -45,6 +66,18 @@ const ProductDetail = () => {
     try {
       const { data } = await api.get(`/products/${id}`);
       setProduct(data);
+
+      // Handle Color Variants
+      if (data.colorVariants && data.colorVariants.length > 0) {
+        const defColor = data.colorVariants.find(c => c.isDefault) || data.colorVariants[0];
+        setSelectedColor(defColor);
+        if (defColor.sizes?.length > 0) {
+          const firstInStock = defColor.sizes.find(s => s.inStock && (s.stockCount > 0));
+          setSelectedSize(firstInStock ? firstInStock.size : defColor.sizes[0].size);
+        }
+      } else if (data.sizes?.length > 0) {
+        setSelectedSize(data.sizes[0].size);
+      }
 
       // Auto-select lowest piece count
       if (data.pieceCounts?.length > 0) {
@@ -74,16 +107,25 @@ const ProductDetail = () => {
     } catch (err) { console.error(err); }
   };
 
+  // Determine current active images and sizes based on selected color variant
+  const galleryImages = (selectedColor && selectedColor.images?.length > 0)
+    ? selectedColor.images
+    : (product?.images || []);
+
+  const activeSizes = (selectedColor && selectedColor.sizes?.length > 0)
+    ? selectedColor.sizes
+    : (product?.sizes || []);
+
   // Resolved price (piece count price overrides product price)
   const resolvedPrice = selectedPieceCount ? selectedPieceCount.price : product?.price;
   const resolvedOriginalPrice = selectedPieceCount ? selectedPieceCount.originalPrice : product?.originalPrice;
 
   // Cart state for current variant
-  const cartVariantQty = product ? getCartItemQuantity(product._id, selectedSize, selectedPieceCount?.count ?? null) : 0;
-  const variantInCart = product ? isInCart(product._id, selectedSize, selectedPieceCount?.count ?? null) : false;
+  const cartVariantQty = product ? getCartItemQuantity(product._id, selectedSize, selectedPieceCount?.count ?? null, selectedColor?._id) : 0;
+  const variantInCart = product ? isInCart(product._id, selectedSize, selectedPieceCount?.count ?? null, selectedColor?._id) : false;
 
   const validate = () => {
-    if ((product.category || '').toLowerCase().includes('bangles') && product.sizes?.length > 0 && !selectedSize) {
+    if (activeSizes?.length > 0 && !selectedSize) {
       setError('Please select a size to continue');
       return false;
     }
@@ -91,13 +133,21 @@ const ProductDetail = () => {
       setError('Please select a piece count to continue');
       return false;
     }
+    // Check if selected size in selected color is in stock
+    if (selectedColor && selectedSize) {
+      const match = selectedColor.sizes?.find(s => s.size === selectedSize);
+      if (match && (!match.inStock || match.stockCount <= 0)) {
+        setError(`Size ${selectedSize} in ${selectedColor.colorName} is out of stock.`);
+        return false;
+      }
+    }
     setError('');
     return true;
   };
 
   const handleAddToCart = () => {
     if (!validate()) return;
-    addToCart(product, selectedSize, 1, selectedPieceCount?.count ?? null, resolvedPrice);
+    addToCart(product, selectedSize, 1, selectedPieceCount?.count ?? null, resolvedPrice, selectedColor);
     setAddedFeedback(true);
     setTimeout(() => setAddedFeedback(false), 2000);
   };
@@ -107,22 +157,48 @@ const ProductDetail = () => {
     if (variantInCart) {
       updateQuantity(product._id, selectedSize, cartVariantQty + 1, selectedPieceCount?.count ?? null);
     } else {
-      addToCart(product, selectedSize, 1, selectedPieceCount?.count ?? null, resolvedPrice);
+      addToCart(product, selectedSize, 1, selectedPieceCount?.count ?? null, resolvedPrice, selectedColor);
     }
   };
 
   const handleDecrease = () => {
     if (cartVariantQty <= 1) {
-      removeFromCart(product._id, selectedSize, selectedPieceCount?.count ?? null);
+      removeFromCart(product._id, selectedSize, selectedPieceCount?.count ?? null, selectedColor?._id);
     } else {
       updateQuantity(product._id, selectedSize, cartVariantQty - 1, selectedPieceCount?.count ?? null);
     }
   };
 
-  const handleShare = () => {
-    const text = `Check out this beautiful ${product.name} on PrettyGlitz!`;
-    const url = window.location.href;
-    window.open(`https://api.whatsapp.com/send?text=${encodeURIComponent(text + ' ' + url)}`, '_blank');
+  // General-Purpose Product Sharing with Web Share API and silent AbortError handling
+  const handleShare = async () => {
+    const shareData = {
+      title: `${product.name} | PrettyGlitz`,
+      text: `Discover this handcrafted piece: ${product.name} on PrettyGlitz!`,
+      url: window.location.href,
+    };
+
+    if (navigator.share) {
+      try {
+        await navigator.share(shareData);
+      } catch (err) {
+        // Silently ignore if user cancels the share dialog
+        if (err.name === 'AbortError') return;
+        // Non-abort failure -> fallback to clipboard
+        fallbackCopyLink(shareData.url);
+      }
+    } else {
+      fallbackCopyLink(shareData.url);
+    }
+  };
+
+  const fallbackCopyLink = async (url) => {
+    try {
+      await navigator.clipboard.writeText(url);
+      setCopyToast(true);
+      setTimeout(() => setCopyToast(false), 2500);
+    } catch {
+      window.open(`https://api.whatsapp.com/send?text=${encodeURIComponent(url)}`, '_blank');
+    }
   };
 
   const handleMouseMove = (e) => {
@@ -130,6 +206,18 @@ const ProductDetail = () => {
     const x = ((e.pageX - left) / width) * 100;
     const y = ((e.pageY - top) / height) * 100;
     setMousePos({ x, y });
+  };
+
+  const handleColorSelect = (cVar) => {
+    setSelectedColor(cVar);
+    setActiveImage(0); // Reset gallery index to 0 as required!
+    if (cVar.sizes?.length > 0) {
+      const stillValid = cVar.sizes.find(s => s.size === selectedSize && s.inStock && (s.stockCount > 0));
+      if (!stillValid) {
+        const firstAvailable = cVar.sizes.find(s => s.inStock && (s.stockCount > 0));
+        setSelectedSize(firstAvailable ? firstAvailable.size : cVar.sizes[0].size);
+      }
+    }
   };
 
   if (!product) return (
@@ -155,41 +243,8 @@ const ProductDetail = () => {
 
         <div className="product-detail-layout">
 
-          {/* ── Image Gallery ──────────────────────────────────── */}
+          {/* ── Image Gallery (Clean hero without Amazon-style thumbnails) ── */}
           <div className="product-gallery-wrapper">
-
-            {/* Thumbnails */}
-            {product.images?.length > 1 && (
-              <div className="product-gallery-thumbs no-scrollbar">
-                {product.images.map((img, idx) => (
-                  <button
-                    key={idx}
-                    onClick={() => setActiveImage(idx)}
-                    className="product-gallery-thumb-btn"
-                    style={{
-                      border: `2px solid ${activeImage === idx ? 'var(--accent)' : 'transparent'}`,
-                      opacity: activeImage === idx ? 1 : 0.6,
-                    }}
-                    onMouseEnter={e => e.currentTarget.style.opacity = 1}
-                    onMouseLeave={e => { if (activeImage !== idx) e.currentTarget.style.opacity = 0.6; }}
-                  >
-                    <img
-                      src={optimizeImageUrl(img.url, 150)}
-                      alt=""
-                      loading="lazy"
-                      onError={(e) => {
-                        e.currentTarget.onerror = null;
-                        e.currentTarget.src = logoImg;
-                        e.currentTarget.style.padding = '4px';
-                      }}
-                      style={{ width: '100%', height: '100%', objectFit: 'cover' }}
-                    />
-                  </button>
-                ))}
-              </div>
-            )}
-
-            {/* Main Image with Zoom and Mobile Touch Swipe */}
             <div
               className="product-gallery-main"
               onMouseEnter={() => setIsZoomed(true)}
@@ -201,19 +256,25 @@ const ProductDetail = () => {
               }}
               onTouchMove={(e) => setTouchEndX(e.targetTouches[0].clientX)}
               onTouchEnd={() => {
-                if (!touchStartX || !touchEndX || !product?.images || product.images.length <= 1) return;
+                if (!touchStartX || !touchEndX || !galleryImages || galleryImages.length <= 1) return;
                 const distance = touchStartX - touchEndX;
                 if (distance > 35) {
-                  setActiveImage((prev) => (prev + 1) % product.images.length);
+                  setActiveImage((prev) => (prev + 1) % galleryImages.length);
                 } else if (distance < -35) {
-                  setActiveImage((prev) => (prev - 1 + product.images.length) % product.images.length);
+                  setActiveImage((prev) => (prev - 1 + galleryImages.length) % galleryImages.length);
                 }
               }}
-              style={{ touchAction: product?.images?.length > 1 ? 'pan-y' : 'auto' }}
+              style={{
+                position: 'relative',
+                touchAction: galleryImages?.length > 1 ? 'pan-y' : 'auto',
+                width: '100%',
+                borderRadius: 20,
+                overflow: 'hidden',
+              }}
             >
               <AnimatePresence mode="wait">
                 <motion.div
-                  key={activeImage}
+                  key={`${selectedColor?.colorName || 'main'}-${activeImage}`}
                   initial={{ opacity: 0 }}
                   animate={{ opacity: 1 }}
                   exit={{ opacity: 0 }}
@@ -221,7 +282,7 @@ const ProductDetail = () => {
                   style={{ width: '100%', height: '100%' }}
                 >
                   <img
-                    src={product.images?.[activeImage]?.url ? optimizeImageUrl(product.images[activeImage].url, 1200) : logoImg}
+                    src={galleryImages[activeImage]?.url ? optimizeImageUrl(galleryImages[activeImage].url, 1200) : logoImg}
                     alt={product.name}
                     onError={(e) => {
                       e.currentTarget.onerror = null;
@@ -232,7 +293,7 @@ const ProductDetail = () => {
                     style={{
                       width: '100%',
                       height: '100%',
-                      objectFit: product.images?.[activeImage]?.url ? 'cover' : 'contain',
+                      objectFit: galleryImages[activeImage]?.url ? 'cover' : 'contain',
                       display: 'block',
                       padding: 0,
                       transform: isZoomed ? 'scale(2)' : 'scale(1)',
@@ -243,8 +304,77 @@ const ProductDetail = () => {
                 </motion.div>
               </AnimatePresence>
 
-              {/* Dots on mobile when multiple images */}
-              {product.images?.length > 1 && (
+              {/* Desktop Hover Next/Prev Arrows */}
+              {galleryImages.length > 1 && (
+                <>
+                  <button
+                    type="button"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setActiveImage((prev) => (prev - 1 + galleryImages.length) % galleryImages.length);
+                    }}
+                    aria-label="Previous photo"
+                    style={{
+                      position: 'absolute',
+                      left: 12,
+                      top: '50%',
+                      transform: 'translateY(-50%)',
+                      width: 38,
+                      height: 38,
+                      borderRadius: '50%',
+                      background: 'rgba(10, 10, 16, 0.65)',
+                      backdropFilter: 'blur(6px)',
+                      border: '1px solid rgba(255, 255, 255, 0.15)',
+                      color: '#FFFFFF',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      cursor: 'pointer',
+                      zIndex: 3,
+                      transition: 'all 0.2s ease',
+                    }}
+                    onMouseEnter={(e) => e.currentTarget.style.background = 'rgba(196, 56, 108, 0.9)'}
+                    onMouseLeave={(e) => e.currentTarget.style.background = 'rgba(10, 10, 16, 0.65)'}
+                  >
+                    <ChevronLeft size={20} />
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setActiveImage((prev) => (prev + 1) % galleryImages.length);
+                    }}
+                    aria-label="Next photo"
+                    style={{
+                      position: 'absolute',
+                      right: 12,
+                      top: '50%',
+                      transform: 'translateY(-50%)',
+                      width: 38,
+                      height: 38,
+                      borderRadius: '50%',
+                      background: 'rgba(10, 10, 16, 0.65)',
+                      backdropFilter: 'blur(6px)',
+                      border: '1px solid rgba(255, 255, 255, 0.15)',
+                      color: '#FFFFFF',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      cursor: 'pointer',
+                      zIndex: 3,
+                      transition: 'all 0.2s ease',
+                    }}
+                    onMouseEnter={(e) => e.currentTarget.style.background = 'rgba(196, 56, 108, 0.9)'}
+                    onMouseLeave={(e) => e.currentTarget.style.background = 'rgba(10, 10, 16, 0.65)'}
+                  >
+                    <ChevronRight size={20} />
+                  </button>
+                </>
+              )}
+
+              {/* Dots below main image */}
+              {galleryImages.length > 1 && (
                 <div
                   style={{
                     position: 'absolute',
@@ -253,24 +383,24 @@ const ProductDetail = () => {
                     transform: 'translateX(-50%)',
                     display: 'flex',
                     alignItems: 'center',
-                    gap: 5,
+                    gap: 6,
                     zIndex: 2,
-                    background: 'rgba(0,0,0,0.35)',
-                    backdropFilter: 'blur(4px)',
-                    WebkitBackdropFilter: 'blur(4px)',
-                    padding: '4px 8px',
+                    background: 'rgba(0,0,0,0.45)',
+                    backdropFilter: 'blur(6px)',
+                    WebkitBackdropFilter: 'blur(6px)',
+                    padding: '5px 10px',
                     borderRadius: 999,
                     pointerEvents: 'none',
                   }}
                 >
-                  {product.images.map((_, i) => (
+                  {galleryImages.map((_, i) => (
                     <span
                       key={i}
                       style={{
-                        width: i === activeImage ? 14 : 6,
+                        width: i === activeImage ? 16 : 6,
                         height: 6,
                         borderRadius: 999,
-                        background: i === activeImage ? '#FFFFFF' : 'rgba(255,255,255,0.45)',
+                        background: i === activeImage ? '#FFFFFF' : 'rgba(255,255,255,0.4)',
                         transition: 'all 0.2s ease',
                       }}
                     />
@@ -313,12 +443,37 @@ const ProductDetail = () => {
                   <button
                     onClick={handleShare}
                     className="product-detail-share-btn"
-                    title="Share to WhatsApp"
+                    title="Share product"
+                    aria-label="Share product"
                   >
                     <Share2 size={16} />
                   </button>
                 </div>
               </div>
+
+              {/* Toast for copied link */}
+              {copyToast && (
+                <motion.div
+                  initial={{ opacity: 0, y: -6 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0 }}
+                  style={{
+                    background: 'rgba(16, 185, 129, 0.15)',
+                    border: '1px solid rgba(16, 185, 129, 0.35)',
+                    color: '#10B981',
+                    fontSize: '0.82rem',
+                    fontWeight: 600,
+                    padding: '6px 12px',
+                    borderRadius: 8,
+                    marginBottom: 12,
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: 6,
+                  }}
+                >
+                  <Check size={14} /> Product link copied to clipboard!
+                </motion.div>
+              )}
 
               <h1 className="product-detail-title">
                 {product.name}
@@ -341,8 +496,78 @@ const ProductDetail = () => {
                 )}
               </div>
 
-              {/* Bangle Size Selector */}
-              {product.sizes?.length > 0 && (
+              {/* Flipkart-Style Colour Variation Thumbnail Cards */}
+              {product.colorVariants && product.colorVariants.length > 0 && (
+                <div className="product-detail-section" style={{ marginBottom: 18 }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 10 }}>
+                    <span className="product-detail-label" style={{ margin: 0 }}>
+                      Colour:
+                    </span>
+                    <span style={{ fontWeight: 700, color: 'var(--text)', fontSize: '0.92rem' }}>
+                      {selectedColor?.colorName || 'Select Colour'}
+                    </span>
+                  </div>
+                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: 10 }}>
+                    {product.colorVariants.map((cVar) => {
+                      const isSelected = (selectedColor?._id && cVar._id && selectedColor._id.toString() === cVar._id.toString()) ||
+                                        selectedColor?.colorName === cVar.colorName;
+                      const thumbImg = cVar.images?.[0]?.url || product.images?.[0]?.url;
+                      return (
+                        <button
+                          key={cVar._id || cVar.colorName}
+                          type="button"
+                          onClick={() => handleColorSelect(cVar)}
+                          style={{
+                            position: 'relative',
+                            display: 'flex',
+                            flexDirection: 'column',
+                            alignItems: 'center',
+                            gap: 6,
+                            padding: '6px 8px',
+                            borderRadius: 12,
+                            border: isSelected ? '2px solid var(--accent, #C4386C)' : '1px solid var(--border)',
+                            background: isSelected ? 'rgba(196,56,108,0.08)' : 'var(--bg-secondary)',
+                            cursor: 'pointer',
+                            boxShadow: isSelected ? '0 4px 16px rgba(196,56,108,0.25)' : 'none',
+                            transition: 'all 0.2s ease',
+                            minWidth: 64,
+                            opacity: cVar.inStock === false ? 0.6 : 1,
+                          }}
+                        >
+                          <div style={{
+                            width: 44,
+                            height: 44,
+                            borderRadius: 8,
+                            overflow: 'hidden',
+                            border: '1px solid rgba(0,0,0,0.1)',
+                            background: cVar.colorCode || '#C4386C',
+                            position: 'relative'
+                          }}>
+                            {thumbImg && (
+                              <img
+                                src={optimizeImageUrl(thumbImg, 100)}
+                                alt={cVar.colorName}
+                                style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                              />
+                            )}
+                          </div>
+                          <span style={{ fontSize: '0.72rem', fontWeight: isSelected ? 700 : 500, color: 'var(--text)', whiteSpace: 'nowrap' }}>
+                            {cVar.colorName}
+                          </span>
+                          {cVar.inStock === false && (
+                            <span style={{ position: 'absolute', top: -4, right: -4, background: '#EF4444', color: '#FFF', fontSize: '9px', fontWeight: 800, padding: '1px 5px', borderRadius: 6 }}>
+                              Sold Out
+                            </span>
+                          )}
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
+
+              {/* Bangle Size Selector with Live Stock Availability */}
+              {activeSizes?.length > 0 && (
                 <div className="product-detail-section">
                   <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 10 }}>
                     <span className="product-detail-label" style={{ margin: 0 }}>
@@ -370,21 +595,41 @@ const ProductDetail = () => {
                     </button>
                   </div>
                   <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
-                    {product.sizes.map((s, idx) => (
-                      <button
-                        key={idx}
-                        onClick={() => { setSelectedSize(s.size); setError(''); }}
-                        className="product-size-btn"
-                        style={{
-                          background: selectedSize === s.size ? 'var(--accent-gradient)' : 'var(--bg-secondary)',
-                          color: selectedSize === s.size ? 'white' : 'var(--text)',
-                          border: selectedSize === s.size ? 'none' : `1px solid var(--border)`,
-                          boxShadow: selectedSize === s.size ? '0 8px 20px rgba(196,56,108,0.4)' : 'none',
-                        }}
-                      >
-                        {s.size}
-                      </button>
-                    ))}
+                    {activeSizes.map((s, idx) => {
+                      const isOutOfStock = s.inStock === false || (typeof s.stockCount === 'number' && s.stockCount <= 0);
+                      const isSelected = selectedSize === s.size;
+                      return (
+                        <button
+                          key={idx}
+                          disabled={isOutOfStock}
+                          onClick={() => {
+                            if (!isOutOfStock) {
+                              setSelectedSize(s.size);
+                              setError('');
+                            }
+                          }}
+                          className="product-size-btn"
+                          style={{
+                            background: isOutOfStock
+                              ? 'rgba(0,0,0,0.06)'
+                              : isSelected ? 'var(--accent-gradient)' : 'var(--bg-secondary)',
+                            color: isOutOfStock
+                              ? 'var(--text-muted)'
+                              : isSelected ? 'white' : 'var(--text)',
+                            border: isSelected ? 'none' : '1px solid var(--border)',
+                            boxShadow: isSelected ? '0 8px 20px rgba(196,56,108,0.4)' : 'none',
+                            cursor: isOutOfStock ? 'not-allowed' : 'pointer',
+                            textDecoration: isOutOfStock ? 'line-through' : 'none',
+                            opacity: isOutOfStock ? 0.5 : 1,
+                            position: 'relative',
+                            minWidth: 46,
+                          }}
+                          title={isOutOfStock ? `${s.size} is currently out of stock` : `Select size ${s.size}`}
+                        >
+                          {s.size}
+                        </button>
+                      );
+                    })}
                   </div>
                 </div>
               )}
@@ -467,29 +712,122 @@ const ProductDetail = () => {
                 </div>
               )}
 
-              {/* Product Details Section */}
-              <div className="product-details-accordion">
-                <h3 className="product-details-heading">
-                  Product Details
-                </h3>
-                <ProductDescriptionDisplay description={product.description} />
-                {product.category?.toLowerCase() === 'gift box combo' && product.giftBoxDetails && (
-                  <>
-                    <h3 className="product-details-heading" style={{ marginTop: 20 }}>
-                      Included Items
-                    </h3>
-                    <ProductDescriptionDisplay description={product.giftBoxDetails} />
-                  </>
-                )}
+              {/* Collapsible Sections for Details and Shipping (Collapsed by default) */}
+              <div style={{ marginTop: 28, display: 'flex', flexDirection: 'column', gap: 12 }}>
+                {/* Accordion 1: Product Details & Specifications */}
+                <div
+                  style={{
+                    border: '1px solid var(--border)',
+                    borderRadius: 14,
+                    overflow: 'hidden',
+                    background: 'var(--bg-secondary)',
+                  }}
+                >
+                  <button
+                    type="button"
+                    onClick={() => setDetailsOpen(!detailsOpen)}
+                    style={{
+                      width: '100%',
+                      padding: '16px 18px',
+                      background: 'none',
+                      border: 'none',
+                      cursor: 'pointer',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'space-between',
+                      color: 'var(--text)',
+                      fontWeight: 700,
+                      fontSize: '0.96rem',
+                    }}
+                  >
+                    <span>Product Details & Specifications</span>
+                    <motion.div
+                      animate={{ rotate: detailsOpen ? 180 : 0 }}
+                      transition={{ duration: 0.2 }}
+                    >
+                      <ChevronDown size={18} />
+                    </motion.div>
+                  </button>
 
-                {/* Shipping info */}
-                <div className="product-shipping-card">
-                  <h4 className="product-shipping-title">
-                    <span>🚚</span> Shipping & Returns
-                  </h4>
-                  <p className="product-shipping-text">
-                    All-India delivery available. We take extreme care in packaging your products to ensure they arrive in perfect condition.
-                  </p>
+                  <AnimatePresence>
+                    {detailsOpen && (
+                      <motion.div
+                        initial={{ height: 0, opacity: 0 }}
+                        animate={{ height: 'auto', opacity: 1 }}
+                        exit={{ height: 0, opacity: 0 }}
+                        transition={{ duration: 0.25, ease: 'easeInOut' }}
+                        style={{ overflow: 'hidden' }}
+                      >
+                        <div style={{ padding: '0 18px 18px', borderTop: '1px solid var(--border)' }}>
+                          <div style={{ paddingTop: 14 }}>
+                            <ProductDescriptionDisplay description={product.description} />
+                          </div>
+                          {product.category?.toLowerCase() === 'gift box combo' && product.giftBoxDetails && (
+                            <div style={{ marginTop: 14, paddingTop: 10, borderTop: '1px solid var(--border)' }}>
+                              <h4 style={{ fontSize: '0.88rem', fontWeight: 700, margin: '0 0 6px', color: 'var(--text)' }}>
+                                Included Items
+                              </h4>
+                              <ProductDescriptionDisplay description={product.giftBoxDetails} />
+                            </div>
+                          )}
+                        </div>
+                      </motion.div>
+                    )}
+                  </AnimatePresence>
+                </div>
+
+                {/* Accordion 2: Shipping & Returns */}
+                <div
+                  style={{
+                    border: '1px solid var(--border)',
+                    borderRadius: 14,
+                    overflow: 'hidden',
+                    background: 'var(--bg-secondary)',
+                  }}
+                >
+                  <button
+                    type="button"
+                    onClick={() => setShippingOpen(!shippingOpen)}
+                    style={{
+                      width: '100%',
+                      padding: '16px 18px',
+                      background: 'none',
+                      border: 'none',
+                      cursor: 'pointer',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'space-between',
+                      color: 'var(--text)',
+                      fontWeight: 700,
+                      fontSize: '0.96rem',
+                    }}
+                  >
+                    <span>🚚 Shipping & Returns</span>
+                    <motion.div
+                      animate={{ rotate: shippingOpen ? 180 : 0 }}
+                      transition={{ duration: 0.2 }}
+                    >
+                      <ChevronDown size={18} />
+                    </motion.div>
+                  </button>
+
+                  <AnimatePresence>
+                    {shippingOpen && (
+                      <motion.div
+                        initial={{ height: 0, opacity: 0 }}
+                        animate={{ height: 'auto', opacity: 1 }}
+                        exit={{ height: 0, opacity: 0 }}
+                        transition={{ duration: 0.25, ease: 'easeInOut' }}
+                        style={{ overflow: 'hidden' }}
+                      >
+                        <div style={{ padding: '14px 18px 18px', borderTop: '1px solid var(--border)' }}>
+                          <p style={{ margin: 0, fontSize: '0.86rem', lineHeight: 1.5, color: 'var(--text-secondary)' }}>
+                            All-India delivery available. We take extreme care in packaging your products to ensure they arrive in perfect condition. Handcrafted pieces are dispatched within 2-3 business days.
+                          </p>
+                        </div>
+                      </motion.div>
+                    )}
+                  </AnimatePresence>
                 </div>
               </div>
 
@@ -575,122 +913,15 @@ const ProductDetail = () => {
               ))}
             </div>
 
-            {/* If a specific category tab is selected */}
-            {activeCategoryTab !== 'ALL' ? (
-              <div style={{ marginBottom: 40 }}>
-                <div style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'space-between',
-                  marginBottom: 20,
-                  flexWrap: 'wrap',
-                  gap: 12,
-                }}>
-                  <div>
-                    <h3 style={{
-                      fontFamily: '"Cormorant Garamond", Georgia, serif',
-                      fontSize: '1.6rem',
-                      fontWeight: 700,
-                      color: 'var(--text)',
-                      margin: 0,
-                    }}>
-                      {activeCategoryTab} Collection
-                    </h3>
-                    <p style={{ fontSize: '0.84rem', color: 'var(--text-secondary)', margin: '2px 0 0' }}>
-                      Showing all {productsByCategory[activeCategoryTab]?.length || 0} pieces
-                    </p>
-                  </div>
-                  <Link
-                    to={`/category/${encodeURIComponent(activeCategoryTab)}`}
-                    style={{
-                      fontSize: '0.85rem',
-                      color: 'var(--accent)',
-                      fontWeight: 600,
-                      textDecoration: 'none',
-                      display: 'inline-flex',
-                      alignItems: 'center',
-                      gap: 4,
-                      padding: '6px 14px',
-                      borderRadius: 8,
-                      background: 'var(--bg-secondary)',
-                      border: '1px solid var(--border)',
-                    }}
-                  >
-                    View Full Collection <ChevronRight size={14} />
-                  </Link>
-                </div>
-
-                <div className="product-grid-4">
-                  {(productsByCategory[activeCategoryTab] || []).map((discProduct) => (
-                    <ProductCard key={discProduct._id} product={discProduct} />
-                  ))}
-                </div>
-              </div>
-            ) : (
-              /* If "ALL Collections" is selected, display every single category collection with its own collection title! */
-              <div style={{ display: 'flex', flexDirection: 'column', gap: 48 }}>
-                {Object.keys(productsByCategory).map((catName, catIdx) => (
-                  <motion.div
-                    key={catName}
-                    initial={{ opacity: 0, y: 20 }}
-                    whileInView={{ opacity: 1, y: 0 }}
-                    viewport={{ once: true }}
-                    transition={{ delay: catIdx * 0.05 }}
-                  >
-                    <div style={{
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'space-between',
-                      marginBottom: 18,
-                      flexWrap: 'wrap',
-                      gap: 12,
-                      borderBottom: '1px solid var(--border)',
-                      paddingBottom: 10,
-                    }}>
-                      <div>
-                        <h3 style={{
-                          fontFamily: '"Cormorant Garamond", Georgia, serif',
-                          fontSize: '1.45rem',
-                          fontWeight: 700,
-                          color: 'var(--text)',
-                          margin: 0,
-                        }}>
-                          {catName}
-                        </h3>
-                        <p style={{ fontSize: '0.82rem', color: 'var(--text-secondary)', margin: '2px 0 0' }}>
-                          Artisanal {catName.toLowerCase()} collection
-                        </p>
-                      </div>
-
-                      <Link
-                        to={`/category/${encodeURIComponent(catName)}`}
-                        style={{
-                          fontSize: '0.82rem',
-                          color: 'var(--accent)',
-                          fontWeight: 600,
-                          textDecoration: 'none',
-                          display: 'inline-flex',
-                          alignItems: 'center',
-                          gap: 4,
-                          padding: '6px 12px',
-                          borderRadius: 8,
-                          background: 'var(--bg-secondary)',
-                          border: '1px solid var(--border)',
-                        }}
-                      >
-                        Explore Collection ({productsByCategory[catName].length}) <ChevronRight size={14} />
-                      </Link>
-                    </div>
-
-                    <div className="product-grid-4">
-                      {productsByCategory[catName].map((discProduct) => (
-                        <ProductCard key={discProduct._id} product={discProduct} />
-                      ))}
-                    </div>
-                  </motion.div>
-                ))}
-              </div>
-            )}
+            {/* Products Grid for Selected Category Tab */}
+            <div className="products-grid">
+              {(activeCategoryTab === 'ALL'
+                ? Object.values(productsByCategory).flat()
+                : productsByCategory[activeCategoryTab] || []
+              ).map((prod) => (
+                <ProductCard key={prod._id} product={prod} />
+              ))}
+            </div>
           </div>
         )}
 

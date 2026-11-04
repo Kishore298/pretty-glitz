@@ -166,18 +166,6 @@ const HeroBannerCarousel = ({ banners = [], loading = false }) => {
                     />
                   </picture>
                 </Link>
-
-                {/* Dynamic "Explore Collection" CTA Button at Bottom Center */}
-                <div className="hero-banner-cta-container">
-                  <Link
-                    to={targetLink}
-                    className="hero-banner-cta-btn"
-                    onClick={(e) => e.stopPropagation()}
-                  >
-                    <span>Explore Collection</span>
-                    <span className="hero-banner-cta-arrow" aria-hidden="true">→</span>
-                  </Link>
-                </div>
               </div>
             );
           })}
@@ -227,6 +215,44 @@ const HeroBannerCarousel = ({ banners = [], loading = false }) => {
           ))}
         </div>
       )}
+
+      {/* Centered Explore Collection Button Below Banner Carousel */}
+      <div style={{
+        display: 'flex',
+        justifyContent: 'center',
+        alignItems: 'center',
+        padding: '24px 16px 16px',
+      }}>
+        <Link
+          to={activeSlides[currentIndex]?.linkTo || '/all-products'}
+          style={{
+            display: 'inline-flex',
+            alignItems: 'center',
+            gap: 12,
+            padding: '14px 34px',
+            borderRadius: 999,
+            background: 'var(--accent-gradient, linear-gradient(135deg, #C4386C, #8A2BE2))',
+            color: '#FFFFFF',
+            fontSize: 'clamp(0.95rem, 2vw, 1.08rem)',
+            fontWeight: 700,
+            textDecoration: 'none',
+            letterSpacing: '0.04em',
+            boxShadow: '0 8px 26px rgba(196, 56, 108, 0.35)',
+            transition: 'all 0.25s ease',
+          }}
+          onMouseEnter={(e) => {
+            e.currentTarget.style.transform = 'translateY(-2px)';
+            e.currentTarget.style.boxShadow = '0 12px 34px rgba(196, 56, 108, 0.5)';
+          }}
+          onMouseLeave={(e) => {
+            e.currentTarget.style.transform = 'translateY(0)';
+            e.currentTarget.style.boxShadow = '0 8px 26px rgba(196, 56, 108, 0.35)';
+          }}
+        >
+          <span>Explore Collection</span>
+          <span style={{ fontSize: '1.2rem', lineHeight: 1 }}>→</span>
+        </Link>
+      </div>
     </section>
   );
 };

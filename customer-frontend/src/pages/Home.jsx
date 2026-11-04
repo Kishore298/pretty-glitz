@@ -299,7 +299,7 @@ const Home = () => {
               marginBottom: 12,
             }}
           >
-            Our Collections
+            Curated Atelier
           </p>
           <h2
             style={{
@@ -310,7 +310,7 @@ const Home = () => {
               margin: 0,
             }}
           >
-            Explore Our Collections
+            Signature Atelier Collections
           </h2>
         </motion.div>
 

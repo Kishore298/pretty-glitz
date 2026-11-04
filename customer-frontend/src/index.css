@@ -1373,7 +1373,7 @@ section,
   display: flex;
   align-items: center;
   justify-content: space-between;
-  height: 100px;
+  height: 76px;
   transition: height 0.25s ease;
 }
 
@@ -1381,12 +1381,12 @@ section,
   text-decoration: none;
   display: flex;
   align-items: center;
-  gap: 14px;
+  gap: 9px;
 }
 
-/* Natural-aspect logo — no circular mask or forced crop */
+/* Natural-aspect logo — perfectly balanced proportions */
 .navbar-logo-img {
-  height: 96px;
+  height: 48px;
   width: auto;
   object-fit: contain;
   object-position: center;
@@ -1411,7 +1411,7 @@ section,
 .navbar-brand-text {
   font-family: 'Outfit', sans-serif;
   font-weight: 800;
-  font-size: 1.55rem;
+  font-size: 1.35rem;
   letter-spacing: 0.04em;
   line-height: 1;
   background: linear-gradient(90deg, #C4386C, #8A2BE2, #C9A84C);
@@ -1424,15 +1424,15 @@ section,
 
 @media (max-width: 900px) {
   .navbar-container {
-    height: 90px;
+    height: 72px;
   }
 
   .navbar-logo-img {
-    height: 86px;
+    height: 42px;
   }
 
   .navbar-brand-text {
-    font-size: 1.4rem;
+    font-size: 1.25rem;
   }
 }
 
@@ -1442,20 +1442,20 @@ section,
   }
 
   .navbar-container {
-    height: 82px;
+    height: 68px;
   }
 
   .navbar-brand-link {
-    gap: 10px;
+    gap: 8px;
   }
 
   .navbar-logo-img {
-    height: 80px;
+    height: 38px;
   }
 
   .navbar-brand-text {
-    font-size: 1.25rem;
-    letter-spacing: 0.04em;
+    font-size: 1.15rem;
+    letter-spacing: 0.03em;
   }
 }
 
@@ -1465,19 +1465,19 @@ section,
   }
 
   .navbar-container {
-    height: 76px;
+    height: 66px;
   }
 
   .navbar-brand-link {
-    gap: 8px;
+    gap: 7px;
   }
 
   .navbar-logo-img {
-    height: 74px;
+    height: 34px;
   }
 
   .navbar-brand-text {
-    font-size: 1.12rem;
+    font-size: 1.05rem;
   }
 }
 

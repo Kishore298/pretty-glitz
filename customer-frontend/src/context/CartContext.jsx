@@ -37,18 +37,27 @@ export const CartProvider = ({ children }) => {
 
   // ── Helpers ──────────────────────────────────────────────────────────────────
 
-  const buildVariantKey = (productId, size, pieceCount) =>
-    `${productId}::${size || 'NOSIZE'}::${pieceCount ?? 'NOCOUNT'}`;
+  const buildVariantKey = (productId, size, pieceCount, colorVariantId = null) => {
+    const p = productId?.toString() || '';
+    const s = size || 'NOSIZE';
+    const pc = pieceCount != null ? pieceCount : 'NOCOUNT';
+    return (colorVariantId && colorVariantId !== 'NOCOLOR') ? `${p}::${s}::${pc}::${colorVariantId}` : `${p}::${s}::${pc}`;
+  };
 
   const toProductId = (product) =>
     typeof product === 'object' ? product?._id : product;
 
   // ── addToCart ─────────────────────────────────────────────────────────────────
 
-  const addToCart = useCallback(async (product, size, quantity = 1, pieceCount = null, priceOverride = null) => {
-    const productId  = toProductId(product);
-    const variantKey = buildVariantKey(productId, size, pieceCount);
-    const price      = priceOverride ?? product.price;
+  const addToCart = useCallback(async (product, size, quantity = 1, pieceCount = null, priceOverride = null, colorVariant = null) => {
+    const productId = toProductId(product);
+    const colorVariantId = typeof colorVariant === 'object' ? colorVariant?._id : colorVariant;
+    const colorName = typeof colorVariant === 'object' ? colorVariant?.colorName : null;
+    const sizeVariantId = typeof size === 'object' ? size?._id : null;
+    const sizeValue = typeof size === 'object' ? size?.size : size;
+
+    const variantKey = buildVariantKey(productId, sizeValue, pieceCount, colorVariantId);
+    const price = priceOverride ?? product.price;
 
     // Optimistic local update
     setCartItems(prev => {
@@ -58,17 +67,33 @@ export const CartProvider = ({ children }) => {
         updated[idx] = { ...updated[idx], quantity: updated[idx].quantity + quantity };
         return updated;
       }
-      return [...prev, { product, variantKey, size, quantity, pieceCount, price }];
+      return [...prev, {
+        product,
+        variantKey,
+        colorVariantId: colorVariantId || null,
+        colorName: colorName || null,
+        sizeVariantId: sizeVariantId || null,
+        size: sizeValue,
+        quantity,
+        pieceCount,
+        price,
+      }];
     });
 
     // Track analytics event (fire-and-forget, deduplicated on backend)
-    trackProductEvent(productId, 'CART_ADD', quantity, { size, pieceCount, price });
+    trackProductEvent(productId, 'CART_ADD', quantity, { size: sizeValue, pieceCount, price, colorName });
 
     const token = localStorage.getItem('customerToken');
     if (token) {
       try {
         const { data } = await api.post('/cart/items', {
-          productId, size, pieceCount, quantity,
+          productId,
+          size: sizeValue,
+          pieceCount,
+          quantity,
+          colorVariantId: colorVariantId || null,
+          colorName: colorName || null,
+          sizeVariantId: sizeVariantId || null,
         });
         // Reconcile with authoritative server response.
         setCartItems(_mapServerItems(data.cart?.items || []));
@@ -80,13 +105,15 @@ export const CartProvider = ({ children }) => {
 
   // ── removeFromCart ────────────────────────────────────────────────────────────
 
-  const removeFromCart = useCallback(async (productId, size, pieceCount = null) => {
-    const variantKey = buildVariantKey(productId, size, pieceCount);
+  const removeFromCart = useCallback(async (productId, size, pieceCount = null, colorVariantId = null) => {
+    const variantKey = typeof productId === 'string' && productId.includes('::')
+      ? productId
+      : buildVariantKey(toProductId(productId), size, pieceCount, colorVariantId);
 
     setCartItems(prev => prev.filter(i => i.variantKey !== variantKey));
 
     // Track analytics removal (does not decrement lifetime additions)
-    trackProductEvent(productId, 'CART_REMOVE', 1, { size, pieceCount });
+    trackProductEvent(toProductId(productId), 'CART_REMOVE', 1, { size, pieceCount });
 
     const token = localStorage.getItem('customerToken');
     if (token) {
@@ -124,20 +151,22 @@ export const CartProvider = ({ children }) => {
 
   // ── isInCart / getCartItemQuantity ────────────────────────────────────────────
 
-  const isInCart = useCallback((productId, size = null, pieceCount = null) =>
+  const isInCart = useCallback((productId, size = null, pieceCount = null, colorVariantId = null) =>
     cartItems.some(i => {
-      const matchProduct  = toProductId(i.product)?.toString() === productId?.toString();
-      const matchSize     = size === null || i.size === size;
-      const matchPiece    = pieceCount === null || i.pieceCount === pieceCount;
-      return matchProduct && matchSize && matchPiece;
+      const matchProduct = toProductId(i.product)?.toString() === toProductId(productId)?.toString();
+      const matchSize = size === null || i.size === size;
+      const matchPiece = pieceCount === null || i.pieceCount === pieceCount;
+      const matchColor = colorVariantId === null || (i.colorVariantId?.toString() === colorVariantId?.toString());
+      return matchProduct && matchSize && matchPiece && matchColor;
     }), [cartItems]);
 
-  const getCartItemQuantity = useCallback((productId, size = null, pieceCount = null) => {
+  const getCartItemQuantity = useCallback((productId, size = null, pieceCount = null, colorVariantId = null) => {
     const item = cartItems.find(i => {
-      const matchProduct  = toProductId(i.product)?.toString() === productId?.toString();
-      const matchSize     = size === null || i.size === size;
-      const matchPiece    = pieceCount === null || i.pieceCount === pieceCount;
-      return matchProduct && matchSize && matchPiece;
+      const matchProduct = toProductId(i.product)?.toString() === toProductId(productId)?.toString();
+      const matchSize = size === null || i.size === size;
+      const matchPiece = pieceCount === null || i.pieceCount === pieceCount;
+      const matchColor = colorVariantId === null || (i.colorVariantId?.toString() === colorVariantId?.toString());
+      return matchProduct && matchSize && matchPiece && matchColor;
     });
     return item ? item.quantity : 0;
   }, [cartItems]);
@@ -247,11 +276,14 @@ export const useCart = () => useContext(CartContext);
  */
 function _mapServerItems(serverItems) {
   return (serverItems || []).map(item => ({
-    product:    item.product,
-    variantKey: item.variantKey,
-    size:       item.size,
-    pieceCount: item.pieceCount,
-    quantity:   item.quantity,
-    price:      item.price,
+    product:        item.product,
+    variantKey:     item.variantKey,
+    colorVariantId: item.colorVariantId || null,
+    colorName:      item.colorName || null,
+    sizeVariantId:  item.sizeVariantId || null,
+    size:           item.size,
+    pieceCount:     item.pieceCount,
+    quantity:       item.quantity,
+    price:          item.price,
   }));
 }

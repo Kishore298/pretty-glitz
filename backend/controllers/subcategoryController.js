@@ -12,7 +12,11 @@ const createSubcategory = async (req, res) => {
 
 const getSubcategories = async (req, res) => {
   try {
-    const subcategories = await Subcategory.find();
+    const filter = {};
+    if (req.query.category) {
+      filter.category = new RegExp(`^${req.query.category.trim()}$`, 'i');
+    }
+    const subcategories = await Subcategory.find(filter).sort({ order: 1, createdAt: 1 });
     res.json(subcategories);
   } catch (error) {
     res.status(500).json({ message: 'Server error' });

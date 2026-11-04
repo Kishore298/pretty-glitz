@@ -23,11 +23,10 @@ const CategoryPage = () => {
     try {
       const [prodRes, subRes] = await Promise.all([
         api.get(`/products?category=${encodeURIComponent(categoryName)}`),
-        categoryName.toLowerCase() === 'artificial flowers' ? api.get(`/subcategories`) : Promise.resolve({ data: [] })
+        api.get(`/subcategories?category=${encodeURIComponent(categoryName)}`).catch(() => ({ data: [] }))
       ]);
-      setProducts(prodRes.data);
-      setSubcategories(subRes.data);
-      
+      setProducts(prodRes.data || []);
+      setSubcategories(subRes.data || []);
     } catch (err) {
       console.error(err);
     }
@@ -149,6 +148,37 @@ const CategoryPage = () => {
                 </motion.div>
               );
             })}
+
+            {/* Any products not tagged with subcategories */}
+            {(() => {
+              const subcatIds = new Set(subcategories.map(s => s._id.toString()));
+              const unassigned = getSortedProducts(products.filter(p => {
+                const pSubId = (p.subcategoryId?._id || p.subcategoryId)?.toString();
+                return !pSubId || !subcatIds.has(pSubId);
+              }));
+              if (unassigned.length === 0) return null;
+              return (
+                <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}>
+                  <h2 style={{
+                    fontSize: '1.4rem', fontWeight: 700, color: 'var(--text)',
+                    fontFamily: 'Outfit, sans-serif', marginBottom: 24,
+                    display: 'flex', alignItems: 'center', gap: 12
+                  }}>
+                    All Signature Pieces
+                    <div style={{ flex: 1, height: 1, background: 'var(--border)' }} />
+                  </h2>
+                  <div className="product-grid-4">
+                    <AnimatePresence>
+                      {unassigned.map((product, idx) => (
+                        <motion.div key={product._id} layout initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.9 }} transition={{ delay: idx * 0.05 }}>
+                          <ProductCard product={product} />
+                        </motion.div>
+                      ))}
+                    </AnimatePresence>
+                  </div>
+                </motion.div>
+              );
+            })()}
           </div>
         ) : (
           <motion.div layout className="product-grid-4">
