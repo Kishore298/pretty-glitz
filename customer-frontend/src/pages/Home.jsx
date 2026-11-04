@@ -273,7 +273,7 @@ const Home = () => {
 
   return (
     <div className="home-page" style={{ background: 'transparent' }}>
-      {/* Storefront Hero Banner Slider (2.5s auto-scroll, manual buttons on desktop, touch swipe on mobile) */}
+      {/* Storefront Hero Banner Slider (5s auto-scroll, manual buttons on desktop, touch swipe on mobile) */}
       <HeroBannerCarousel banners={banners} loading={loadingBanners} />
 
       {/* Collections Grid — restored to the earlier collection-grid/theme-card design */}

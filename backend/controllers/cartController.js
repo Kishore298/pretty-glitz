@@ -96,7 +96,29 @@ const validateStock = (product, requestedQty = 1, colorVariantId = null, sizeVar
     };
   }
 
-  // 2. Standard product stock check
+  // 2. If product has size-wise stock (e.g. Wedding Bangles, Antique Bangles, Valaikaappu Bangles)
+  if (product.sizes && product.sizes.length > 0 && size) {
+    const matchedSize = product.sizes.find((s) => s.size === size);
+    if (matchedSize) {
+      if (matchedSize.inStock === false || (typeof matchedSize.stockCount === 'number' && matchedSize.stockCount <= 0)) {
+        return { ok: false, reason: `Size ${matchedSize.size} is currently out of stock.` };
+      }
+      const available = typeof matchedSize.stockCount === 'number' ? matchedSize.stockCount : 9999;
+      const allowed = Math.min(requestedQty, available);
+      return {
+        ok: true,
+        availableStock: available,
+        allowedQty: allowed,
+        colorVariantId: null,
+        colorName: null,
+        sizeVariantId: matchedSize._id || null,
+        size: matchedSize.size,
+        price: resolvePrice(product),
+      };
+    }
+  }
+
+  // 3. Standard product stock check
   if (typeof product.inStockCount === 'number') {
     if (product.inStockCount <= 0) {
       return { ok: false, reason: 'Product is out of stock.' };

@@ -76,7 +76,7 @@ const Register = () => {
       display: 'flex',
       alignItems: 'center',
       justifyContent: 'center',
-      paddingTop: 'calc(76px + 40px)',
+      paddingTop: 'calc(var(--nav-height, 76px) + 20px)',
       paddingBottom: 'calc(var(--bottom-nav-total-height, 60px) + 40px)',
       paddingLeft: 20,
       paddingRight: 20,

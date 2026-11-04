@@ -88,11 +88,13 @@ const productSchema = new mongoose.Schema(
     // Colour-based variations (for Designer Glass Bangles & Designer Bangles)
     colorVariants: [colorVariantSchema],
 
-    // Backward-compatible Bangle specifics for legacy single-colour products
+    // Size-wise stock for other bangle categories (Wedding Bangles, Antique Bangles, Valaikaappu Bangles)
     sizes: [
       {
-        size: String,
-        order: Number,
+        size: { type: String, required: true },
+        order: { type: Number, default: 0 },
+        inStock: { type: Boolean, default: true },
+        stockCount: { type: Number, default: 0 },
       },
     ],
 

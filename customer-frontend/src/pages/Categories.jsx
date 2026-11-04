@@ -33,14 +33,14 @@ const Categories = () => {
   };
 
   return (
-    <div style={{ minHeight: '100vh', paddingTop: 80, paddingBottom: 40 }}>
+    <div style={{ minHeight: '100vh', paddingTop: 'calc(var(--nav-height, 76px) + 8px)', paddingBottom: 40 }}>
       <div className="section-padding" style={{ maxWidth: 1280, margin: '0 auto' }}>
 
         {/* Header */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
-          style={{ marginBottom: 32, paddingTop: 16 }}
+          style={{ marginBottom: 32, paddingTop: 4 }}
         >
           <p style={{ fontSize: '0.75rem', color: 'var(--accent)', fontWeight: 700, letterSpacing: '0.2em', textTransform: 'uppercase', marginBottom: 8 }}>
             Explore

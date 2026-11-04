@@ -3,34 +3,63 @@ const Product = require('../models/Product');
 const Subcategory = require('../models/Subcategory');
 
 const seedCategories = async () => {
-    const cats = await Category.find();
-    if(cats.length === 0) {
-        await Category.insertMany([
-          {name: 'glass bangles'}, 
-          {name: 'Valaikaappu bangles'}, 
-          {name: 'Antique bangles'},
-          {name: 'wedding bangles'},
-          {name: 'Gift box combo'},
-          {name: 'artifical flowers'},
-          {name: 'jumkhas'},
-          {name: 'jewels'}
-        ]);
-    }
-}
+  const cats = await Category.find();
+  if (cats.length === 0) {
+    await Category.insertMany([
+      { name: 'Designer Glass Bangles', order: 0 },
+      { name: 'Wedding Bangles', order: 1 },
+      { name: 'Antique Bangles', order: 2 },
+      { name: 'Valaikaappu Bangles', order: 3 },
+      { name: 'Artificial Flowers', order: 4 },
+      { name: 'Gift Box Combo', order: 5 },
+      { name: 'Jumkhas', order: 6 },
+      { name: 'Jewels', order: 7 },
+    ]);
+  }
+};
 
 const getCategories = async (req, res) => {
   try {
     await seedCategories();
     const categories = await Category.find().sort({ order: 1 }).lean();
-    
-    // Add product counts
+
+    // Add aggregate product & subcategory counts
     for (let cat of categories) {
-      cat.productCount = await Product.countDocuments({ category: cat.name });
-      cat.subcategoryCount = await Subcategory.countDocuments({ category: cat.name });
+      const isDesignerGlassBangles = /^(designer\s+)?glass\s+bangles$/i.test(cat.name);
+      const isArtificialFlowers = /^artificial\s+flowers$/i.test(cat.name);
+
+      if (isDesignerGlassBangles) {
+        const subcatDocs = await Subcategory.find({
+          category: new RegExp('^(designer\\s+)?glass\\s+bangles$', 'i'),
+        }).select('_id');
+        const subIds = subcatDocs.map((s) => s._id);
+
+        cat.productCount = await Product.countDocuments({
+          $or: [
+            { category: new RegExp('^(designer\\s+)?glass\\s+bangles$', 'i') },
+            ...(subIds.length > 0 ? [{ subcategoryId: { $in: subIds } }] : []),
+          ],
+        });
+        cat.subcategoryCount = subcatDocs.length;
+      } else if (isArtificialFlowers) {
+        const subcatDocs = await Subcategory.find({
+          category: new RegExp('^artificial\\s+flowers$', 'i'),
+        }).select('_id');
+        cat.productCount = await Product.countDocuments({
+          category: new RegExp('^artificial\\s+flowers$', 'i'),
+        });
+        cat.subcategoryCount = subcatDocs.length;
+      } else {
+        cat.productCount = await Product.countDocuments({
+          category: new RegExp(`^${cat.name}$`, 'i'),
+        });
+        cat.subcategoryCount = 0; // Top-level categories without subcategories
+      }
     }
-    
+
     res.json(categories);
   } catch (error) {
+    console.error('[categoryController] getCategories error:', error);
     res.status(500).json({ message: 'Server error' });
   }
 };

@@ -8,14 +8,12 @@ import {
   GripVertical,
   Pencil,
   Trash2,
-  Gem,
   Search,
   X,
   Filter,
   CheckCircle2,
   AlertCircle,
   Tag,
-  Sparkles,
   ShoppingBag
 } from 'lucide-react';
 import AddEditProductModal from '../components/AddEditProductModal';
@@ -103,7 +101,22 @@ const Products = () => {
   // Filter products by search, status, and category
   const filteredProducts = products.filter((p) => {
     const matchesSearch = !searchQuery.trim() || p.name.toLowerCase().includes(searchQuery.toLowerCase());
-    const matchesCategory = selectedCategory === 'all' || p.category === selectedCategory;
+    
+    let matchesCategory = true;
+    if (selectedCategory !== 'all') {
+      const isBanglesFilter = /^(designer\s+)?glass\s+bangles$|^bangles$/i.test(selectedCategory);
+      if (isBanglesFilter) {
+        matchesCategory =
+          /^(designer\s+)?glass\s+bangles$|^bangles$/i.test(p.category) ||
+          subcategories.some(
+            (s) =>
+              /^(designer\s+)?glass\s+bangles$|^bangles$/i.test(s.category) &&
+              ((p.subcategoryId?._id || p.subcategoryId)?.toString() === s._id.toString())
+          );
+      } else {
+        matchesCategory = (p.category || '').toLowerCase() === selectedCategory.toLowerCase();
+      }
+    }
 
     let matchesStatus = true;
     if (activeFilter === 'live') matchesStatus = p.isActive;
@@ -370,12 +383,25 @@ const Products = () => {
         /* Categorized / Grouped Table Lists */
         <div style={{ display: 'flex', flexDirection: 'column', gap: 40 }}>
           {categories.map((category) => {
-            if (category.name === 'Artificial Flowers') {
-              return subcategories.map((subcat) => {
+            const isDesignerGlassBangles = /^(designer\s+)?glass\s+bangles$/i.test(category.name);
+            const isArtificialFlowers = /^artificial\s+flowers$/i.test(category.name);
+            const hasSubcategories = isDesignerGlassBangles || isArtificialFlowers;
+
+            if (hasSubcategories) {
+              const relevantSubcats = subcategories.filter((s) => {
+                if (isDesignerGlassBangles) return /^(designer\s+)?glass\s+bangles$/i.test(s.category);
+                if (isArtificialFlowers) return /^artificial\s+flowers$/i.test(s.category);
+                return false;
+              });
+
+              return relevantSubcats.map((subcat) => {
                 const catProducts = filteredProducts
                   .filter((p) => {
-                    const pSubcatId = typeof p.subcategoryId === 'object' && p.subcategoryId ? p.subcategoryId._id : p.subcategoryId;
-                    return p.category === category.name && pSubcatId === subcat._id;
+                    const isCatMatch = isDesignerGlassBangles
+                      ? /^(designer\s+)?glass\s+bangles$/i.test(p.category)
+                      : (p.category || '').toLowerCase() === category.name.toLowerCase();
+                    const pSubcatId = (typeof p.subcategoryId === 'object' && p.subcategoryId ? p.subcategoryId._id : p.subcategoryId)?.toString();
+                    return isCatMatch && pSubcatId === subcat._id.toString();
                   })
                   .sort((a, b) => (a.order || 0) - (b.order || 0));
 
@@ -539,9 +565,9 @@ const Products = () => {
                                         <div>
                                           <span
                                             style={{
-                                              background: 'rgba(236, 72, 153, 0.1)',
-                                              border: '1px solid rgba(236, 72, 153, 0.25)',
-                                              color: '#EC4899',
+                                              background: isDesignerGlassBangles ? 'rgba(201, 168, 76, 0.12)' : 'rgba(236, 72, 153, 0.1)',
+                                              border: isDesignerGlassBangles ? '1px solid rgba(201, 168, 76, 0.28)' : '1px solid rgba(236, 72, 153, 0.25)',
+                                              color: isDesignerGlassBangles ? 'var(--accent-gold-light)' : '#EC4899',
                                               borderRadius: 999,
                                               padding: '4px 12px',
                                               fontSize: '0.74rem',
@@ -678,8 +704,10 @@ const Products = () => {
               });
             }
 
+            if (hasSubcategories) return null;
+
             const catProducts = filteredProducts
-              .filter((p) => p.category === category.name)
+              .filter((p) => (p.category || '').toLowerCase() === category.name.toLowerCase())
               .sort((a, b) => (a.order || 0) - (b.order || 0));
 
             if (catProducts.length === 0) return null;

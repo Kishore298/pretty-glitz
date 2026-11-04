@@ -42,7 +42,7 @@ const Search = () => {
   };
 
   return (
-    <div style={{ minHeight: '100vh', paddingTop: 120, paddingBottom: 100 }}>
+    <div style={{ minHeight: '100vh', paddingTop: 'calc(var(--nav-height, 76px) + 20px)', paddingBottom: 100 }}>
       <div style={{ maxWidth: 1280, margin: '0 auto', padding: '0 24px' }}>
         
         <div style={{ textAlign: 'center', marginBottom: 64 }}>

@@ -145,6 +145,42 @@ const createOrder = async (req, res) => {
             sizeVariantId: item.sizeVariantId,
             quantity: item.quantity,
           });
+        } else if (item.product && item.size) {
+          // Size-wise stock deduction for top-level bangles (Wedding Bangles, Antique Bangles, Valaikaappu Bangles)
+          const prodDoc = await Product.findById(item.product).session(useTransaction && session ? session : null);
+          if (prodDoc && Array.isArray(prodDoc.sizes) && prodDoc.sizes.length > 0) {
+            const stockQuery = {
+              _id: item.product,
+              sizes: {
+                $elemMatch: {
+                  size: item.size,
+                  inStock: true,
+                  stockCount: { $gte: item.quantity },
+                },
+              },
+            };
+            const stockUpdate = {
+              $inc: { 'sizes.$[s].stockCount': -item.quantity },
+            };
+            const options = {
+              arrayFilters: [{ 's.size': item.size }],
+            };
+            if (useTransaction && session) options.session = session;
+
+            const updateRes = await Product.updateOne(stockQuery, stockUpdate, options);
+            if (updateRes.modifiedCount === 0) {
+              throw new Error(
+                `Unable to reserve stock for ${item.name} (Size ${item.size}). Item is either out of stock or sold out.`
+              );
+            }
+            deductedItemsLog.push({
+              type: 'sizeStock',
+              productId: item.product,
+              size: item.size,
+              quantity: item.quantity,
+            });
+            continue;
+          }
         } else if (item.product) {
           // Standard / legacy product stock deduction if inStockCount is tracked
           const prodDoc = await Product.findById(item.product).session(useTransaction && session ? session : null);
@@ -268,6 +304,12 @@ const createOrder = async (req, res) => {
               { _id: d.productId },
               { $inc: { 'colorVariants.$[c].sizes.$[s].stockCount': d.quantity } },
               { arrayFilters: [{ 'c._id': d.colorVariantId }, { 's._id': d.sizeVariantId }] }
+            ).catch((revertErr) => console.error('[Orders] Rollback error:', revertErr));
+          } else if (d.type === 'sizeStock') {
+            await Product.updateOne(
+              { _id: d.productId },
+              { $inc: { 'sizes.$[s].stockCount': d.quantity } },
+              { arrayFilters: [{ 's.size': d.size }] }
             ).catch((revertErr) => console.error('[Orders] Rollback error:', revertErr));
           } else if (d.type === 'standard') {
             await Product.updateOne(

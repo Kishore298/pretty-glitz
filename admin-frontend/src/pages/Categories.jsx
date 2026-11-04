@@ -36,6 +36,7 @@ const luxuryGradients = [
 ];
 
 const catIcons = {
+  'Designer Glass Bangles': <Sparkles size={24} />,
   'Bangles': <Sparkles size={24} />,
   'Glass Bangles': <Gem size={24} />,
   'Valaikaappu Bangles': <Crown size={24} />,

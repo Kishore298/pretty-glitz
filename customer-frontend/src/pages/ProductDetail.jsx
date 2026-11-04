@@ -236,7 +236,15 @@ const ProductDetail = () => {
         <div className="product-detail-breadcrumb">
           <Link to="/">Home</Link>
           <ChevronRight size={14} className="separator" />
-          <Link to={`/category/${product.category}`}>{product.category}</Link>
+          <Link to={`/category/${encodeURIComponent(product.category)}`}>{product.category}</Link>
+          {product.subcategoryId && (
+            <>
+              <ChevronRight size={14} className="separator" />
+              <Link to={`/category/${encodeURIComponent(product.category)}?sub=${encodeURIComponent(product.subcategoryId?._id || product.subcategoryId)}`}>
+                {product.subcategoryId.name || 'Collection'}
+              </Link>
+            </>
+          )}
           <ChevronRight size={14} className="separator" />
           <span style={{ color: 'var(--text)', fontWeight: 600 }}>{product.name}</span>
         </div>

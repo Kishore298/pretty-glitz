@@ -182,7 +182,7 @@ const Checkout = () => {
   }
 
   return (
-    <div style={{ minHeight: '100vh', paddingTop: 100, paddingBottom: 100 }}>
+    <div style={{ minHeight: '100vh', paddingTop: 'calc(var(--nav-height, 76px) + 16px)', paddingBottom: 100 }}>
       <div style={{ maxWidth: 1280, margin: '0 auto', padding: '0 24px' }}>
         
         {/* Breadcrumb */}

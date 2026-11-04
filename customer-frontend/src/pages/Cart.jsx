@@ -16,7 +16,7 @@ const Cart = () => {
 
   if (cartItems.length === 0) {
     return (
-      <div style={{ minHeight: '100vh', paddingTop: 80, paddingBottom: 100, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }}>
+      <div style={{ minHeight: '100vh', paddingTop: 'var(--nav-height, 76px)', paddingBottom: 100, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }}>
         <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} style={{ textAlign: 'center' }}>
           <div style={{ width: 100, height: 100, borderRadius: '50%', background: 'var(--bg-secondary)', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 24px', border: `1px solid var(--border-strong)` }}>
             <span style={{ fontSize: '3rem' }}>🛍️</span>
@@ -48,7 +48,7 @@ const Cart = () => {
   }
 
   return (
-    <div style={{ minHeight: '100vh', paddingTop: 100, paddingBottom: 100 }}>
+    <div style={{ minHeight: '100vh', paddingTop: 'calc(var(--nav-height, 76px) + 16px)', paddingBottom: 100 }}>
       <div style={{ maxWidth: 1280, margin: '0 auto', padding: '0 24px' }}>
         
         {/* Breadcrumb */}

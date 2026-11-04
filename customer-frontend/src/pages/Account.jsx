@@ -55,7 +55,7 @@ const Account = () => {
   return (
     <div style={{
       minHeight: '80vh',
-      paddingTop: 'calc(76px + 28px)',
+      paddingTop: 'calc(var(--nav-height, 76px) + 16px)',
       paddingBottom: 'calc(var(--bottom-nav-total-height, 60px) + 40px)',
       maxWidth: 800,
       margin: '0 auto',

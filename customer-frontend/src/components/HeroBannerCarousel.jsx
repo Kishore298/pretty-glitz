@@ -39,13 +39,13 @@ const HeroBannerCarousel = ({ banners = [], loading = false }) => {
     setCurrentIndex((prev) => (prev - 1 + activeSlides.length) % activeSlides.length);
   }, [activeSlides.length]);
 
-  // Auto-scroll every 2.5 seconds (2500ms) only when multiple slides exist
+  // Auto-scroll every 5 seconds (5000ms) only when multiple slides exist
   useEffect(() => {
     if (activeSlides.length <= 1 || isPaused) return;
 
     const timer = setInterval(() => {
       handleNext();
-    }, 2500);
+    }, 5000);
 
     return () => clearInterval(timer);
   }, [activeSlides.length, isPaused, handleNext]);

@@ -14,7 +14,7 @@ const Wishlist = () => {
   return (
     <div style={{
       minHeight: '80vh',
-      paddingTop: 'calc(76px + 24px)',
+      paddingTop: 'calc(var(--nav-height, 76px) + 16px)',
       paddingBottom: 'calc(var(--bottom-nav-total-height, 60px) + 40px)',
       maxWidth: 1280,
       margin: '0 auto',

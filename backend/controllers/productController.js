@@ -1,4 +1,16 @@
 const Product = require('../models/Product');
+const Category = require('../models/Category');
+const Subcategory = require('../models/Subcategory');
+
+const sanitizeSizes = (sizes) => {
+  if (!Array.isArray(sizes)) return [];
+  return sizes.map((s, idx) => ({
+    size: typeof s === 'string' ? s.trim() : ((s && s.size) || '').trim(),
+    order: (s && s.order !== undefined) ? s.order : idx,
+    inStock: (s && s.inStock !== undefined) ? Boolean(s.inStock) : true,
+    stockCount: Math.max(0, parseInt(s && s.stockCount, 10) || 0),
+  })).filter(s => s.size);
+};
 
 const sanitizeColorVariants = (variants) => {
   if (!Array.isArray(variants)) return [];
@@ -40,22 +52,43 @@ const createProduct = async (req, res) => {
       isActive,
     } = req.body;
 
-    // Core Bangle logic: sizes are ONLY saved for Bangles
-    const productSizes = (category || '').toLowerCase().includes('bangles') ? (sizes || []) : [];
-    const productPieceCounts = (category || '').toLowerCase().includes('bangles') ? (pieceCounts || []) : [];
-    const sanitizedVariants = sanitizeColorVariants(colorVariants);
+    const trimmedCat = (category || '').trim();
+    const isDesignerGlassBangles = /^(designer\s+)?glass\s+bangles$/i.test(trimmedCat);
+    const isOtherBangles = !isDesignerGlassBangles && trimmedCat.toLowerCase().includes('bangle');
+
+    let productSizes = [];
+    let productVariants = [];
+    let finalSubcategoryId = undefined;
+
+    if (isDesignerGlassBangles) {
+      productVariants = sanitizeColorVariants(colorVariants);
+      productSizes = [];
+      finalSubcategoryId = subcategoryId || undefined;
+    } else if (isOtherBangles) {
+      productVariants = [];
+      productSizes = sanitizeSizes(sizes);
+      finalSubcategoryId = undefined;
+    } else {
+      productVariants = [];
+      productSizes = [];
+      if (trimmedCat.toLowerCase() === 'artificial flowers') {
+        finalSubcategoryId = subcategoryId || undefined;
+      }
+    }
+
+    const productPieceCounts = (isDesignerGlassBangles || isOtherBangles) ? (pieceCounts || []) : [];
 
     const product = new Product({
       name,
       description,
       price,
       originalPrice,
-      category,
-      subcategoryId: subcategoryId || undefined,
+      category: isDesignerGlassBangles ? 'Designer Glass Bangles' : trimmedCat,
+      subcategoryId: finalSubcategoryId,
       giftBoxDetails,
       inStock: inStock !== undefined ? inStock : true,
       images: Array.isArray(images) ? images : [],
-      colorVariants: sanitizedVariants,
+      colorVariants: productVariants,
       sizes: productSizes,
       pieceCounts: productPieceCounts,
       isBestseller: isBestseller || false,
@@ -74,8 +107,40 @@ const createProduct = async (req, res) => {
 const getProducts = async (req, res) => {
   try {
     const query = {};
-    if (req.query.category) query.category = req.query.category;
-    if (req.query.subcategoryId) query.subcategoryId = req.query.subcategoryId;
+
+    if (req.query.subcategoryId) {
+      query.subcategoryId = req.query.subcategoryId;
+    }
+
+    if (req.query.category) {
+      const catName = req.query.category.trim();
+      const isDesignerGlassBangles = /^(designer\s+)?glass\s+bangles$|^bangles$/i.test(catName);
+
+      if (isDesignerGlassBangles) {
+        // Rollup query: fetch subcategories under Designer Glass Bangles
+        const subcategoryDocs = await Subcategory.find({
+          category: new RegExp('^(designer\\s+)?glass\\s+bangles$|^bangles$', 'i'),
+        }).select('_id');
+        const subIds = subcategoryDocs.map((s) => s._id);
+
+        const categoryConditions = [
+          { category: new RegExp('^(designer\\s+)?glass\\s+bangles$|^bangles$', 'i') },
+        ];
+        if (subIds.length > 0) {
+          categoryConditions.push({ subcategoryId: { $in: subIds } });
+        }
+
+        if (query.subcategoryId) {
+          query.$and = [{ $or: categoryConditions }, { subcategoryId: query.subcategoryId }];
+          delete query.subcategoryId;
+        } else {
+          query.$or = categoryConditions;
+        }
+      } else {
+        query.category = new RegExp(`^${catName}$`, 'i');
+      }
+    }
+
     if (req.query.isBestseller === 'true') query.isBestseller = true;
     if (req.query.isOffer === 'true') query.isOffer = true;
 
@@ -127,8 +192,12 @@ const updateProduct = async (req, res) => {
     product.description = description !== undefined ? description : product.description;
     product.price = price !== undefined ? price : product.price;
     product.originalPrice = originalPrice !== undefined ? originalPrice : product.originalPrice;
-    product.category = category !== undefined ? category : product.category;
-    product.subcategoryId = subcategoryId !== undefined ? subcategoryId : product.subcategoryId;
+
+    const newCategory = category !== undefined ? category.trim() : product.category;
+    const isDesignerGlassBangles = /^(designer\s+)?glass\s+bangles$/i.test(newCategory);
+    const isOtherBangles = !isDesignerGlassBangles && newCategory.toLowerCase().includes('bangle');
+
+    product.category = isDesignerGlassBangles ? 'Designer Glass Bangles' : newCategory;
     product.giftBoxDetails = giftBoxDetails !== undefined ? giftBoxDetails : product.giftBoxDetails;
     product.inStock = inStock !== undefined ? inStock : product.inStock;
     product.images = images !== undefined ? images : product.images;
@@ -136,17 +205,34 @@ const updateProduct = async (req, res) => {
     product.isOffer = isOffer !== undefined ? isOffer : product.isOffer;
     product.isActive = isActive !== undefined ? isActive : product.isActive;
 
-    if (colorVariants !== undefined) {
-      product.colorVariants = sanitizeColorVariants(colorVariants);
-    }
-
-    // Core Bangle update logic (preserve existing non-variant products)
-    if ((product.category || '').toLowerCase().includes('bangles')) {
-      product.sizes = sizes !== undefined ? sizes : product.sizes;
+    // Three-Tier Category & Inventory Logic
+    if (isDesignerGlassBangles) {
+      if (colorVariants !== undefined) {
+        product.colorVariants = sanitizeColorVariants(colorVariants);
+      }
+      product.sizes = [];
+      if (subcategoryId !== undefined) {
+        product.subcategoryId = subcategoryId ? subcategoryId : undefined;
+      }
+      product.pieceCounts = pieceCounts !== undefined ? pieceCounts : product.pieceCounts;
+    } else if (isOtherBangles) {
+      product.colorVariants = [];
+      if (sizes !== undefined) {
+        product.sizes = sanitizeSizes(sizes);
+      }
+      product.subcategoryId = undefined; // strictly no subcategories for other bangles
       product.pieceCounts = pieceCounts !== undefined ? pieceCounts : product.pieceCounts;
     } else {
+      product.colorVariants = [];
       product.sizes = [];
       product.pieceCounts = [];
+      if (newCategory.toLowerCase() === 'artificial flowers') {
+        if (subcategoryId !== undefined) {
+          product.subcategoryId = subcategoryId ? subcategoryId : undefined;
+        }
+      } else {
+        product.subcategoryId = undefined;
+      }
     }
 
     const updatedProduct = await product.save();
@@ -191,4 +277,5 @@ module.exports = {
   updateProduct,
   deleteProduct,
   reorderProducts,
+  updateProductOrders: reorderProducts,
 };

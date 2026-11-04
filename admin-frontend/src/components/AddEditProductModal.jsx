@@ -100,7 +100,18 @@ const AddEditProductModal = ({ isOpen, onClose, productId, onSuccess, isOfferPre
       const { data } = await api.get(`/products/${productId}`);
       setFormData({
         ...data,
+        subcategoryId: typeof data.subcategoryId === 'object' && data.subcategoryId?._id
+          ? data.subcategoryId._id
+          : (data.subcategoryId || ''),
         colorVariants: data.colorVariants || [],
+        sizes: Array.isArray(data.sizes)
+          ? data.sizes.map((s, idx) => ({
+              size: typeof s === 'string' ? s : (s.size || ''),
+              order: s.order !== undefined ? s.order : idx,
+              inStock: s.inStock !== undefined ? Boolean(s.inStock) : true,
+              stockCount: s.stockCount !== undefined ? s.stockCount : 15,
+            }))
+          : [],
         isBestseller: Boolean(data.isBestseller || data.isFlagship),
       });
     } catch (err) {
@@ -117,19 +128,19 @@ const AddEditProductModal = ({ isOpen, onClose, productId, onSuccess, isOfferPre
   const handleAddSize = () =>
     setFormData((prev) => ({
       ...prev,
-      sizes: [...prev.sizes, { size: '', order: prev.sizes.length }],
+      sizes: [...(prev.sizes || []), { size: '', order: (prev.sizes || []).length, inStock: true, stockCount: 15 }],
     }));
 
-  const handleSizeChange = (index, value) => {
-    const s = [...formData.sizes];
-    s[index].size = value;
-    setFormData({ ...formData, sizes: s });
+  const handleSizeChange = (index, fieldName, value) => {
+    const s = [...(formData.sizes || [])];
+    s[index] = { ...s[index], [fieldName]: value };
+    setFormData((prev) => ({ ...prev, sizes: s }));
   };
 
   const handleRemoveSize = (index) =>
     setFormData((prev) => ({
       ...prev,
-      sizes: prev.sizes.filter((_, i) => i !== index),
+      sizes: (prev.sizes || []).filter((_, i) => i !== index),
     }));
 
   const handleAddColorVariant = () => {
@@ -468,9 +479,9 @@ const AddEditProductModal = ({ isOpen, onClose, productId, onSuccess, isOfferPre
                     )}
 
                     <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
-                      {(formData.category?.toLowerCase() === 'artificial flowers' ||
-                        formData.category?.toLowerCase().includes('flower') ||
-                        formData.category?.toLowerCase().includes('bangle')) &&
+                      {/* Subcategories are ONLY supported for Designer Glass Bangles and Artificial Flowers */}
+                      {(/^(designer\s+)?glass\s+bangles$/i.test(formData.category || '') ||
+                        (formData.category || '').toLowerCase() === 'artificial flowers') &&
                         field(
                           'Subcategory / Type',
                           <select
@@ -484,11 +495,13 @@ const AddEditProductModal = ({ isOpen, onClose, productId, onSuccess, isOfferPre
                               .filter((s) => {
                                 if (!formData.category) return false;
                                 const sCat = (typeof s.category === 'object' ? s.category?.name : s.category) || '';
-                                if (sCat.toLowerCase() === formData.category.toLowerCase()) return true;
-                                if (formData.category.toLowerCase().includes('bangle') && sCat.toLowerCase().includes('bangle')) return true;
-                                if (formData.category.toLowerCase().includes('flower') && sCat.toLowerCase().includes('flower')) return true;
-                                const c = categories.find((cat) => cat.name === formData.category);
-                                return c && (s.category === c._id || s.category === c.name);
+                                if (/^(designer\s+)?glass\s+bangles$/i.test(formData.category)) {
+                                  return /^(designer\s+)?glass\s+bangles$/i.test(sCat);
+                                }
+                                if ((formData.category || '').toLowerCase() === 'artificial flowers') {
+                                  return /^artificial\s+flowers$/i.test(sCat);
+                                }
+                                return false;
                               })
                               .map((s) => (
                                 <option key={s._id} value={s._id}>
@@ -543,8 +556,8 @@ const AddEditProductModal = ({ isOpen, onClose, productId, onSuccess, isOfferPre
                 </div>
               </div>
 
-              {/* Colour Variations & Size-Wise Stock for Bangles */}
-              {(formData.category || '').toLowerCase().includes('bangle') && (
+              {/* TIER 1: Colour Variations & Size-Wise Stock for Designer Glass Bangles */}
+              {/^(designer\s+)?glass\s+bangles$/i.test(formData.category || '') && (
                 <div style={{ ...sectionStyle, display: 'flex', flexDirection: 'column', gap: 18 }}>
                   <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 10 }}>
                     <div>
@@ -790,55 +803,122 @@ const AddEditProductModal = ({ isOpen, onClose, productId, onSuccess, isOfferPre
                       ))}
                     </div>
                   ) : (
-                    <div>
-                      <p style={{ color: 'var(--text-muted)', fontSize: '0.84rem', margin: '0 0 10px' }}>
-                        No colour variations added yet. You can either click "Add Colour Variant" above for colour-specific inventory and photography, or configure simple sizes below:
+                    <div style={{ textAlign: 'center', padding: '24px 16px', background: 'rgba(255, 255, 255, 0.02)', borderRadius: 12, border: '1px dashed var(--card-border)' }}>
+                      <p style={{ color: 'var(--text-muted)', fontSize: '0.84rem', margin: '0 0 12px' }}>
+                        No colour variations added yet. Click below to add your first colourway with dedicated photography and size-wise stock.
                       </p>
-                      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8 }}>
-                        <span style={{ fontSize: '0.74rem', color: 'var(--text-secondary)', fontWeight: 600 }}>Standard Single Sizes</span>
-                        <button
-                          type="button"
-                          onClick={handleAddSize}
-                          className="btn-secondary"
-                          style={{ padding: '4px 10px', fontSize: '0.75rem', gap: 4 }}
-                        >
-                          <Plus size={13} /> Add Size
-                        </button>
-                      </div>
-                      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(160px, 1fr))', gap: 8 }}>
-                        {formData.sizes.map((sizeObj, idx) => (
-                          <div
-                            key={idx}
-                            style={{
-                              display: 'flex',
-                              alignItems: 'center',
-                              gap: 8,
-                              background: 'rgba(255, 255, 255, 0.03)',
-                              borderRadius: 8,
-                              padding: '6px 10px',
-                              border: '1px solid var(--card-border)',
-                            }}
-                          >
-                            <input
-                              type="text"
-                              value={sizeObj.size}
-                              onChange={(e) => handleSizeChange(idx, e.target.value)}
-                              placeholder="e.g. 2.4"
-                              className="admin-input"
-                              style={{ padding: '4px 8px', height: 30, fontSize: '0.82rem' }}
-                            />
-                            <button
-                              type="button"
-                              onClick={() => handleRemoveSize(idx)}
-                              style={{ background: 'transparent', border: 'none', color: 'var(--text-muted)', cursor: 'pointer' }}
-                            >
-                              <Trash2 size={13} />
-                            </button>
-                          </div>
-                        ))}
-                      </div>
+                      <button
+                        type="button"
+                        onClick={handleAddColorVariant}
+                        className="btn-primary"
+                        style={{ padding: '8px 16px', fontSize: '0.82rem', gap: 6, margin: '0 auto' }}
+                      >
+                        <Plus size={14} /> Add First Colour Variant
+                      </button>
                     </div>
                   )}
+                </div>
+              )}
+
+              {/* TIER 2: Size-Wise Stock Toggles for Other Bangles (Wedding, Antique, Valaikaappu) */}
+              {!/^(designer\s+)?glass\s+bangles$/i.test(formData.category || '') &&
+                (formData.category || '').toLowerCase().includes('bangle') && (
+                  <div style={{ ...sectionStyle, display: 'flex', flexDirection: 'column', gap: 16 }}>
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 10 }}>
+                      <div>
+                        <span style={{ fontSize: '0.74rem', color: 'var(--accent-gold)', fontWeight: 700, letterSpacing: '0.08em', textTransform: 'uppercase', display: 'block' }}>
+                          2. Size-Wise Inventory & Stock Toggles
+                        </span>
+                        <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>
+                          Manage sizes and individual stock availability for {formData.category}.
+                        </span>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={handleAddSize}
+                        className="btn-primary"
+                        style={{ padding: '6px 14px', fontSize: '0.78rem', gap: 6 }}
+                      >
+                        <Plus size={14} /> Add Size
+                      </button>
+                    </div>
+
+                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(230px, 1fr))', gap: 10 }}>
+                      {(formData.sizes || []).map((sizeObj, idx) => (
+                        <div
+                          key={idx}
+                          style={{
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: 8,
+                            background: 'rgba(255, 255, 255, 0.03)',
+                            borderRadius: 10,
+                            padding: '8px 12px',
+                            border: '1px solid var(--card-border)',
+                          }}
+                        >
+                          <input
+                            type="text"
+                            value={sizeObj.size}
+                            onChange={(e) => handleSizeChange(idx, 'size', e.target.value)}
+                            placeholder="Size (e.g. 2.4)"
+                            className="admin-input"
+                            style={{ width: 65, padding: '4px 8px', height: 32, fontSize: '0.82rem' }}
+                          />
+                          <div style={{ display: 'flex', alignItems: 'center', gap: 4, flex: 1 }}>
+                            <span style={{ fontSize: '0.72rem', color: 'var(--text-muted)' }}>Qty:</span>
+                            <input
+                              type="number"
+                              min="0"
+                              value={sizeObj.stockCount !== undefined ? sizeObj.stockCount : 15}
+                              onChange={(e) => handleSizeChange(idx, 'stockCount', e.target.value)}
+                              className="admin-input"
+                              style={{ width: 60, padding: '4px 6px', height: 32, fontSize: '0.82rem' }}
+                            />
+                          </div>
+                          <label style={{ display: 'flex', alignItems: 'center', gap: 4, cursor: 'pointer', fontSize: '0.75rem', color: sizeObj.inStock ? '#10B981' : '#EF4444' }}>
+                            <input
+                              type="checkbox"
+                              checked={Boolean(sizeObj.inStock)}
+                              onChange={(e) => handleSizeChange(idx, 'inStock', e.target.checked)}
+                            />
+                            <span>{sizeObj.inStock ? 'In' : 'Out'}</span>
+                          </label>
+                          <button
+                            type="button"
+                            onClick={() => handleRemoveSize(idx)}
+                            style={{ background: 'transparent', border: 'none', color: 'var(--text-muted)', cursor: 'pointer', padding: 4 }}
+                            title="Remove size"
+                          >
+                            <Trash2 size={13} />
+                          </button>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+              {/* TIER 3: Product-Wise Stock Toggle for Other Collections */}
+              {!(formData.category || '').toLowerCase().includes('bangle') && (
+                <div style={{ ...sectionStyle, display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '16px 20px' }}>
+                  <div>
+                    <span style={{ fontSize: '0.74rem', color: 'var(--accent-gold)', fontWeight: 700, letterSpacing: '0.08em', textTransform: 'uppercase', display: 'block' }}>
+                      2. Product Stock Availability
+                    </span>
+                    <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>
+                      Toggle whether this piece is currently in stock and orderable by customers.
+                    </span>
+                  </div>
+                  <label style={{ display: 'flex', alignItems: 'center', gap: 8, cursor: 'pointer', fontSize: '0.88rem', fontWeight: 600, color: formData.inStock ? '#10B981' : '#EF4444' }}>
+                    <input
+                      type="checkbox"
+                      name="inStock"
+                      checked={Boolean(formData.inStock)}
+                      onChange={handleChange}
+                      style={{ width: 18, height: 18, cursor: 'pointer' }}
+                    />
+                    <span>{formData.inStock ? 'In Stock (Available)' : 'Out of Stock'}</span>
+                  </label>
                 </div>
               )}
 

@@ -53,18 +53,19 @@ const Footer = () => {
         }}>
           {/* Brand */}
           <div>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 16 }}>
-              {/* Brand Logo - natural aspect ratio, no circular mask */}
+            <div style={{ display: 'flex', alignItems: 'center', gap: 14, marginBottom: 18 }}>
+              {/* Brand Logo - high detailing, prominent footer presence per client request */}
               <img
                 src={logoImg}
                 alt="PrettyGlitz Logo"
                 style={{
-                  height: 42,
+                  height: 76,
                   width: 'auto',
                   objectFit: 'contain',
                   display: 'block',
                   flexShrink: 0,
                   mixBlendMode: isDark ? 'normal' : 'multiply',
+                  filter: isDark ? 'drop-shadow(0 4px 14px rgba(255,255,255,0.08))' : 'drop-shadow(0 4px 12px rgba(196, 56, 108, 0.12))',
                 }}
               />
               <span style={{
@@ -72,6 +73,7 @@ const Footer = () => {
                 letterSpacing: '0.04em', fontSize: '1.45rem',
                 background: 'linear-gradient(90deg, #C4386C, #8A2BE2, #C9A84C)',
                 WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', backgroundClip: 'text',
+                whiteSpace: 'nowrap',
               }}>
                 PrettyGlitz
               </span>

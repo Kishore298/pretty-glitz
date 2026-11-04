@@ -28,6 +28,7 @@
 
 /* ─── CSS Custom Properties (Premium Theme Tokens) ────── */
 :root {
+  --nav-height: 76px;
   --bg: #FEFCF8;
   --bg-secondary: #F7F3EB;
   --bg-card: #FFFFFF;
@@ -45,6 +46,24 @@
   --accent: #B8305E;
   --accent-gold: #B8860B;
   --accent-gradient: linear-gradient(135deg, #C4386C, #8A2BE2);
+}
+
+@media (max-width: 900px) {
+  :root {
+    --nav-height: 72px;
+  }
+}
+
+@media (max-width: 640px) {
+  :root {
+    --nav-height: 68px;
+  }
+}
+
+@media (max-width: 400px) {
+  :root {
+    --nav-height: 66px;
+  }
 }
 
 [data-theme="dark"] {
@@ -709,13 +728,13 @@ section,
 /* ─── Product Detail Responsive Layout ─────────────────── */
 .product-detail-page {
   min-height: 100vh;
-  padding-top: 112px;
+  padding-top: calc(var(--nav-height, 76px) + 12px);
   padding-bottom: 90px;
 }
 
 @media (max-width: 640px) {
   .product-detail-page {
-    padding-top: 94px;
+    padding-top: calc(var(--nav-height, 68px) + 8px);
   }
 }
 
@@ -1124,7 +1143,7 @@ section,
 /* ── Mobile Compact Tweaks (<= 648px) ───────────────────── */
 @media (max-width: 648px) {
   .product-detail-page {
-    padding-top: 88px;
+    padding-top: calc(var(--nav-height, 68px) + 8px);
     padding-bottom: 68px;
   }
 
@@ -1411,7 +1430,7 @@ section,
 .navbar-brand-text {
   font-family: 'Outfit', sans-serif;
   font-weight: 800;
-  font-size: 1.35rem;
+  font-size: 1.45rem;
   letter-spacing: 0.04em;
   line-height: 1;
   background: linear-gradient(90deg, #C4386C, #8A2BE2, #C9A84C);
@@ -1432,7 +1451,7 @@ section,
   }
 
   .navbar-brand-text {
-    font-size: 1.25rem;
+    font-size: 1.32rem;
   }
 }
 
@@ -1454,7 +1473,7 @@ section,
   }
 
   .navbar-brand-text {
-    font-size: 1.15rem;
+    font-size: 1.22rem;
     letter-spacing: 0.03em;
   }
 }
@@ -1477,7 +1496,7 @@ section,
   }
 
   .navbar-brand-text {
-    font-size: 1.05rem;
+    font-size: 1.12rem;
   }
 }
 
@@ -1645,7 +1664,7 @@ section,
 
 /* ─── Hero Banner Carousel ──────────────────────────────────── */
 .hero-banner-section {
-  padding-top: 100px;
+  padding-top: var(--nav-height, 76px);
   background: var(--bg);
   position: relative;
   overflow: hidden;
@@ -1728,7 +1747,7 @@ section,
 
 @media (max-width: 900px) {
   .hero-banner-section {
-    padding-top: 90px;
+    padding-top: var(--nav-height, 72px);
   }
 }
 

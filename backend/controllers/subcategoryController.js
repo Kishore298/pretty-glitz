@@ -1,4 +1,5 @@
 const Subcategory = require('../models/Subcategory');
+const Product = require('../models/Product');
 
 const createSubcategory = async (req, res) => {
   try {
@@ -14,7 +15,12 @@ const getSubcategories = async (req, res) => {
   try {
     const filter = {};
     if (req.query.category) {
-      filter.category = new RegExp(`^${req.query.category.trim()}$`, 'i');
+      const catTrim = req.query.category.trim();
+      if (/^(designer\s+)?glass\s+bangles$|^bangles$/i.test(catTrim)) {
+        filter.category = new RegExp('^(designer\\s+)?glass\\s+bangles$|^bangles$', 'i');
+      } else {
+        filter.category = new RegExp(`^${catTrim}$`, 'i');
+      }
     }
     const subcategories = await Subcategory.find(filter).sort({ order: 1, createdAt: 1 });
     res.json(subcategories);
@@ -26,7 +32,9 @@ const getSubcategories = async (req, res) => {
 const deleteSubcategory = async (req, res) => {
   try {
     await Subcategory.findByIdAndDelete(req.params.id);
-    res.json({ message: 'Subcategory deleted' });
+    // Unset subcategoryId on assigned products to maintain referential integrity
+    await Product.updateMany({ subcategoryId: req.params.id }, { $unset: { subcategoryId: 1 } });
+    res.json({ message: 'Subcategory deleted and products unlinked' });
   } catch (error) {
     res.status(500).json({ message: 'Server error' });
   }

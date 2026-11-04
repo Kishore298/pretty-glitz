@@ -9,10 +9,23 @@ import api from '../utils/api';
 import logoImg from '../assets/pretty-glitz-logo.png';
 
 // Categories that appear as primary nav items
-const PRIMARY_CATEGORIES = ['Bangles', 'Artificial Flowers', 'Gift Box Combo', 'Jumkhas', 'Jewels'];
+const PRIMARY_CATEGORIES = [
+  'Designer Glass Bangles',
+  'Wedding Bangles',
+  'Antique Bangles',
+  'Valaikaappu Bangles',
+  'Artificial Flowers',
+  'Gift Box Combo',
+  'Jumkhas',
+  'Jewels'
+];
 
-// Subcategories grouped under Bangles on customer side
-const BANGLE_SUBCATS = ['Glass Bangles', 'Valaikaappu Bangles', 'Antique Bangles', 'Wedding Bangles'];
+const DEFAULT_BANGLE_SUBS = [
+  { name: 'Daily Wear Bangles' },
+  { name: 'Velvet Finish Bangles' },
+  { name: 'Matte Gold Sets' },
+  { name: 'Bridal Chura Sets' },
+];
 
 const Navbar = () => {
   const [isOpen, setIsOpen] = useState(false);
@@ -27,6 +40,7 @@ const Navbar = () => {
   const { getWishlistCount } = useWishlist();
   const wishlistCount = getWishlistCount();
   const [allCategories, setAllCategories] = useState([]);
+  const [bangleSubcategories, setBangleSubcategories] = useState(DEFAULT_BANGLE_SUBS);
   const [searchResults, setSearchResults] = useState([]);
   const [isSearching, setIsSearching] = useState(false);
   const banglesRef = useRef(null);
@@ -42,7 +56,18 @@ const Navbar = () => {
         console.error('Failed to load categories', err);
       }
     };
+    const fetchBangleSubs = async () => {
+      try {
+        const { data } = await api.get('/subcategories?category=Designer%20Glass%20Bangles');
+        if (Array.isArray(data) && data.length > 0) {
+          setBangleSubcategories(data);
+        }
+      } catch (err) {
+        console.error('Failed to load bangle subcategories', err);
+      }
+    };
     fetchCategories();
+    fetchBangleSubs();
   }, []);
 
   useEffect(() => {
@@ -118,7 +143,11 @@ const Navbar = () => {
 
   const primaryCats = allCategories.filter(name => PRIMARY_CATEGORIES.includes(name));
 
-  const isBanglesActive = decodeURIComponent(pathname) === '/category/Bangles' || BANGLE_SUBCATS.some(sub => decodeURIComponent(pathname) === `/category/${sub}`);
+  const decodedPathname = decodeURIComponent(pathname);
+  const isDesignerBanglesActive =
+    decodedPathname === '/category/Designer Glass Bangles' ||
+    decodedPathname === '/category/Glass Bangles' ||
+    decodedPathname === '/category/Bangles';
 
   const linkStyle = (path, forceActive = false) => {
     const decodedPathname = decodeURIComponent(pathname);
@@ -190,24 +219,25 @@ const Navbar = () => {
             {/* Desktop Nav Links */}
             <div style={{ display: 'none', gap: 24, alignItems: 'center' }} className="desktop-nav">
 
-              {/* Bangles with hover dropdown */}
+              {/* Designer Glass Bangles with hover dropdown */}
               <div
                 ref={banglesRef}
                 style={{ position: 'relative' }}
                 onMouseEnter={() => setBanglesOpen(true)}
                 onMouseLeave={() => setBanglesOpen(false)}
               >
-                <button
+                <Link
+                  to="/category/Designer%20Glass%20Bangles"
                   style={{
-                    ...linkStyle('/category/Bangles', isBanglesActive),
+                    ...linkStyle('/category/Designer Glass Bangles', isDesignerBanglesActive),
                     background: 'none', border: 'none', cursor: 'pointer',
                     display: 'flex', alignItems: 'center', gap: 4, padding: 0,
-                    paddingBottom: linkStyle('/category/Bangles', isBanglesActive).paddingBottom,
+                    paddingBottom: linkStyle('/category/Designer Glass Bangles', isDesignerBanglesActive).paddingBottom,
                   }}
                 >
-                  Bangles
+                  Designer Glass Bangles
                   <ChevronDown size={14} style={{ transition: 'transform 0.2s', transform: banglesOpen ? 'rotate(180deg)' : 'none' }} />
-                </button>
+                </Link>
                 <AnimatePresence>
                   {banglesOpen && (
                     <motion.div
@@ -215,17 +245,40 @@ const Navbar = () => {
                       transition={{ duration: 0.15 }}
                       style={{ ...dropdownStyle, left: 0 }}
                     >
-
-                      {BANGLE_SUBCATS.map(sub => {
-                        const isSubActive = decodeURIComponent(pathname) === `/category/${sub}`;
+                      <Link
+                        to="/category/Designer%20Glass%20Bangles"
+                        style={{
+                          ...dropdownItemStyle,
+                          color: 'var(--accent)',
+                          fontWeight: 700,
+                          borderBottom: '1px solid var(--border)',
+                          marginBottom: 4,
+                          paddingBottom: 8,
+                        }}
+                        onClick={() => setBanglesOpen(false)}
+                      >
+                        All Designer Glass Bangles
+                      </Link>
+                      {bangleSubcategories.map(sub => {
+                        const subParam = sub._id || sub.name;
+                        const isSubActive = decodedPathname.includes(sub.name);
                         return (
-                          <Link key={sub} to={`/category/${encodeURIComponent(sub)}`} style={{...dropdownItemStyle, color: isSubActive ? 'var(--accent)' : 'var(--text-secondary)', display: 'flex', alignItems: 'center', gap: 8}}
+                          <Link
+                            key={sub._id || sub.name}
+                            to={`/category/Designer%20Glass%20Bangles?sub=${encodeURIComponent(subParam)}`}
+                            style={{
+                              ...dropdownItemStyle,
+                              color: isSubActive ? 'var(--accent)' : 'var(--text-secondary)',
+                              display: 'flex',
+                              alignItems: 'center',
+                              gap: 8,
+                            }}
                             onMouseEnter={e => { e.currentTarget.style.background = isDark ? 'rgba(245,240,234,0.06)' : 'rgba(26,17,24,0.04)'; e.currentTarget.style.color = 'var(--accent)'; }}
                             onMouseLeave={e => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = isSubActive ? 'var(--accent)' : 'var(--text-secondary)'; }}
                             onClick={() => setBanglesOpen(false)}
                           >
                             <div style={{ width: 4, height: 4, borderRadius: '50%', background: 'currentColor', opacity: 0.5 }} />
-                            {sub}
+                            {sub.name}
                           </Link>
                         );
                       })}
@@ -235,8 +288,8 @@ const Navbar = () => {
               </div>
 
               {/* Other primary categories */}
-              {primaryCats.filter(n => n !== 'Bangles').map(name => (
-                <Link key={name} to={`/category/${name}`} style={linkStyle(`/category/${name}`)}
+              {primaryCats.filter(n => n !== 'Designer Glass Bangles' && n !== 'Bangles' && n !== 'Glass Bangles').map(name => (
+                <Link key={name} to={`/category/${encodeURIComponent(name)}`} style={linkStyle(`/category/${name}`)}
                   onMouseEnter={e => e.currentTarget.style.color = 'var(--text)'}
                   onMouseLeave={e => e.currentTarget.style.color = decodeURIComponent(pathname) === `/category/${name}` ? 'var(--accent)' : 'var(--text-secondary)'}
                 >{name}</Link>
@@ -341,9 +394,9 @@ const Navbar = () => {
                               Popular Categories
                             </p>
                             <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
-                              {['Bangles', 'Artificial Flowers', 'Jumkhas', 'Jewels', 'Gift Box Combo'].map(cat => (
+                              {['Designer Glass Bangles', 'Wedding Bangles', 'Antique Bangles', 'Valaikaappu Bangles', 'Artificial Flowers', 'Gift Box Combo'].map(cat => (
                                 <Link
-                                  key={cat} to={`/category/${cat}`} onClick={() => setSearchOpen(false)}
+                                  key={cat} to={`/category/${encodeURIComponent(cat)}`} onClick={() => setSearchOpen(false)}
                                   style={{
                                     display: 'flex', alignItems: 'center', justifyContent: 'space-between',
                                     padding: '10px 12px', borderRadius: 8,
@@ -455,8 +508,8 @@ const Navbar = () => {
                     animate={{ scale: 1 }}
                     style={{
                       position: 'absolute',
-                      top: -4,
-                      right: -7,
+                      top: 0,
+                      right: -2,
                       background: '#E11D48',
                       color: '#ffffff',
                       fontSize: '0.62rem',
@@ -469,6 +522,9 @@ const Navbar = () => {
                       justifyContent: 'center',
                       padding: '0 4px',
                       boxShadow: '0 2px 8px rgba(225, 29, 72, 0.45)',
+                      pointerEvents: 'none',
+                      lineHeight: 1,
+                      border: '1.5px solid var(--nav-bg)',
                     }}
                   >
                     {wishlistCount > 99 ? '99+' : wishlistCount}
@@ -554,49 +610,58 @@ const Navbar = () => {
                   <ChevronRight size={14} opacity={0.4} />
                 </Link>
 
-                {/* Bangles Group */}
+                {/* Designer Glass Bangles Group */}
                 <div style={{ 
-                  background: isBanglesActive ? 'var(--bg-secondary)' : 'transparent',
-                  border: `1px solid ${isBanglesActive ? 'var(--border-strong)' : 'transparent'}`,
+                  background: isDesignerBanglesActive ? 'var(--bg-secondary)' : 'transparent',
+                  border: `1px solid ${isDesignerBanglesActive ? 'var(--border-strong)' : 'transparent'}`,
                   borderRadius: 8, overflow: 'hidden', transition: 'all 0.3s ease',
                   marginTop: 2, marginBottom: 2
                 }}>
-                  <Link to="/category/Bangles" onClick={() => setIsOpen(false)} style={{
+                  <Link to="/category/Designer%20Glass%20Bangles" onClick={() => setIsOpen(false)} style={{
                     display: 'flex', alignItems: 'center', justifyContent: 'space-between',
                     padding: '8px 10px',
-                    color: decodeURIComponent(pathname) === '/category/Bangles' ? 'var(--accent)' : 'var(--text)',
+                    color: isDesignerBanglesActive ? 'var(--accent)' : 'var(--text)',
                     textDecoration: 'none',
                   }}>
-                    <span style={{ fontSize: '1rem', fontFamily: 'Outfit, sans-serif', fontWeight: 600 }}>Bangles</span>
+                    <span style={{ fontSize: '1rem', fontFamily: 'Outfit, sans-serif', fontWeight: 600 }}>Designer Glass Bangles</span>
                     <ChevronRight size={14} opacity={0.4} />
                   </Link>
                   <div style={{ 
                     padding: '0 8px 8px 16px', display: 'flex', flexDirection: 'column', gap: 2,
                     borderLeft: `2px solid var(--accent)`, marginLeft: 12,
                   }}>
-                    {BANGLE_SUBCATS.map(sub => {
-                      const isSubActive = decodeURIComponent(pathname) === `/category/${sub}`;
+                    <Link
+                      to="/category/Designer%20Glass%20Bangles"
+                      onClick={() => setIsOpen(false)}
+                      style={{
+                        display: 'flex', alignItems: 'center', gap: 8,
+                        fontSize: '0.82rem', fontFamily: 'Inter, sans-serif', fontWeight: 600,
+                        color: 'var(--accent)', textDecoration: 'none', padding: '5px 10px',
+                      }}
+                    >
+                      All Designer Glass Bangles
+                    </Link>
+                    {bangleSubcategories.map(sub => {
+                      const subParam = sub._id || sub.name;
                       return (
-                        <Link key={sub} to={`/category/${encodeURIComponent(sub)}`} onClick={() => setIsOpen(false)} style={{
+                        <Link key={sub._id || sub.name} to={`/category/Designer%20Glass%20Bangles?sub=${encodeURIComponent(subParam)}`} onClick={() => setIsOpen(false)} style={{
                           display: 'flex', alignItems: 'center', gap: 8,
-                          fontSize: '0.85rem', fontFamily: 'Inter, sans-serif', fontWeight: isSubActive ? 600 : 500,
-                          color: isSubActive ? 'var(--accent)' : 'var(--text-secondary)',
+                          fontSize: '0.85rem', fontFamily: 'Inter, sans-serif', fontWeight: 500,
+                          color: 'var(--text-secondary)',
                           textDecoration: 'none', padding: '6px 10px', borderRadius: 6,
-                          background: isSubActive ? 'var(--bg-card)' : 'transparent',
-                          boxShadow: isSubActive ? '0 2px 4px rgba(0,0,0,0.05)' : 'none',
                         }}>
-                          {sub}
+                          {sub.name}
                         </Link>
-                      )
+                      );
                     })}
                   </div>
                 </div>
 
                 {/* Other Categories */}
-                {allCategories.filter(n => n !== 'Bangles' && !BANGLE_SUBCATS.includes(n)).map(name => {
+                {allCategories.filter(n => n !== 'Designer Glass Bangles' && n !== 'Bangles' && n !== 'Glass Bangles').map(name => {
                   const isActive = decodeURIComponent(pathname) === `/category/${name}`;
                   return (
-                    <Link key={name} to={`/category/${name}`} onClick={() => setIsOpen(false)} style={{
+                    <Link key={name} to={`/category/${encodeURIComponent(name)}`} onClick={() => setIsOpen(false)} style={{
                       display: 'flex', alignItems: 'center', justifyContent: 'space-between',
                       padding: '8px 10px', borderRadius: 8,
                       background: isActive ? 'var(--bg-secondary)' : 'transparent',
@@ -606,7 +671,7 @@ const Navbar = () => {
                       <span style={{ fontSize: '1rem', fontFamily: 'Outfit, sans-serif', fontWeight: 600 }}>{name}</span>
                       <ChevronRight size={14} opacity={0.4} />
                     </Link>
-                  )
+                  );
                 })}
 
                 {/* Wishlist */}
