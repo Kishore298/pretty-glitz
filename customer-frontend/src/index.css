@@ -1663,8 +1663,9 @@ section,
 }
 
 /* ─── Hero Banner Carousel ──────────────────────────────────── */
+/* Desktop / Bigger devices: keep generous breathing gap where desktop banner images are displayed */
 .hero-banner-section {
-  padding-top: var(--nav-height, 76px);
+  padding-top: calc(var(--nav-height, 76px) + 24px); /* 100px on desktop */
   background: var(--bg);
   position: relative;
   overflow: hidden;
@@ -1737,6 +1738,9 @@ section,
 }
 
 @media (max-width: 1023px) and (min-width: 768px) {
+  .hero-banner-section {
+    padding-top: calc(var(--nav-height, 76px) + 16px);
+  }
   .hero-banner-viewport {
     height: clamp(520px, 58vw, 650px);
   }
@@ -1745,49 +1749,47 @@ section,
   }
 }
 
-@media (max-width: 900px) {
-  .hero-banner-section {
-    padding-top: var(--nav-height, 72px);
-  }
-}
-
-/* Mobile: height equivalent to image dimensions with content fitting inside cleanly */
+/* Mobile Screens (< 768px): ZERO gap below navbar; banner starts flush at navbar bottom */
 @media (max-width: 767px) {
+  .hero-banner-section {
+    padding-top: var(--nav-height, 68px) !important;
+    margin-top: 0 !important;
+  }
   .hero-banner-viewport {
     height: auto;
-    min-height: 360px;
+    min-height: auto;
   }
   .hero-banner-track {
     height: auto;
+    align-items: flex-start;
   }
   .hero-banner-slide {
     height: auto;
-    min-height: 360px;
+    min-height: auto;
+    align-items: flex-start;
+    justify-content: flex-start;
   }
   .hero-banner-link,
   .hero-banner-picture {
     height: auto;
+    width: 100%;
+    display: block;
+    line-height: 0;
+    margin: 0;
+    padding: 0;
   }
   .hero-banner-img {
     width: 100% !important;
     height: auto !important;
-    max-height: 560px !important;
+    max-height: none !important;
     display: block !important;
     object-fit: contain !important;
+    object-position: center top !important;
     aspect-ratio: auto !important;
     transform: none !important;
-  }
-}
-
-@media (max-width: 640px) {
-  .hero-banner-section {
-    padding-top: 82px;
-  }
-}
-
-@media (max-width: 400px) {
-  .hero-banner-section {
-    padding-top: 76px;
+    margin: 0 !important;
+    padding: 0 !important;
+    vertical-align: top;
   }
 }
 
