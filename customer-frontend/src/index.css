@@ -1401,6 +1401,7 @@ section,
   display: flex;
   align-items: center;
   gap: 9px;
+  flex-shrink: 0;
 }
 
 /* Natural-aspect logo — perfectly balanced proportions */

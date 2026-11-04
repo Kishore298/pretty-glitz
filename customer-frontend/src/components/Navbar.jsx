@@ -8,16 +8,20 @@ import { useWishlist } from '../context/WishlistContext';
 import api from '../utils/api';
 import logoImg from '../assets/pretty-glitz-logo.png';
 
-// Categories that appear as primary nav items
-const PRIMARY_CATEGORIES = [
+// The 4 Bangle categories grouped under parent "Bangles"
+const BANGLE_CATEGORIES = [
   'Designer Glass Bangles',
-  'Wedding Bangles',
-  'Antique Bangles',
   'Valaikaappu Bangles',
+  'Antique Bangles',
+  'Wedding Bangles',
+];
+
+// Fallback non-bangle categories in desired display order
+const NON_BANGLE_CATEGORIES = [
   'Artificial Flowers',
-  'Gift Box Combo',
   'Jumkhas',
-  'Jewels'
+  'Gift Box Combo',
+  'Jewels',
 ];
 
 const DEFAULT_BANGLE_SUBS = [
@@ -31,6 +35,8 @@ const Navbar = () => {
   const [isOpen, setIsOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
   const [banglesOpen, setBanglesOpen] = useState(false);
+  const [mobileBanglesOpen, setMobileBanglesOpen] = useState(true);
+  const [mobileDesignerSubsOpen, setMobileDesignerSubsOpen] = useState(false);
   const [searchOpen, setSearchOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const { pathname } = useLocation();
@@ -141,13 +147,29 @@ const Navbar = () => {
     }
   };
 
-  const primaryCats = allCategories.filter(name => PRIMARY_CATEGORIES.includes(name));
-
   const decodedPathname = decodeURIComponent(pathname);
+  const isAnyBanglesActive =
+    decodedPathname.includes('/category/Designer Glass Bangles') ||
+    decodedPathname.includes('/category/Glass Bangles') ||
+    decodedPathname.includes('/category/Bangles') ||
+    decodedPathname.includes('/category/Valaikaappu Bangles') ||
+    decodedPathname.includes('/category/Antique Bangles') ||
+    decodedPathname.includes('/category/Wedding Bangles');
+
   const isDesignerBanglesActive =
-    decodedPathname === '/category/Designer Glass Bangles' ||
-    decodedPathname === '/category/Glass Bangles' ||
-    decodedPathname === '/category/Bangles';
+    decodedPathname.includes('/category/Designer Glass Bangles') ||
+    decodedPathname.includes('/category/Glass Bangles') ||
+    decodedPathname.includes('/category/Bangles');
+
+  // Filter out any bangle category so only non-bangle categories remain at the top level
+  const otherCatsFromApi = allCategories.filter(
+    (name) =>
+      !name.toLowerCase().includes('bangle') &&
+      name !== 'Designer Glass Bangles' &&
+      name !== 'Glass Bangles' &&
+      name !== 'Bangles'
+  );
+  const nonBangleCats = otherCatsFromApi.length > 0 ? otherCatsFromApi : NON_BANGLE_CATEGORIES;
 
   const linkStyle = (path, forceActive = false) => {
     const decodedPathname = decodeURIComponent(pathname);
@@ -219,89 +241,342 @@ const Navbar = () => {
             {/* Desktop Nav Links */}
             <div style={{ display: 'none', gap: 24, alignItems: 'center' }} className="desktop-nav">
 
-              {/* Designer Glass Bangles with hover dropdown */}
+              {/* Bangles Parent with Horizontal Mega Menu */}
               <div
                 ref={banglesRef}
                 style={{ position: 'relative' }}
                 onMouseEnter={() => setBanglesOpen(true)}
                 onMouseLeave={() => setBanglesOpen(false)}
               >
-                <Link
-                  to="/category/Designer%20Glass%20Bangles"
+                <button
+                  type="button"
+                  onClick={() => setBanglesOpen((prev) => !prev)}
                   style={{
-                    ...linkStyle('/category/Designer Glass Bangles', isDesignerBanglesActive),
-                    background: 'none', border: 'none', cursor: 'pointer',
-                    display: 'flex', alignItems: 'center', gap: 4, padding: 0,
-                    paddingBottom: linkStyle('/category/Designer Glass Bangles', isDesignerBanglesActive).paddingBottom,
+                    ...linkStyle('/category/Designer Glass Bangles', isAnyBanglesActive),
+                    background: 'none',
+                    border: 'none',
+                    cursor: 'pointer',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: 5,
+                    padding: 0,
+                    paddingBottom: linkStyle('', isAnyBanglesActive).paddingBottom,
+                    fontFamily: 'Inter, sans-serif',
                   }}
+                  aria-expanded={banglesOpen}
+                  aria-haspopup="true"
                 >
-                  Designer Glass Bangles
-                  <ChevronDown size={14} style={{ transition: 'transform 0.2s', transform: banglesOpen ? 'rotate(180deg)' : 'none' }} />
-                </Link>
+                  <span>Bangles</span>
+                  <ChevronDown
+                    size={14}
+                    style={{
+                      transition: 'transform 0.25s ease',
+                      transform: banglesOpen ? 'rotate(180deg)' : 'none',
+                    }}
+                  />
+                </button>
+
                 <AnimatePresence>
                   {banglesOpen && (
                     <motion.div
-                      initial={{ opacity: 0, y: -8 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -8 }}
-                      transition={{ duration: 0.15 }}
-                      style={{ ...dropdownStyle, left: 0 }}
+                      initial={{ opacity: 0, y: -6 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      exit={{ opacity: 0, y: -6 }}
+                      transition={{ duration: 0.18, ease: 'easeOut' }}
+                      style={{
+                        position: 'absolute',
+                        top: 'calc(100% + 14px)',
+                        left: -20,
+                        background: isDark ? 'rgba(14, 14, 22, 0.98)' : 'var(--bg)',
+                        backdropFilter: 'blur(20px)',
+                        border: `1px solid var(--border)`,
+                        borderRadius: 16,
+                        boxShadow: isDark
+                          ? '0 24px 50px rgba(0, 0, 0, 0.65)'
+                          : '0 24px 50px rgba(26, 17, 24, 0.12)',
+                        zIndex: 100,
+                        width: 600,
+                        padding: '22px 24px',
+                        display: 'grid',
+                        gridTemplateColumns: '1.35fr 1fr',
+                        gap: 24,
+                      }}
                     >
-                      <Link
-                        to="/category/Designer%20Glass%20Bangles"
-                        style={{
-                          ...dropdownItemStyle,
-                          color: 'var(--accent)',
-                          fontWeight: 700,
-                          borderBottom: '1px solid var(--border)',
-                          marginBottom: 4,
-                          paddingBottom: 8,
-                        }}
-                        onClick={() => setBanglesOpen(false)}
-                      >
-                        All Designer Glass Bangles
-                      </Link>
-                      {bangleSubcategories.map(sub => {
-                        const subParam = sub._id || sub.name;
-                        const isSubActive = decodedPathname.includes(sub.name);
-                        return (
+                      {/* Left Column: Designer Glass Bangles & Subcategories */}
+                      <div style={{ borderRight: `1px solid var(--border)`, paddingRight: 20 }}>
+                        <div style={{ marginBottom: 14 }}>
                           <Link
-                            key={sub._id || sub.name}
-                            to={`/category/Designer%20Glass%20Bangles?sub=${encodeURIComponent(subParam)}`}
+                            to="/category/Designer%20Glass%20Bangles"
+                            onClick={() => setBanglesOpen(false)}
                             style={{
-                              ...dropdownItemStyle,
-                              color: isSubActive ? 'var(--accent)' : 'var(--text-secondary)',
-                              display: 'flex',
+                              textDecoration: 'none',
+                              display: 'inline-flex',
                               alignItems: 'center',
                               gap: 8,
                             }}
-                            onMouseEnter={e => { e.currentTarget.style.background = isDark ? 'rgba(245,240,234,0.06)' : 'rgba(26,17,24,0.04)'; e.currentTarget.style.color = 'var(--accent)'; }}
-                            onMouseLeave={e => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = isSubActive ? 'var(--accent)' : 'var(--text-secondary)'; }}
-                            onClick={() => setBanglesOpen(false)}
                           >
-                            <div style={{ width: 4, height: 4, borderRadius: '50%', background: 'currentColor', opacity: 0.5 }} />
-                            {sub.name}
+                            <span
+                              style={{
+                                fontSize: '0.98rem',
+                                fontWeight: 700,
+                                fontFamily: 'Outfit, sans-serif',
+                                color: isDesignerBanglesActive ? 'var(--accent)' : 'var(--text)',
+                                letterSpacing: '0.02em',
+                              }}
+                            >
+                              Designer Glass Bangles
+                            </span>
+                            <span
+                              style={{
+                                fontSize: '0.65rem',
+                                fontWeight: 700,
+                                textTransform: 'uppercase',
+                                letterSpacing: '0.06em',
+                                background: 'linear-gradient(135deg, rgba(196,56,108,0.12), rgba(138,43,226,0.12))',
+                                color: 'var(--accent)',
+                                padding: '2px 7px',
+                                borderRadius: 999,
+                                border: '1px solid rgba(196,56,108,0.2)',
+                              }}
+                            >
+                              Featured
+                            </span>
                           </Link>
-                        );
-                      })}
+                          <p
+                            style={{
+                              fontSize: '0.78rem',
+                              color: 'var(--text-muted)',
+                              margin: '4px 0 0',
+                              lineHeight: 1.4,
+                            }}
+                          >
+                            Handcrafted color-rich glass bangles with size-wise variations.
+                          </p>
+                        </div>
+
+                        {/* Subcategories list */}
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: 2, marginBottom: 12 }}>
+                          <span
+                            style={{
+                              fontSize: '0.7rem',
+                              fontWeight: 700,
+                              textTransform: 'uppercase',
+                              letterSpacing: '0.08em',
+                              color: 'var(--text-muted)',
+                              marginBottom: 6,
+                            }}
+                          >
+                            Collections & Sets
+                          </span>
+
+                          {bangleSubcategories.map((sub) => {
+                            const subParam = sub._id || sub.name;
+                            const isSubActive = decodedPathname.includes(sub.name);
+                            return (
+                              <Link
+                                key={sub._id || sub.name}
+                                to={`/category/Designer%20Glass%20Bangles?sub=${encodeURIComponent(subParam)}`}
+                                onClick={() => setBanglesOpen(false)}
+                                style={{
+                                  display: 'flex',
+                                  alignItems: 'center',
+                                  justifyContent: 'space-between',
+                                  padding: '7px 10px',
+                                  borderRadius: 8,
+                                  fontSize: '0.86rem',
+                                  fontWeight: isSubActive ? 700 : 500,
+                                  color: isSubActive ? 'var(--accent)' : 'var(--text)',
+                                  textDecoration: 'none',
+                                  transition: 'all 0.15s ease',
+                                  background: isSubActive
+                                    ? (isDark ? 'rgba(245,240,234,0.06)' : 'rgba(26,17,24,0.04)')
+                                    : 'transparent',
+                                }}
+                                onMouseEnter={(e) => {
+                                  e.currentTarget.style.background = isDark
+                                    ? 'rgba(245,240,234,0.06)'
+                                    : 'rgba(26,17,24,0.04)';
+                                  e.currentTarget.style.color = 'var(--accent)';
+                                }}
+                                onMouseLeave={(e) => {
+                                  e.currentTarget.style.background = isSubActive
+                                    ? (isDark ? 'rgba(245,240,234,0.06)' : 'rgba(26,17,24,0.04)')
+                                    : 'transparent';
+                                  e.currentTarget.style.color = isSubActive
+                                    ? 'var(--accent)'
+                                    : 'var(--text)';
+                                }}
+                              >
+                                <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                                  <div
+                                    style={{
+                                      width: 5,
+                                      height: 5,
+                                      borderRadius: '50%',
+                                      background: isSubActive ? 'var(--accent)' : 'currentColor',
+                                      opacity: isSubActive ? 1 : 0.45,
+                                    }}
+                                  />
+                                  <span>{sub.name}</span>
+                                </div>
+                                <ChevronRight size={13} style={{ opacity: 0.4 }} />
+                              </Link>
+                            );
+                          })}
+                        </div>
+
+                        <Link
+                          to="/category/Designer%20Glass%20Bangles"
+                          onClick={() => setBanglesOpen(false)}
+                          style={{
+                            display: 'inline-flex',
+                            alignItems: 'center',
+                            gap: 6,
+                            fontSize: '0.82rem',
+                            fontWeight: 700,
+                            color: 'var(--accent)',
+                            textDecoration: 'none',
+                            padding: '6px 10px',
+                            borderRadius: 6,
+                            background: 'linear-gradient(135deg, rgba(196,56,108,0.08), rgba(138,43,226,0.08))',
+                            border: `1px solid rgba(196,56,108,0.15)`,
+                            marginTop: 4,
+                          }}
+                        >
+                          <span>View All Designer Glass Bangles</span>
+                          <ChevronRight size={13} />
+                        </Link>
+                      </div>
+
+                      {/* Right Column: Other Signature Bangle Categories */}
+                      <div style={{ display: 'flex', flexDirection: 'column' }}>
+                        <div style={{ marginBottom: 12 }}>
+                          <span
+                            style={{
+                              fontSize: '0.7rem',
+                              fontWeight: 700,
+                              textTransform: 'uppercase',
+                              letterSpacing: '0.08em',
+                              color: 'var(--text-muted)',
+                            }}
+                          >
+                            Other Bangle Styles
+                          </span>
+                        </div>
+
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: 6, flex: 1 }}>
+                          {[
+                            {
+                              name: 'Valaikaappu Bangles',
+                              desc: 'Auspicious ceremony & celebration sets',
+                            },
+                            {
+                              name: 'Antique Bangles',
+                              desc: 'Heritage temple antique & matte gold designs',
+                            },
+                            {
+                              name: 'Wedding Bangles',
+                              desc: 'Bridal chura & bridal occasion collection',
+                            },
+                          ].map((cat) => {
+                            const isCatActive = decodedPathname === `/category/${cat.name}`;
+                            return (
+                              <Link
+                                key={cat.name}
+                                to={`/category/${encodeURIComponent(cat.name)}`}
+                                onClick={() => setBanglesOpen(false)}
+                                style={{
+                                  padding: '10px 12px',
+                                  borderRadius: 10,
+                                  textDecoration: 'none',
+                                  display: 'block',
+                                  transition: 'all 0.18s ease',
+                                  background: isCatActive
+                                    ? (isDark ? 'rgba(245,240,234,0.06)' : 'rgba(26,17,24,0.04)')
+                                    : 'transparent',
+                                  border: `1px solid ${isCatActive ? 'var(--border)' : 'transparent'}`,
+                                }}
+                                onMouseEnter={(e) => {
+                                  e.currentTarget.style.background = isDark
+                                    ? 'rgba(245,240,234,0.06)'
+                                    : 'rgba(26,17,24,0.04)';
+                                }}
+                                onMouseLeave={(e) => {
+                                  e.currentTarget.style.background = isCatActive
+                                    ? (isDark ? 'rgba(245,240,234,0.06)' : 'rgba(26,17,24,0.04)')
+                                    : 'transparent';
+                                }}
+                              >
+                                <div
+                                  style={{
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    justifyContent: 'space-between',
+                                    marginBottom: 2,
+                                  }}
+                                >
+                                  <span
+                                    style={{
+                                      fontSize: '0.92rem',
+                                      fontWeight: isCatActive ? 700 : 600,
+                                      fontFamily: 'Outfit, sans-serif',
+                                      color: isCatActive ? 'var(--accent)' : 'var(--text)',
+                                    }}
+                                  >
+                                    {cat.name}
+                                  </span>
+                                  <ChevronRight size={14} style={{ color: 'var(--text-muted)' }} />
+                                </div>
+                                <span
+                                  style={{
+                                    fontSize: '0.74rem',
+                                    color: 'var(--text-muted)',
+                                    lineHeight: 1.3,
+                                    display: 'block',
+                                  }}
+                                >
+                                  {cat.desc}
+                                </span>
+                              </Link>
+                            );
+                          })}
+                        </div>
+                      </div>
                     </motion.div>
                   )}
                 </AnimatePresence>
               </div>
 
-              {/* Other primary categories */}
-              {primaryCats.filter(n => n !== 'Designer Glass Bangles' && n !== 'Bangles' && n !== 'Glass Bangles').map(name => (
-                <Link key={name} to={`/category/${encodeURIComponent(name)}`} style={linkStyle(`/category/${name}`)}
-                  onMouseEnter={e => e.currentTarget.style.color = 'var(--text)'}
-                  onMouseLeave={e => e.currentTarget.style.color = decodeURIComponent(pathname) === `/category/${name}` ? 'var(--accent)' : 'var(--text-secondary)'}
-                >{name}</Link>
+              {/* Remaining primary categories: Artificial Flowers, Jumkhas, Gift Box Combo, Jewels */}
+              {nonBangleCats.map((name) => (
+                <Link
+                  key={name}
+                  to={`/category/${encodeURIComponent(name)}`}
+                  style={linkStyle(`/category/${name}`)}
+                  onMouseEnter={(e) => (e.currentTarget.style.color = 'var(--text)')}
+                  onMouseLeave={(e) =>
+                    (e.currentTarget.style.color =
+                      decodeURIComponent(pathname) === `/category/${name}`
+                        ? 'var(--accent)'
+                        : 'var(--text-secondary)')
+                  }
+                >
+                  {name}
+                </Link>
               ))}
 
               {/* Offers link */}
-              <Link to="/offers" style={{
-                ...linkStyle('/offers'),
-                display: 'flex', alignItems: 'center', gap: 4,
-                color: pathname === '/offers' ? 'var(--accent)' : '#C4386C',
-                fontWeight: 600,
-              }}>
+              <Link
+                to="/offers"
+                style={{
+                  ...linkStyle('/offers'),
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 4,
+                  color: pathname === '/offers' ? 'var(--accent)' : '#C4386C',
+                  fontWeight: 600,
+                }}
+              >
                 Offers <Gift size={14} />
               </Link>
 
@@ -610,65 +885,265 @@ const Navbar = () => {
                   <ChevronRight size={14} opacity={0.4} />
                 </Link>
 
-                {/* Designer Glass Bangles Group */}
-                <div style={{ 
-                  background: isDesignerBanglesActive ? 'var(--bg-secondary)' : 'transparent',
-                  border: `1px solid ${isDesignerBanglesActive ? 'var(--border-strong)' : 'transparent'}`,
-                  borderRadius: 8, overflow: 'hidden', transition: 'all 0.3s ease',
-                  marginTop: 2, marginBottom: 2
+                {/* Bangles Level 1 Accordion */}
+                <div style={{
+                  borderRadius: 10,
+                  overflow: 'hidden',
+                  background: isAnyBanglesActive
+                    ? (isDark ? 'rgba(255,255,255,0.04)' : 'rgba(196,56,108,0.04)')
+                    : 'transparent',
+                  border: `1px solid ${isAnyBanglesActive ? 'var(--border)' : 'transparent'}`,
+                  marginTop: 3,
+                  marginBottom: 3,
                 }}>
-                  <Link to="/category/Designer%20Glass%20Bangles" onClick={() => setIsOpen(false)} style={{
-                    display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-                    padding: '8px 10px',
-                    color: isDesignerBanglesActive ? 'var(--accent)' : 'var(--text)',
-                    textDecoration: 'none',
-                  }}>
-                    <span style={{ fontSize: '1rem', fontFamily: 'Outfit, sans-serif', fontWeight: 600 }}>Designer Glass Bangles</span>
-                    <ChevronRight size={14} opacity={0.4} />
-                  </Link>
-                  <div style={{ 
-                    padding: '0 8px 8px 16px', display: 'flex', flexDirection: 'column', gap: 2,
-                    borderLeft: `2px solid var(--accent)`, marginLeft: 12,
-                  }}>
-                    <Link
-                      to="/category/Designer%20Glass%20Bangles"
-                      onClick={() => setIsOpen(false)}
+                  <button
+                    type="button"
+                    onClick={() => setMobileBanglesOpen(!mobileBanglesOpen)}
+                    style={{
+                      width: '100%',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'space-between',
+                      padding: '10px 12px',
+                      background: 'none',
+                      border: 'none',
+                      cursor: 'pointer',
+                      color: isAnyBanglesActive ? 'var(--accent)' : 'var(--text)',
+                      textAlign: 'left',
+                    }}
+                  >
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                      <span style={{ fontSize: '1rem', fontFamily: 'Outfit, sans-serif', fontWeight: 700 }}>
+                        Bangles
+                      </span>
+                      <span style={{
+                        fontSize: '0.65rem',
+                        fontWeight: 700,
+                        textTransform: 'uppercase',
+                        letterSpacing: '0.05em',
+                        background: 'linear-gradient(135deg, rgba(196,56,108,0.12), rgba(138,43,226,0.12))',
+                        color: 'var(--accent)',
+                        padding: '1px 6px',
+                        borderRadius: 999,
+                      }}>
+                        4 Styles
+                      </span>
+                    </div>
+                    <ChevronDown
+                      size={16}
                       style={{
-                        display: 'flex', alignItems: 'center', gap: 8,
-                        fontSize: '0.82rem', fontFamily: 'Inter, sans-serif', fontWeight: 600,
-                        color: 'var(--accent)', textDecoration: 'none', padding: '5px 10px',
+                        transition: 'transform 0.25s ease',
+                        transform: mobileBanglesOpen ? 'rotate(180deg)' : 'none',
+                        color: isAnyBanglesActive ? 'var(--accent)' : 'var(--text-secondary)',
                       }}
-                    >
-                      All Designer Glass Bangles
-                    </Link>
-                    {bangleSubcategories.map(sub => {
-                      const subParam = sub._id || sub.name;
-                      return (
-                        <Link key={sub._id || sub.name} to={`/category/Designer%20Glass%20Bangles?sub=${encodeURIComponent(subParam)}`} onClick={() => setIsOpen(false)} style={{
-                          display: 'flex', alignItems: 'center', gap: 8,
-                          fontSize: '0.85rem', fontFamily: 'Inter, sans-serif', fontWeight: 500,
-                          color: 'var(--text-secondary)',
-                          textDecoration: 'none', padding: '6px 10px', borderRadius: 6,
-                        }}>
-                          {sub.name}
-                        </Link>
-                      );
-                    })}
-                  </div>
+                    />
+                  </button>
+
+                  <AnimatePresence initial={false}>
+                    {mobileBanglesOpen && (
+                      <motion.div
+                        initial={{ height: 0, opacity: 0 }}
+                        animate={{ height: 'auto', opacity: 1 }}
+                        exit={{ height: 0, opacity: 0 }}
+                        transition={{ duration: 0.2 }}
+                        style={{
+                          overflow: 'hidden',
+                          paddingLeft: 12,
+                          paddingRight: 8,
+                          paddingBottom: 8,
+                          borderLeft: `2px solid var(--accent)`,
+                          marginLeft: 14,
+                          marginBottom: 6,
+                        }}
+                      >
+                        {/* Level 2: Designer Glass Bangles Accordion */}
+                        <div style={{ marginTop: 2, marginBottom: 4 }}>
+                          <div
+                            style={{
+                              display: 'flex',
+                              alignItems: 'center',
+                              justifyContent: 'space-between',
+                              borderRadius: 6,
+                              background: isDesignerBanglesActive
+                                ? (isDark ? 'rgba(255,255,255,0.06)' : 'rgba(26,17,24,0.04)')
+                                : 'transparent',
+                            }}
+                          >
+                            <Link
+                              to="/category/Designer%20Glass%20Bangles"
+                              onClick={() => setIsOpen(false)}
+                              style={{
+                                flex: 1,
+                                padding: '7px 8px',
+                                fontSize: '0.92rem',
+                                fontFamily: 'Outfit, sans-serif',
+                                fontWeight: 600,
+                                color: isDesignerBanglesActive ? 'var(--accent)' : 'var(--text)',
+                                textDecoration: 'none',
+                              }}
+                            >
+                              Designer Glass Bangles
+                            </Link>
+                            <button
+                              type="button"
+                              onClick={() => setMobileDesignerSubsOpen(!mobileDesignerSubsOpen)}
+                              style={{
+                                background: 'none',
+                                border: 'none',
+                                padding: '7px 10px',
+                                cursor: 'pointer',
+                                color: 'var(--text-muted)',
+                                display: 'flex',
+                                alignItems: 'center',
+                              }}
+                              aria-label="Toggle Designer Glass Bangles subcategories"
+                            >
+                              <ChevronDown
+                                size={14}
+                                style={{
+                                  transition: 'transform 0.2s',
+                                  transform: mobileDesignerSubsOpen ? 'rotate(180deg)' : 'none',
+                                }}
+                              />
+                            </button>
+                          </div>
+
+                          <AnimatePresence initial={false}>
+                            {mobileDesignerSubsOpen && (
+                              <motion.div
+                                initial={{ height: 0, opacity: 0 }}
+                                animate={{ height: 'auto', opacity: 1 }}
+                                exit={{ height: 0, opacity: 0 }}
+                                transition={{ duration: 0.18 }}
+                                style={{
+                                  overflow: 'hidden',
+                                  paddingLeft: 12,
+                                  display: 'flex',
+                                  flexDirection: 'column',
+                                  gap: 2,
+                                  marginTop: 2,
+                                  borderLeft: `1px dashed var(--border)`,
+                                  marginLeft: 10,
+                                }}
+                              >
+                                <Link
+                                  to="/category/Designer%20Glass%20Bangles"
+                                  onClick={() => setIsOpen(false)}
+                                  style={{
+                                    fontSize: '0.82rem',
+                                    fontFamily: 'Inter, sans-serif',
+                                    fontWeight: 600,
+                                    color: 'var(--accent)',
+                                    textDecoration: 'none',
+                                    padding: '5px 8px',
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    gap: 6,
+                                  }}
+                                >
+                                  <span>View All Designer Glass Bangles</span>
+                                  <ChevronRight size={12} />
+                                </Link>
+                                {bangleSubcategories.map((sub) => {
+                                  const subParam = sub._id || sub.name;
+                                  const isSubActive = decodedPathname.includes(sub.name);
+                                  return (
+                                    <Link
+                                      key={sub._id || sub.name}
+                                      to={`/category/Designer%20Glass%20Bangles?sub=${encodeURIComponent(subParam)}`}
+                                      onClick={() => setIsOpen(false)}
+                                      style={{
+                                        fontSize: '0.84rem',
+                                        fontFamily: 'Inter, sans-serif',
+                                        fontWeight: isSubActive ? 700 : 500,
+                                        color: isSubActive ? 'var(--accent)' : 'var(--text-secondary)',
+                                        textDecoration: 'none',
+                                        padding: '6px 8px',
+                                        borderRadius: 6,
+                                        display: 'flex',
+                                        alignItems: 'center',
+                                        gap: 8,
+                                      }}
+                                    >
+                                      <div
+                                        style={{
+                                          width: 4,
+                                          height: 4,
+                                          borderRadius: '50%',
+                                          background: isSubActive ? 'var(--accent)' : 'currentColor',
+                                          opacity: isSubActive ? 1 : 0.4,
+                                        }}
+                                      />
+                                      <span>{sub.name}</span>
+                                    </Link>
+                                  );
+                                })}
+                              </motion.div>
+                            )}
+                          </AnimatePresence>
+                        </div>
+
+                        {/* Other 3 Bangle Categories as Direct Links */}
+                        {[
+                          'Valaikaappu Bangles',
+                          'Antique Bangles',
+                          'Wedding Bangles',
+                        ].map((catName) => {
+                          const isCatActive = decodedPathname === `/category/${catName}`;
+                          return (
+                            <Link
+                              key={catName}
+                              to={`/category/${encodeURIComponent(catName)}`}
+                              onClick={() => setIsOpen(false)}
+                              style={{
+                                display: 'flex',
+                                alignItems: 'center',
+                                justifyContent: 'space-between',
+                                padding: '7px 8px',
+                                borderRadius: 6,
+                                fontSize: '0.92rem',
+                                fontFamily: 'Outfit, sans-serif',
+                                fontWeight: 600,
+                                color: isCatActive ? 'var(--accent)' : 'var(--text)',
+                                textDecoration: 'none',
+                                background: isCatActive
+                                  ? (isDark ? 'rgba(255,255,255,0.06)' : 'rgba(26,17,24,0.04)')
+                                  : 'transparent',
+                              }}
+                            >
+                              <span>{catName}</span>
+                              <ChevronRight size={13} opacity={0.4} />
+                            </Link>
+                          );
+                        })}
+                      </motion.div>
+                    )}
+                  </AnimatePresence>
                 </div>
 
-                {/* Other Categories */}
-                {allCategories.filter(n => n !== 'Designer Glass Bangles' && n !== 'Bangles' && n !== 'Glass Bangles').map(name => {
+                {/* Remaining Categories: Artificial Flowers, Jumkhas, Gift Box Combo, Jewels */}
+                {nonBangleCats.map((name) => {
                   const isActive = decodeURIComponent(pathname) === `/category/${name}`;
                   return (
-                    <Link key={name} to={`/category/${encodeURIComponent(name)}`} onClick={() => setIsOpen(false)} style={{
-                      display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-                      padding: '8px 10px', borderRadius: 8,
-                      background: isActive ? 'var(--bg-secondary)' : 'transparent',
-                      color: isActive ? 'var(--accent)' : 'var(--text)',
-                      textDecoration: 'none', transition: 'background 0.2s',
-                    }}>
-                      <span style={{ fontSize: '1rem', fontFamily: 'Outfit, sans-serif', fontWeight: 600 }}>{name}</span>
+                    <Link
+                      key={name}
+                      to={`/category/${encodeURIComponent(name)}`}
+                      onClick={() => setIsOpen(false)}
+                      style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'space-between',
+                        padding: '8px 10px',
+                        borderRadius: 8,
+                        background: isActive ? 'var(--bg-secondary)' : 'transparent',
+                        color: isActive ? 'var(--accent)' : 'var(--text)',
+                        textDecoration: 'none',
+                        transition: 'background 0.2s',
+                      }}
+                    >
+                      <span style={{ fontSize: '1rem', fontFamily: 'Outfit, sans-serif', fontWeight: 600 }}>
+                        {name}
+                      </span>
                       <ChevronRight size={14} opacity={0.4} />
                     </Link>
                   );
