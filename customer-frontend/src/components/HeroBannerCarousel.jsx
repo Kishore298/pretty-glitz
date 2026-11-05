@@ -217,27 +217,29 @@ const HeroBannerCarousel = ({ banners = [], loading = false }) => {
       )}
 
       {/* Centered Explore Collection Button Below Banner Carousel */}
-      <div style={{
-        display: 'flex',
-        justifyContent: 'center',
-        alignItems: 'center',
-        padding: '24px 16px 16px',
-      }}>
+      <div
+        className="hero-banner-cta-wrapper"
+        style={{
+          display: 'flex',
+          justifyContent: 'center',
+          alignItems: 'center',
+        }}
+      >
         <Link
           to={activeSlides[currentIndex]?.linkTo || '/all-products'}
           style={{
             display: 'inline-flex',
             alignItems: 'center',
-            gap: 12,
-            padding: '14px 34px',
+            gap: 10,
+            padding: '12px 32px',
             borderRadius: 999,
             background: 'var(--accent-gradient, linear-gradient(135deg, #C4386C, #8A2BE2))',
             color: '#FFFFFF',
-            fontSize: 'clamp(0.95rem, 2vw, 1.08rem)',
+            fontSize: 'clamp(0.9rem, 1.8vw, 1.05rem)',
             fontWeight: 700,
             textDecoration: 'none',
             letterSpacing: '0.04em',
-            boxShadow: '0 8px 26px rgba(196, 56, 108, 0.35)',
+            boxShadow: '0 6px 22px rgba(196, 56, 108, 0.32)',
             transition: 'all 0.25s ease',
           }}
           onMouseEnter={(e) => {

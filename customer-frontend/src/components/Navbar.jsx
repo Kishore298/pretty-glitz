@@ -214,7 +214,7 @@ const Navbar = () => {
             </Link>
 
             {/* Desktop Nav Links */}
-            <div style={{ display: 'none', gap: 24, alignItems: 'center' }} className="desktop-nav">
+            <div style={{ display: 'none', alignItems: 'center' }} className="desktop-nav">
 
               {/* Bangles Parent with Horizontal Mega Menu */}
               <div
@@ -1174,8 +1174,13 @@ const Navbar = () => {
       </AnimatePresence>
 
       <style>{`
-        @media (min-width: 768px) {
-          .desktop-nav { display: flex !important; }
+        @media (min-width: 1024px) {
+          .desktop-nav { display: flex !important; gap: 20px !important; }
+          .mobile-menu-btn { display: none !important; }
+        }
+        @media (min-width: 768px) and (max-width: 1023px) {
+          .desktop-nav { display: flex !important; gap: 8px !important; }
+          .desktop-nav a, .desktop-nav button { font-size: 0.74rem !important; }
           .mobile-menu-btn { display: none !important; }
         }
       `}</style>

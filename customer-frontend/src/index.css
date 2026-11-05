@@ -212,9 +212,17 @@ section,
   z-index: 1;
 }
 
-@media (min-width: 768px) {
+@media (min-width: 1024px) {
   .desktop-nav {
     display: flex !important;
+    gap: 20px;
+  }
+}
+
+@media (min-width: 768px) and (max-width: 1023px) {
+  .desktop-nav {
+    display: flex !important;
+    gap: 8px !important;
   }
 }
 
@@ -1400,17 +1408,23 @@ section,
   text-decoration: none;
   display: flex;
   align-items: center;
-  gap: 9px;
+  gap: 8px;
   flex-shrink: 0;
+  height: 100%;
+  padding: 0;
+  margin: 0;
 }
 
-/* Natural-aspect logo — perfectly balanced proportions */
+/* Mascot logo adapts to fill vertical navbar space, removing upper & lower empty padding */
 .navbar-logo-img {
-  height: 48px;
+  height: 100%;
+  max-height: 100%;
   width: auto;
   object-fit: contain;
   object-position: center;
   flex-shrink: 0;
+  padding: 2px 0;
+  box-sizing: border-box;
   transition: opacity 0.25s ease;
   image-rendering: -webkit-optimize-contrast;
   image-rendering: crisp-edges;
@@ -1442,17 +1456,29 @@ section,
   display: inline-block;
 }
 
+/* Tablet screens (768px - 1023px): Ensure brand logo/text and nav links never collide */
+@media (min-width: 768px) and (max-width: 1023px) {
+  .navbar-wrapper {
+    padding: 0 14px;
+  }
+
+  .navbar-brand-link {
+    gap: 6px;
+    margin-right: 10px;
+  }
+
+  .navbar-brand-text {
+    font-size: 1.22rem;
+  }
+}
+
 @media (max-width: 900px) {
   .navbar-container {
     height: 72px;
   }
 
-  .navbar-logo-img {
-    height: 42px;
-  }
-
   .navbar-brand-text {
-    font-size: 1.32rem;
+    font-size: 1.28rem;
   }
 }
 
@@ -1466,15 +1492,11 @@ section,
   }
 
   .navbar-brand-link {
-    gap: 8px;
-  }
-
-  .navbar-logo-img {
-    height: 38px;
+    gap: 7px;
   }
 
   .navbar-brand-text {
-    font-size: 1.22rem;
+    font-size: 1.18rem;
     letter-spacing: 0.03em;
   }
 }
@@ -1489,15 +1511,11 @@ section,
   }
 
   .navbar-brand-link {
-    gap: 7px;
-  }
-
-  .navbar-logo-img {
-    height: 34px;
+    gap: 6px;
   }
 
   .navbar-brand-text {
-    font-size: 1.12rem;
+    font-size: 1.1rem;
   }
 }
 
@@ -1664,9 +1682,10 @@ section,
 }
 
 /* ─── Hero Banner Carousel ──────────────────────────────────── */
-/* Desktop / Bigger devices: keep generous breathing gap where desktop banner images are displayed */
+/* Default / All devices: flush against navbar (NO GAP) */
 .hero-banner-section {
-  padding-top: calc(var(--nav-height, 76px) + 24px); /* 100px on desktop */
+  padding-top: var(--nav-height, 76px);
+  margin-top: 0;
   background: var(--bg);
   position: relative;
   overflow: hidden;
@@ -1677,7 +1696,7 @@ section,
   position: relative;
   width: 100%;
   overflow: hidden;
-  height: 700px; /* 700px banner height on desktop per requirements */
+  height: 700px;
   background: var(--bg);
 }
 
@@ -1717,7 +1736,7 @@ section,
   height: 100%;
 }
 
-/* Ensure content fits well within the 700px container without cropping or zooming */
+/* Ensure content fits cleanly without cropping or zooming */
 .hero-banner-img {
   width: 100% !important;
   height: 100% !important;
@@ -1729,24 +1748,156 @@ section,
   transform: none !important;
 }
 
-@media (min-width: 1440px) {
-  .hero-banner-viewport {
-    height: 700px;
+/* Devices from 768px to 1440px:
+   1. NO gap between navbar and banner (padding-top: var(--nav-height, 76px)).
+   2. The entire hero banner section (navbar + banner + dots + explore collection button)
+      must NOT take up more than the screen height (height: 100vh / 100dvh). */
+@media (min-width: 768px) and (max-width: 1440px) {
+  .hero-banner-section {
+    padding-top: var(--nav-height, 76px) !important;
+    margin-top: 0 !important;
+    height: 100vh;
+    height: 100dvh;
+    max-height: 100vh;
+    max-height: 100dvh;
+    display: flex;
+    flex-direction: column;
+    box-sizing: border-box;
+    overflow: hidden;
   }
+
+  .hero-banner-viewport {
+    flex: 1 1 0% !important;
+    min-height: 0 !important;
+    height: auto !important;
+    max-height: none !important;
+    width: 100%;
+    position: relative;
+    overflow: hidden;
+    background: var(--bg);
+  }
+
+  .hero-banner-track {
+    display: flex;
+    align-items: center;
+    width: 100%;
+    height: 100% !important;
+    min-height: 0 !important;
+  }
+
+  .hero-banner-slide {
+    width: 100%;
+    min-width: 100%;
+    height: 100% !important;
+    min-height: 0 !important;
+    flex-shrink: 0;
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: var(--bg);
+    overflow: hidden;
+  }
+
+  .hero-banner-link,
+  .hero-banner-picture {
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    width: 100% !important;
+    height: 100% !important;
+    text-decoration: none;
+  }
+
   .hero-banner-img {
-    max-height: 700px !important;
+    width: 100% !important;
+    height: 100% !important;
+    max-height: 100% !important;
+    display: block !important;
+    object-fit: contain !important;
+    object-position: center center !important;
+    aspect-ratio: auto !important;
+    transform: none !important;
+    margin: 0 auto !important;
+  }
+
+  .hero-carousel-dots {
+    flex-shrink: 0;
+    padding: 6px 0 2px !important;
+    margin: 0 !important;
+  }
+
+  .hero-banner-cta-wrapper {
+    flex-shrink: 0;
+    padding: 6px 16px 14px !important;
+    display: flex;
+    justify-content: center;
+    align-items: center;
   }
 }
 
-@media (max-width: 1023px) and (min-width: 768px) {
+/* Large Screens > 1440px: Flush against navbar, fits within 100vh viewport */
+@media (min-width: 1441px) {
   .hero-banner-section {
-    padding-top: calc(var(--nav-height, 76px) + 16px);
+    padding-top: var(--nav-height, 76px) !important;
+    margin-top: 0 !important;
+    height: 100vh;
+    height: 100dvh;
+    max-height: 100vh;
+    max-height: 100dvh;
+    display: flex;
+    flex-direction: column;
+    box-sizing: border-box;
+    overflow: hidden;
   }
+
   .hero-banner-viewport {
-    height: clamp(520px, 58vw, 650px);
+    flex: 1 1 0% !important;
+    min-height: 0 !important;
+    height: auto !important;
+    max-height: none !important;
+    width: 100%;
+    position: relative;
+    overflow: hidden;
+    background: var(--bg);
   }
+
+  .hero-banner-track,
+  .hero-banner-slide {
+    height: 100% !important;
+    min-height: 0 !important;
+  }
+
+  .hero-banner-link,
+  .hero-banner-picture {
+    height: 100% !important;
+    width: 100% !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+  }
+
   .hero-banner-img {
-    max-height: 650px !important;
+    width: 100% !important;
+    height: 100% !important;
+    max-height: 100% !important;
+    object-fit: contain !important;
+    object-position: center center !important;
+    display: block !important;
+    margin: 0 auto !important;
+  }
+
+  .hero-carousel-dots {
+    flex-shrink: 0;
+    padding: 8px 0 4px !important;
+  }
+
+  .hero-banner-cta-wrapper {
+    flex-shrink: 0;
+    padding: 8px 16px 18px !important;
+    display: flex;
+    justify-content: center;
+    align-items: center;
   }
 }
 
