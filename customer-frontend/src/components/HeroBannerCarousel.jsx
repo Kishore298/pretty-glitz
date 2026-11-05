@@ -125,6 +125,11 @@ const HeroBannerCarousel = ({ banners = [], loading = false }) => {
         <div
           className="hero-banner-track"
           style={{
+            display: 'flex',
+            flexDirection: 'row',
+            flexWrap: 'nowrap',
+            width: '100%',
+            height: '100%',
             transform: `translateX(-${currentIndex * 100}%)`,
             transition: 'transform 0.5s cubic-bezier(0.25, 1, 0.5, 1)',
           }}
@@ -138,6 +143,12 @@ const HeroBannerCarousel = ({ banners = [], loading = false }) => {
               <div
                 key={slide._id || idx}
                 className="hero-banner-slide"
+                style={{
+                  flex: '0 0 100%',
+                  width: '100%',
+                  minWidth: '100%',
+                  maxWidth: '100%',
+                }}
               >
                 <Link
                   to={targetLink}
