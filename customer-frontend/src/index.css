@@ -1696,80 +1696,62 @@ section,
   position: relative;
   width: 100%;
   overflow: hidden;
-  height: 700px;
   background: var(--bg);
 }
 
 .hero-banner-track {
   display: flex;
-  align-items: center;
   width: 100%;
-  height: 100%;
 }
 
 .hero-banner-slide {
   width: 100%;
   min-width: 100%;
-  height: 100%;
   flex-shrink: 0;
   position: relative;
-  display: flex;
-  align-items: center;
-  justify-content: center;
   background: var(--bg);
 }
 
 .hero-banner-link {
-  display: flex;
-  align-items: center;
-  justify-content: center;
+  display: block;
   width: 100%;
-  height: 100%;
   text-decoration: none;
 }
 
 .hero-banner-picture {
-  display: flex;
-  align-items: center;
-  justify-content: center;
+  display: block;
   width: 100%;
-  height: 100%;
 }
 
 /* Ensure content fits cleanly without cropping or zooming */
 .hero-banner-img {
   width: 100% !important;
-  height: 100% !important;
-  max-height: 700px !important;
   display: block !important;
   object-fit: contain !important;
-  object-position: center center !important;
+  object-position: center top !important;
   aspect-ratio: auto !important;
   transform: none !important;
 }
 
-/* Devices from 768px to 1440px:
-   1. NO gap between navbar and banner (padding-top: var(--nav-height, 76px)).
-   2. The entire hero banner section (navbar + banner + dots + explore collection button)
-      must NOT take up more than the screen height (height: 100vh / 100dvh). */
-@media (min-width: 768px) and (max-width: 1440px) {
+/* Devices from 768px to 1200px (Tablets, Medium Screens):
+   1. NO gap between navbar and banner (flush padding-top: var(--nav-height, 76px)).
+   2. NO forced screen height / 100vh: height is auto, fitting natural banner proportions cleanly.
+   3. Top of banner image touches bottom of navbar with 0px gap. */
+@media (min-width: 768px) and (max-width: 1200px) {
   .hero-banner-section {
     padding-top: var(--nav-height, 76px) !important;
     margin-top: 0 !important;
-    height: 100vh;
-    height: 100dvh;
-    max-height: 100vh;
-    max-height: 100dvh;
-    display: flex;
-    flex-direction: column;
+    height: auto !important;
+    min-height: auto !important;
+    max-height: none !important;
+    display: block !important;
     box-sizing: border-box;
     overflow: hidden;
   }
 
   .hero-banner-viewport {
-    flex: 1 1 0% !important;
-    min-height: 0 !important;
     height: auto !important;
+    min-height: auto !important;
     max-height: none !important;
     width: 100%;
     position: relative;
@@ -1779,83 +1761,83 @@ section,
 
   .hero-banner-track {
     display: flex;
-    align-items: center;
+    height: auto !important;
+    min-height: auto !important;
+    align-items: flex-start !important;
     width: 100%;
-    height: 100% !important;
-    min-height: 0 !important;
   }
 
   .hero-banner-slide {
     width: 100%;
     min-width: 100%;
-    height: 100% !important;
-    min-height: 0 !important;
+    height: auto !important;
+    min-height: auto !important;
     flex-shrink: 0;
     position: relative;
-    display: flex;
-    align-items: center;
-    justify-content: center;
+    display: block !important;
     background: var(--bg);
-    overflow: hidden;
   }
 
   .hero-banner-link,
   .hero-banner-picture {
-    display: flex !important;
-    align-items: center !important;
-    justify-content: center !important;
+    display: block !important;
     width: 100% !important;
-    height: 100% !important;
+    height: auto !important;
+    line-height: 0 !important;
+    margin: 0 !important;
+    padding: 0 !important;
     text-decoration: none;
   }
 
   .hero-banner-img {
     width: 100% !important;
-    height: 100% !important;
-    max-height: 100% !important;
+    height: auto !important;
+    max-height: none !important;
     display: block !important;
     object-fit: contain !important;
-    object-position: center center !important;
+    object-position: center top !important;
+    vertical-align: top !important;
+    margin: 0 !important;
+    padding: 0 !important;
     aspect-ratio: auto !important;
     transform: none !important;
-    margin: 0 auto !important;
   }
 
   .hero-carousel-dots {
     flex-shrink: 0;
-    padding: 6px 0 2px !important;
+    padding: 10px 0 4px !important;
     margin: 0 !important;
   }
 
   .hero-banner-cta-wrapper {
     flex-shrink: 0;
-    padding: 6px 16px 14px !important;
+    padding: 8px 16px 16px !important;
     display: flex;
     justify-content: center;
     align-items: center;
   }
 }
 
-/* Large Screens > 1440px: Flush against navbar, fits within 100vh viewport */
-@media (min-width: 1441px) {
+/* Devices bigger than 1200px (> 1200px):
+   1. Can have a certain gap below the navbar (+ 20px).
+   2. Must NOT cross the screen height including navbar and explore collection button (<= 100vh). */
+@media (min-width: 1201px) {
   .hero-banner-section {
-    padding-top: var(--nav-height, 76px) !important;
+    padding-top: calc(var(--nav-height, 76px) + 20px) !important;
     margin-top: 0 !important;
-    height: 100vh;
-    height: 100dvh;
     max-height: 100vh;
     max-height: 100dvh;
+    box-sizing: border-box;
     display: flex;
     flex-direction: column;
-    box-sizing: border-box;
     overflow: hidden;
   }
 
   .hero-banner-viewport {
-    flex: 1 1 0% !important;
+    flex: 1 1 auto;
     min-height: 0 !important;
-    height: auto !important;
-    max-height: none !important;
+    height: min(650px, calc(100vh - var(--nav-height, 76px) - 20px - 110px)) !important;
+    max-height: calc(100vh - var(--nav-height, 76px) - 20px - 110px) !important;
     width: 100%;
     position: relative;
     overflow: hidden;
@@ -1866,6 +1848,9 @@ section,
   .hero-banner-slide {
     height: 100% !important;
     min-height: 0 !important;
+    display: flex;
+    align-items: center;
+    justify-content: center;
   }
 
   .hero-banner-link,
@@ -1882,7 +1867,7 @@ section,
     height: 100% !important;
     max-height: 100% !important;
     object-fit: contain !important;
-    object-position: center center !important;
+    object-position: center top !important;
     display: block !important;
     margin: 0 auto !important;
   }
@@ -1890,6 +1875,7 @@ section,
   .hero-carousel-dots {
     flex-shrink: 0;
     padding: 8px 0 4px !important;
+    margin: 0 !important;
   }
 
   .hero-banner-cta-wrapper {
@@ -1906,24 +1892,25 @@ section,
   .hero-banner-section {
     padding-top: var(--nav-height, 68px) !important;
     margin-top: 0 !important;
+    height: auto !important;
   }
   .hero-banner-viewport {
-    height: auto;
+    height: auto !important;
     min-height: auto;
   }
   .hero-banner-track {
-    height: auto;
+    height: auto !important;
     align-items: flex-start;
   }
   .hero-banner-slide {
-    height: auto;
+    height: auto !important;
     min-height: auto;
     align-items: flex-start;
     justify-content: flex-start;
   }
   .hero-banner-link,
   .hero-banner-picture {
-    height: auto;
+    height: auto !important;
     width: 100%;
     display: block;
     line-height: 0;
@@ -1942,6 +1929,12 @@ section,
     margin: 0 !important;
     padding: 0 !important;
     vertical-align: top;
+  }
+  .hero-carousel-dots {
+    padding: 8px 0 4px !important;
+  }
+  .hero-banner-cta-wrapper {
+    padding: 6px 16px 14px !important;
   }
 }
 
