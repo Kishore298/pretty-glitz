@@ -9,7 +9,7 @@ const colorVariantSizeSchema = new mongoose.Schema(
     },
     inStock: {
       type: Boolean,
-      default: false, // Zero-default safeguard: must be explicitly marked in stock
+      default: true,
     },
     stockCount: {
       type: Number,
@@ -46,7 +46,7 @@ const colorVariantSchema = new mongoose.Schema(
     sizes: [colorVariantSizeSchema],
     inStock: {
       type: Boolean,
-      default: false, // If false, all sizes under this color are unavailable
+      default: true,
     },
     isDefault: {
       type: Boolean,

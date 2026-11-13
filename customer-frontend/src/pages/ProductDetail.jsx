@@ -11,7 +11,7 @@ import {
   ChevronLeft,
   ChevronDown,
   Share2,
-  ZoomIn,
+  Maximize2,
   Plus,
   Minus,
   ShoppingBag,
@@ -38,12 +38,10 @@ const ProductDetail = () => {
   const [selectedColor, setSelectedColor] = useState(null);
   const [selectedSize, setSelectedSize] = useState(null);
   const [selectedPieceCount, setSelectedPieceCount] = useState(null);
+  const [activeCustomImage, setActiveCustomImage] = useState(null);
 
   const [error, setError] = useState('');
-  const [activeImage, setActiveImage] = useState(0);
   const [addedFeedback, setAddedFeedback] = useState(false);
-  const [isZoomed, setIsZoomed] = useState(false);
-  const [mousePos, setMousePos] = useState({ x: 0, y: 0 });
   const [touchStartX, setTouchStartX] = useState(null);
   const [touchEndX, setTouchEndX] = useState(null);
   const [showSizeChart, setShowSizeChart] = useState(false);
@@ -60,6 +58,9 @@ const ProductDetail = () => {
   const inWishlist = product ? isInWishlist(product._id) : false;
 
   useEffect(() => {
+    setActiveCustomImage(null);
+    setSelectedColor(null);
+    setSelectedSize(null);
     fetchProduct();
     // Instantly reset scroll to top without visible smooth scrolling animation
     const html = document.documentElement;
@@ -82,16 +83,14 @@ const ProductDetail = () => {
       const { data } = await api.get(`/products/${id}`);
       setProduct(data);
 
-      // Handle Color Variants
+      // Handle Color Variants: Showcase image is default for designer bangles!
+      // Do NOT pre-select color variant on initial load.
       if (data.colorVariants && data.colorVariants.length > 0) {
-        const defColor = data.colorVariants.find(c => c.isDefault) || data.colorVariants[0];
-        setSelectedColor(defColor);
-        if (defColor.sizes?.length > 0) {
-          const firstInStock = defColor.sizes.find(s => s.inStock && (s.stockCount > 0));
-          setSelectedSize(firstInStock ? firstInStock.size : defColor.sizes[0].size);
-        }
+        setSelectedColor(null);
+        setSelectedSize(null);
       } else if (data.sizes?.length > 0) {
-        setSelectedSize(data.sizes[0].size);
+        const firstInStock = data.sizes.find(s => s.inStock !== false);
+        setSelectedSize(firstInStock ? firstInStock.size : data.sizes[0].size);
       }
 
       // Auto-select lowest piece count
@@ -122,14 +121,89 @@ const ProductDetail = () => {
     } catch (err) { console.error(err); }
   };
 
-  // Determine current active images and sizes based on selected color variant
-  const galleryImages = (selectedColor && selectedColor.images?.length > 0)
-    ? selectedColor.images
-    : (product?.images || []);
+  // Combined gallery thumbnails: showcase images first, followed by each color variant's images
+  const allGalleryThumbnails = React.useMemo(() => {
+    if (!product) return [];
+    const list = [];
+    const seenUrls = new Set();
+
+    // 1. Showcase images from product.images
+    if (Array.isArray(product.images) && product.images.length > 0) {
+      product.images.forEach((img, i) => {
+        if (img?.url && !seenUrls.has(img.url)) {
+          seenUrls.add(img.url);
+          list.push({
+            id: `showcase-${i}`,
+            url: img.url,
+            type: 'showcase',
+            label: `Showcase Photo ${i + 1}`,
+            colorVariant: null,
+          });
+        }
+      });
+    } else if (product.image && !seenUrls.has(product.image)) {
+      seenUrls.add(product.image);
+      list.push({
+        id: 'showcase-main',
+        url: product.image,
+        type: 'showcase',
+        label: 'Showcase Photo',
+        colorVariant: null,
+      });
+    }
+
+    // 2. Colour variant images
+    if (Array.isArray(product.colorVariants)) {
+      product.colorVariants.forEach((cVar) => {
+        if (Array.isArray(cVar.images)) {
+          cVar.images.forEach((img, i) => {
+            if (img?.url && !seenUrls.has(img.url)) {
+              seenUrls.add(img.url);
+              list.push({
+                id: `color-${cVar._id || cVar.colorName}-${i}`,
+                url: img.url,
+                type: 'color',
+                label: `${cVar.colorName} ${i > 0 ? `(${i + 1})` : ''}`.trim(),
+                colorVariant: cVar,
+              });
+            }
+          });
+        }
+      });
+    }
+
+    return list;
+  }, [product]);
+
+  // Current active main image: showcase image by default, or color specific image after selection
+  const currentMainImageUrl = activeCustomImage
+    || (selectedColor?.images?.[0]?.url)
+    || (product?.images?.[0]?.url)
+    || (product?.image)
+    || logoImg;
+
+  const handleThumbnailClick = (item) => {
+    if (!item) return;
+    setActiveCustomImage(item.url);
+    if (item.type === 'color' && item.colorVariant) {
+      setSelectedColor(item.colorVariant);
+      if (item.colorVariant.sizes?.length > 0) {
+        const stillValid = item.colorVariant.sizes.find(s => s.size === selectedSize && s.inStock !== false);
+        if (!stillValid) {
+          const firstInStock = item.colorVariant.sizes.find(s => s.inStock !== false);
+          setSelectedSize(firstInStock ? firstInStock.size : item.colorVariant.sizes[0].size);
+        }
+      }
+    } else if (item.type === 'showcase') {
+      setSelectedColor(null);
+    }
+  };
 
   const activeSizes = (selectedColor && selectedColor.sizes?.length > 0)
     ? selectedColor.sizes
-    : (product?.sizes || []);
+    : (product?.colorVariants?.[0]?.sizes?.length > 0
+        ? product.colorVariants[0].sizes
+        : (product?.sizes || []));
 
   // Resolved price (piece count price overrides product price)
   const resolvedPrice = selectedPieceCount ? selectedPieceCount.price : product?.price;
@@ -140,18 +214,22 @@ const ProductDetail = () => {
   const variantInCart = product ? isInCart(product._id, selectedSize, selectedPieceCount?.count ?? null, selectedColor?._id) : false;
 
   const validate = () => {
+    if (product?.colorVariants && product.colorVariants.length > 0 && !selectedColor) {
+      setError('Please choose a colour to continue');
+      return false;
+    }
     if (activeSizes?.length > 0 && !selectedSize) {
       setError('Please select a size to continue');
       return false;
     }
-    if (product.pieceCounts?.length > 0 && !selectedPieceCount) {
+    if (product?.pieceCounts?.length > 0 && !selectedPieceCount) {
       setError('Please select a piece count to continue');
       return false;
     }
     // Check if selected size in selected color is in stock
     if (selectedColor && selectedSize) {
       const match = selectedColor.sizes?.find(s => s.size === selectedSize);
-      if (match && (!match.inStock || match.stockCount <= 0)) {
+      if (match && match.inStock === false) {
         setError(`Size ${selectedSize} in ${selectedColor.colorName} is out of stock.`);
         return false;
       }
@@ -216,20 +294,13 @@ const ProductDetail = () => {
     }
   };
 
-  const handleMouseMove = (e) => {
-    const { left, top, width, height } = e.currentTarget.getBoundingClientRect();
-    const x = ((e.pageX - left) / width) * 100;
-    const y = ((e.pageY - top) / height) * 100;
-    setMousePos({ x, y });
-  };
-
   const handleColorSelect = (cVar) => {
     setSelectedColor(cVar);
-    setActiveImage(0); // Reset gallery index to 0 as required!
-    if (cVar.sizes?.length > 0) {
-      const stillValid = cVar.sizes.find(s => s.size === selectedSize && s.inStock && (s.stockCount > 0));
+    setActiveCustomImage(cVar?.images?.[0]?.url || null);
+    if (cVar?.sizes?.length > 0) {
+      const stillValid = cVar.sizes.find(s => s.size === selectedSize && s.inStock !== false);
       if (!stillValid) {
-        const firstAvailable = cVar.sizes.find(s => s.inStock && (s.stockCount > 0));
+        const firstAvailable = cVar.sizes.find(s => s.inStock !== false);
         setSelectedSize(firstAvailable ? firstAvailable.size : cVar.sizes[0].size);
       }
     }
@@ -266,43 +337,39 @@ const ProductDetail = () => {
 
         <div className="product-detail-layout">
 
-          {/* ── Image Gallery (Clean hero without Amazon-style thumbnails) ── */}
+          {/* ── Image Gallery (Showcase Default + Colour-Specific Selection + Thumbnail Strip) ── */}
           <div className="product-gallery-wrapper">
             <div
               className="product-gallery-main"
-              onClick={() => {
-                if (!touchStartX || !touchEndX || Math.abs(touchStartX - touchEndX) < 10) {
-                  setIsImageModalOpen(true);
-                }
-              }}
-              onMouseEnter={() => setIsZoomed(true)}
-              onMouseLeave={() => setIsZoomed(false)}
-              onMouseMove={handleMouseMove}
               onTouchStart={(e) => {
                 setTouchEndX(null);
                 setTouchStartX(e.targetTouches[0].clientX);
               }}
               onTouchMove={(e) => setTouchEndX(e.targetTouches[0].clientX)}
               onTouchEnd={() => {
-                if (!touchStartX || !touchEndX || !galleryImages || galleryImages.length <= 1) return;
+                if (!touchStartX || !touchEndX || allGalleryThumbnails.length <= 1) return;
                 const distance = touchStartX - touchEndX;
+                const currentIdx = allGalleryThumbnails.findIndex(t => t.url === currentMainImageUrl);
                 if (distance > 35) {
-                  setActiveImage((prev) => (prev + 1) % galleryImages.length);
+                  const nextIdx = (currentIdx + 1) % allGalleryThumbnails.length;
+                  handleThumbnailClick(allGalleryThumbnails[nextIdx]);
                 } else if (distance < -35) {
-                  setActiveImage((prev) => (prev - 1 + galleryImages.length) % galleryImages.length);
+                  const nextIdx = (currentIdx - 1 + allGalleryThumbnails.length) % allGalleryThumbnails.length;
+                  handleThumbnailClick(allGalleryThumbnails[nextIdx]);
                 }
               }}
               style={{
                 position: 'relative',
-                touchAction: galleryImages?.length > 1 ? 'pan-y' : 'auto',
+                touchAction: allGalleryThumbnails.length > 1 ? 'pan-y' : 'auto',
                 width: '100%',
                 borderRadius: 20,
                 overflow: 'hidden',
+                cursor: 'default',
               }}
             >
               <AnimatePresence mode="wait">
                 <motion.div
-                  key={`${selectedColor?.colorName || 'main'}-${activeImage}`}
+                  key={currentMainImageUrl}
                   initial={{ opacity: 0 }}
                   animate={{ opacity: 1 }}
                   exit={{ opacity: 0 }}
@@ -310,7 +377,7 @@ const ProductDetail = () => {
                   style={{ width: '100%', height: '100%' }}
                 >
                   <img
-                    src={galleryImages[activeImage]?.url ? optimizeImageUrl(galleryImages[activeImage].url, 1200) : logoImg}
+                    src={currentMainImageUrl ? optimizeImageUrl(currentMainImageUrl, 1200) : logoImg}
                     alt={product.name}
                     onError={(e) => {
                       e.currentTarget.onerror = null;
@@ -321,25 +388,24 @@ const ProductDetail = () => {
                     style={{
                       width: '100%',
                       height: '100%',
-                      objectFit: galleryImages[activeImage]?.url ? 'cover' : 'contain',
+                      objectFit: currentMainImageUrl ? 'cover' : 'contain',
                       display: 'block',
                       padding: 0,
-                      transform: isZoomed ? 'scale(2)' : 'scale(1)',
-                      transformOrigin: `${mousePos.x}% ${mousePos.y}%`,
-                      transition: isZoomed ? 'none' : 'transform 0.3s ease-out',
                     }}
                   />
                 </motion.div>
               </AnimatePresence>
 
               {/* Desktop Hover Next/Prev Arrows */}
-              {galleryImages.length > 1 && (
+              {allGalleryThumbnails.length > 1 && (
                 <>
                   <button
                     type="button"
                     onClick={(e) => {
                       e.stopPropagation();
-                      setActiveImage((prev) => (prev - 1 + galleryImages.length) % galleryImages.length);
+                      const currentIdx = allGalleryThumbnails.findIndex(t => t.url === currentMainImageUrl);
+                      const prevIdx = (currentIdx - 1 + allGalleryThumbnails.length) % allGalleryThumbnails.length;
+                      handleThumbnailClick(allGalleryThumbnails[prevIdx]);
                     }}
                     aria-label="Previous photo"
                     style={{
@@ -361,8 +427,8 @@ const ProductDetail = () => {
                       zIndex: 3,
                       transition: 'all 0.2s ease',
                     }}
-                    onMouseEnter={(e) => e.currentTarget.style.background = 'rgba(196, 56, 108, 0.9)'}
-                    onMouseLeave={(e) => e.currentTarget.style.background = 'rgba(10, 10, 16, 0.65)'}
+                    onMouseEnter={(e) => (e.currentTarget.style.background = 'rgba(196, 56, 108, 0.9)')}
+                    onMouseLeave={(e) => (e.currentTarget.style.background = 'rgba(10, 10, 16, 0.65)')}
                   >
                     <ChevronLeft size={20} />
                   </button>
@@ -371,7 +437,9 @@ const ProductDetail = () => {
                     type="button"
                     onClick={(e) => {
                       e.stopPropagation();
-                      setActiveImage((prev) => (prev + 1) % galleryImages.length);
+                      const currentIdx = allGalleryThumbnails.findIndex(t => t.url === currentMainImageUrl);
+                      const nextIdx = (currentIdx + 1) % allGalleryThumbnails.length;
+                      handleThumbnailClick(allGalleryThumbnails[nextIdx]);
                     }}
                     aria-label="Next photo"
                     style={{
@@ -393,64 +461,91 @@ const ProductDetail = () => {
                       zIndex: 3,
                       transition: 'all 0.2s ease',
                     }}
-                    onMouseEnter={(e) => e.currentTarget.style.background = 'rgba(196, 56, 108, 0.9)'}
-                    onMouseLeave={(e) => e.currentTarget.style.background = 'rgba(10, 10, 16, 0.65)'}
+                    onMouseEnter={(e) => (e.currentTarget.style.background = 'rgba(196, 56, 108, 0.9)')}
+                    onMouseLeave={(e) => (e.currentTarget.style.background = 'rgba(10, 10, 16, 0.65)')}
                   >
                     <ChevronRight size={20} />
                   </button>
                 </>
               )}
 
-              {/* Dots below main image */}
-              {galleryImages.length > 1 && (
-                <div
-                  style={{
-                    position: 'absolute',
-                    bottom: 14,
-                    left: '50%',
-                    transform: 'translateX(-50%)',
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: 6,
-                    zIndex: 2,
-                    background: 'rgba(0,0,0,0.45)',
-                    backdropFilter: 'blur(6px)',
-                    WebkitBackdropFilter: 'blur(6px)',
-                    padding: '5px 10px',
-                    borderRadius: 999,
-                    pointerEvents: 'none',
-                  }}
-                >
-                  {galleryImages.map((_, i) => (
-                    <span
-                      key={i}
-                      style={{
-                        width: i === activeImage ? 16 : 6,
-                        height: 6,
-                        borderRadius: 999,
-                        background: i === activeImage ? '#FFFFFF' : 'rgba(255,255,255,0.4)',
-                        transition: 'all 0.2s ease',
-                      }}
-                    />
-                  ))}
-                </div>
-              )}
-
-              {!isZoomed && (
-                <div
-                  className="product-gallery-zoom-badge"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    setIsImageModalOpen(true);
-                  }}
-                  role="button"
-                  aria-label="Enlarge product image"
-                  style={{ cursor: 'pointer' }}
-                >
-                  <ZoomIn size={16} />
-                </div>
-              )}
+              <button
+                type="button"
+                className="product-gallery-zoom-badge"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setIsImageModalOpen(true);
+                }}
+                aria-label="Enlarge product image"
+                title="Enlarge image"
+              >
+                <Maximize2 size={16} strokeWidth={2.2} />
+              </button>
             </div>
+
+            {/* ── Thumbnail Strip: Showcase & Colour Variant Images ── */}
+            {allGalleryThumbnails.length > 1 && (
+              <div
+                className="product-gallery-thumbnails"
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 10,
+                  marginTop: 14,
+                  overflowX: 'auto',
+                  padding: '4px 2px 8px',
+                  scrollbarWidth: 'thin',
+                }}
+              >
+                {allGalleryThumbnails.map((item, idx) => {
+                  const isActive = item.url === currentMainImageUrl;
+                  return (
+                    <button
+                      key={item.id || idx}
+                      type="button"
+                      onClick={() => handleThumbnailClick(item)}
+                      aria-label={`View ${item.label}`}
+                      title={item.label}
+                      style={{
+                        width: 58,
+                        height: 58,
+                        borderRadius: 12,
+                        overflow: 'hidden',
+                        padding: 0,
+                        border: isActive
+                          ? '2px solid var(--accent, #C4386C)'
+                          : '1.5px solid var(--border)',
+                        background: 'var(--bg-secondary)',
+                        cursor: 'pointer',
+                        flexShrink: 0,
+                        boxShadow: isActive
+                          ? '0 4px 12px rgba(196, 56, 108, 0.28)'
+                          : 'none',
+                        opacity: isActive ? 1 : 0.72,
+                        transition: 'all 0.2s cubic-bezier(0.16, 1, 0.3, 1)',
+                        transform: isActive ? 'scale(1.02)' : 'none',
+                      }}
+                      onMouseEnter={(e) => (e.currentTarget.style.opacity = '1')}
+                      onMouseLeave={(e) => {
+                        if (!isActive) e.currentTarget.style.opacity = '0.72';
+                      }}
+                    >
+                      <img
+                        src={optimizeImageUrl(item.url, 140)}
+                        alt={item.label}
+                        loading="lazy"
+                        style={{
+                          width: '100%',
+                          height: '100%',
+                          objectFit: 'cover',
+                          display: 'block',
+                        }}
+                      />
+                    </button>
+                  );
+                })}
+              </div>
+            )}
           </div>
 
           {/* ── Product Info ───────────────────────────────────── */}
@@ -573,7 +668,7 @@ const ProductDetail = () => {
                   </div>
                   <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
                     {activeSizes.map((s, idx) => {
-                      const isOutOfStock = s.inStock === false || (typeof s.stockCount === 'number' && s.stockCount <= 0);
+                      const isOutOfStock = s.inStock === false;
                       const isSelected = selectedSize === s.size;
                       return (
                         <button
@@ -891,7 +986,7 @@ const ProductDetail = () => {
             </div>
 
             {/* Products Grid for Selected Category Tab */}
-            <div className="products-grid">
+            <div className="product-grid-4">
               {(activeCategoryTab === 'ALL'
                 ? Object.values(productsByCategory).flat()
                 : productsByCategory[activeCategoryTab] || []
@@ -915,8 +1010,8 @@ const ProductDetail = () => {
         isOpen={isImageModalOpen}
         onClose={() => setIsImageModalOpen(false)}
         product={product}
-        images={galleryImages}
-        initialIndex={activeImage}
+        images={allGalleryThumbnails.length > 0 ? allGalleryThumbnails : (product.images || [])}
+        initialIndex={Math.max(0, allGalleryThumbnails.findIndex(t => t.url === currentMainImageUrl))}
       />
     </div>
   );

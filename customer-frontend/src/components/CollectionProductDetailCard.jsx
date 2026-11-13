@@ -8,7 +8,7 @@ import {
   Check,
   Sparkles,
   Ruler,
-  ZoomIn,
+  Maximize2,
   ChevronLeft,
   ChevronRight,
   ChevronDown,
@@ -51,7 +51,7 @@ const CollectionProductDetailCard = ({ product, isLast = false }) => {
 
   const [selectedSize, setSelectedSize] = useState(() => {
     if (selectedColor?.sizes?.length > 0) {
-      const firstInStock = selectedColor.sizes.find(s => s.inStock && (s.stockCount > 0));
+      const firstInStock = selectedColor.sizes.find(s => s.inStock !== false);
       return firstInStock ? firstInStock.size : selectedColor.sizes[0].size;
     }
     return product.sizes?.length > 0 ? product.sizes[0].size : null;
@@ -92,9 +92,9 @@ const CollectionProductDetailCard = ({ product, isLast = false }) => {
     setSelectedColor(cVar);
     setActiveImg(0); // Reset gallery to index 0 on colour switch
     if (cVar.sizes?.length > 0) {
-      const stillValid = cVar.sizes.find(s => s.size === selectedSize && s.inStock && (s.stockCount > 0));
+      const stillValid = cVar.sizes.find(s => s.size === selectedSize && s.inStock !== false);
       if (!stillValid) {
-        const firstAvailable = cVar.sizes.find(s => s.inStock && (s.stockCount > 0));
+        const firstAvailable = cVar.sizes.find(s => s.inStock !== false);
         setSelectedSize(firstAvailable ? firstAvailable.size : cVar.sizes[0].size);
       }
     }
@@ -179,7 +179,7 @@ const CollectionProductDetailCard = ({ product, isLast = false }) => {
               aspectRatio: '1 / 1',
               width: '100%',
               maxWidth: 540,
-              cursor: 'zoom-in',
+              cursor: 'pointer',
             }}
             role="button"
             tabIndex={0}
@@ -283,9 +283,10 @@ const CollectionProductDetailCard = ({ product, isLast = false }) => {
                 width: 32,
                 height: 32,
                 borderRadius: '50%',
-                background: 'rgba(0,0,0,0.4)',
+                background: 'rgba(10, 10, 16, 0.65)',
                 backdropFilter: 'blur(4px)',
                 WebkitBackdropFilter: 'blur(4px)',
+                border: '1px solid rgba(255, 255, 255, 0.2)',
                 color: '#FFFFFF',
                 display: 'flex',
                 alignItems: 'center',
@@ -294,7 +295,7 @@ const CollectionProductDetailCard = ({ product, isLast = false }) => {
               }}
               title="Click to enlarge"
             >
-              <ZoomIn size={16} />
+              <Maximize2 size={16} strokeWidth={2.2} />
             </div>
 
             {/* Mobile swipe dot indicators */}
@@ -582,7 +583,7 @@ const CollectionProductDetailCard = ({ product, isLast = false }) => {
               </div>
               <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
                 {activeSizes.map((s, i) => {
-                  const isOutOfStock = s.inStock === false || (typeof s.stockCount === 'number' && s.stockCount <= 0);
+                  const isOutOfStock = s.inStock === false;
                   const isSelected = selectedSize === s.size;
                   return (
                     <button

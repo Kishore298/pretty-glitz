@@ -4,7 +4,7 @@ import { useTheme } from '../context/ThemeContext';
 import { CartContext } from '../context/CartContext';
 import { useWishlist } from '../context/WishlistContext';
 import { optimizeImageUrl } from '../utils/cloudinary';
-import { ShoppingBag, Plus, Minus, Sparkles, Heart, ZoomIn, ChevronLeft, ChevronRight } from 'lucide-react';
+import { ShoppingBag, Plus, Minus, Sparkles, Heart, Maximize2, ChevronLeft, ChevronRight } from 'lucide-react';
 import ProductImageModal from './ProductImageModal';
 import logoImg from '../assets/pretty-glitz-logo.png';
 
@@ -55,13 +55,13 @@ const ProductCard = ({ product, showVariants = false }) => {
   };
 
   const handleImageClick = (e) => {
-    e.preventDefault();
-    e.stopPropagation();
     if (didSwipe) {
+      e.preventDefault();
+      e.stopPropagation();
       setDidSwipe(false);
       return;
     }
-    setIsEnlargedModalOpen(true);
+    // Allow default click to navigate to the product detail page via the parent Link
   };
 
   // Standardise all products belonging to any bangle category, or having variations/sizes/pieces to 'Options'
@@ -133,20 +133,12 @@ const ProductCard = ({ product, showVariants = false }) => {
           height: '100%',
         }}
       >
-        {/* Image Container with Mobile Touch Swipe & Enlarged Preview */}
+        {/* Image Container with Mobile Touch Swipe & Detail Page Navigation */}
         <div
           onTouchStart={handleTouchStart}
           onTouchMove={handleTouchMove}
           onTouchEnd={handleTouchEnd}
           onClick={handleImageClick}
-          role="button"
-          tabIndex={0}
-          onKeyDown={(e) => {
-            if (e.key === 'Enter' || e.key === ' ') {
-              handleImageClick(e);
-            }
-          }}
-          aria-label={`View enlarged images for ${product.name}`}
           style={{
             position: 'relative',
             aspectRatio: '1 / 1',
@@ -156,7 +148,7 @@ const ProductCard = ({ product, showVariants = false }) => {
             marginBottom: hasMultipleImages ? 4 : 6,
             transition: 'background 0.35s ease',
             touchAction: hasMultipleImages ? 'pan-y' : 'auto',
-            cursor: 'zoom-in',
+            cursor: 'pointer',
           }}
         >
           {currentImage ? (
@@ -341,31 +333,48 @@ const ProductCard = ({ product, showVariants = false }) => {
             )}
           </div>
 
-          {/* Top-Right Zoom Hint Badge */}
-          <div
+          {/* Top-Right Expand Pop-out Button */}
+          <button
+            type="button"
+            onClick={(e) => {
+              e.preventDefault();
+              e.stopPropagation();
+              setIsEnlargedModalOpen(true);
+            }}
+            aria-label={`Enlarge photo for ${product.name}`}
+            title="Enlarge preview"
             style={{
               position: 'absolute',
               top: 6,
               right: 6,
-              zIndex: 2,
-              width: 22,
-              height: 22,
+              zIndex: 3,
+              width: 26,
+              height: 26,
               borderRadius: '50%',
-              background: 'rgba(0,0,0,0.35)',
-              backdropFilter: 'blur(3px)',
-              WebkitBackdropFilter: 'blur(3px)',
+              background: 'rgba(10, 10, 16, 0.65)',
+              backdropFilter: 'blur(4px)',
+              WebkitBackdropFilter: 'blur(4px)',
+              border: '1px solid rgba(255, 255, 255, 0.25)',
               color: '#FFFFFF',
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
-              pointerEvents: 'none',
-              opacity: isHovered ? 1 : 0.65,
-              transition: 'opacity 0.2s',
+              cursor: 'pointer',
+              padding: 0,
+              transition: 'all 0.2s ease',
+              boxShadow: '0 2px 6px rgba(0,0,0,0.3)',
             }}
-            title="Click to enlarge"
+            onMouseEnter={(e) => {
+              e.currentTarget.style.background = 'var(--accent, #C4386C)';
+              e.currentTarget.style.transform = 'scale(1.1)';
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.background = 'rgba(10, 10, 16, 0.65)';
+              e.currentTarget.style.transform = 'scale(1)';
+            }}
           >
-            <ZoomIn size={12} />
-          </div>
+            <Maximize2 size={13} strokeWidth={2.2} />
+          </button>
 
           {/* Bottom-Right Wishlist Button */}
           <button

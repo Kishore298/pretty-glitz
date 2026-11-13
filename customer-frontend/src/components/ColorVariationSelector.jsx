@@ -131,10 +131,12 @@ const ColorVariationSelector = ({
             );
 
             const thumbImg = cVar.images?.[0]?.url || fallbackImage;
-            const isOutOfStock = cVar.inStock === false || (
-              Array.isArray(cVar.sizes) &&
-              cVar.sizes.length > 0 &&
-              cVar.sizes.every((s) => s.inStock === false || (typeof s.stockCount === 'number' && s.stockCount <= 0))
+            // Variant is in stock if any of its sizes has inStock !== false, or if no sizes and cVar.inStock !== false.
+            // Stock counts are optional; unentered counts (0) with inStock=true remain in-stock.
+            const isOutOfStock = (
+              Array.isArray(cVar.sizes) && cVar.sizes.length > 0
+                ? cVar.sizes.every((s) => s.inStock === false)
+                : cVar.inStock === false
             );
 
             return (
@@ -154,16 +156,16 @@ const ColorVariationSelector = ({
                   display: 'flex',
                   flexDirection: 'column',
                   alignItems: 'center',
-                  padding: '6px 4px 8px',
+                  padding: '6px 6px 8px',
                   borderRadius: 12,
                   border: isSelected
                     ? '2px solid var(--accent, #C4386C)'
                     : '1px solid var(--border)',
                   background: isSelected
-                    ? (isDark ? 'rgba(196,56,108,0.18)' : 'rgba(196,56,108,0.06)')
+                    ? (isDark ? 'rgba(196,56,108,0.16)' : 'rgba(196,56,108,0.05)')
                     : (isDark ? 'rgba(255,255,255,0.03)' : '#FFFFFF'),
                   boxShadow: isSelected
-                    ? '0 4px 14px rgba(196,56,108,0.24)'
+                    ? '0 3px 12px rgba(196,56,108,0.22)'
                     : 'none',
                   cursor: 'pointer',
                   transition: 'border-color 0.2s, box-shadow 0.2s, background-color 0.2s',
@@ -216,18 +218,19 @@ const ColorVariationSelector = ({
                   </span>
                 )}
 
-                {/* Thumbnail Image Container */}
+                {/* Thumbnail Image Container - Clean single container without inner border */}
                 <div
                   style={{
-                    width: 50,
-                    height: 50,
+                    width: '100%',
+                    aspectRatio: '1 / 1',
+                    maxHeight: 56,
                     borderRadius: 8,
                     overflow: 'hidden',
                     background: cVar.colorCode || '#FAF6EE',
-                    border: '1px solid var(--border)',
+                    border: 'none',
                     position: 'relative',
                     flexShrink: 0,
-                    marginBottom: 5,
+                    marginBottom: 6,
                   }}
                 >
                   {thumbImg ? (
