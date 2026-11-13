@@ -23,6 +23,8 @@ import CollectionProductDetailCard from '../components/CollectionProductDetailCa
 import LotusDivider from '../components/LotusDivider';
 import ProductDescriptionDisplay from '../components/ProductDescriptionDisplay';
 import BangleSizeChartModal from '../components/BangleSizeChartModal';
+import ProductImageModal from '../components/ProductImageModal';
+import ColorVariationSelector from '../components/ColorVariationSelector';
 import logoImg from '../assets/pretty-glitz-logo.png';
 
 const ProductDetail = () => {
@@ -45,6 +47,7 @@ const ProductDetail = () => {
   const [touchStartX, setTouchStartX] = useState(null);
   const [touchEndX, setTouchEndX] = useState(null);
   const [showSizeChart, setShowSizeChart] = useState(false);
+  const [isImageModalOpen, setIsImageModalOpen] = useState(false);
 
   // Accordion States (Collapsed by default as required)
   const [detailsOpen, setDetailsOpen] = useState(false);
@@ -58,7 +61,19 @@ const ProductDetail = () => {
 
   useEffect(() => {
     fetchProduct();
-    window.scrollTo(0, 0);
+    // Instantly reset scroll to top without visible smooth scrolling animation
+    const html = document.documentElement;
+    const prevBehavior = html.style.scrollBehavior;
+    html.style.scrollBehavior = 'auto';
+    try {
+      window.scrollTo({ top: 0, left: 0, behavior: 'instant' });
+    } catch (err) {
+      window.scrollTo(0, 0);
+    }
+    const raf = requestAnimationFrame(() => {
+      html.style.scrollBehavior = prevBehavior;
+    });
+    return () => cancelAnimationFrame(raf);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [id]);
 
@@ -255,6 +270,11 @@ const ProductDetail = () => {
           <div className="product-gallery-wrapper">
             <div
               className="product-gallery-main"
+              onClick={() => {
+                if (!touchStartX || !touchEndX || Math.abs(touchStartX - touchEndX) < 10) {
+                  setIsImageModalOpen(true);
+                }
+              }}
               onMouseEnter={() => setIsZoomed(true)}
               onMouseLeave={() => setIsZoomed(false)}
               onMouseMove={handleMouseMove}
@@ -417,7 +437,16 @@ const ProductDetail = () => {
               )}
 
               {!isZoomed && (
-                <div className="product-gallery-zoom-badge">
+                <div
+                  className="product-gallery-zoom-badge"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setIsImageModalOpen(true);
+                  }}
+                  role="button"
+                  aria-label="Enlarge product image"
+                  style={{ cursor: 'pointer' }}
+                >
                   <ZoomIn size={16} />
                 </div>
               )}
@@ -504,74 +533,14 @@ const ProductDetail = () => {
                 )}
               </div>
 
-              {/* Flipkart-Style Colour Variation Thumbnail Cards */}
+              {/* Colour Variation Selector with Expand/Collapse */}
               {product.colorVariants && product.colorVariants.length > 0 && (
-                <div className="product-detail-section" style={{ marginBottom: 18 }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 10 }}>
-                    <span className="product-detail-label" style={{ margin: 0 }}>
-                      Colour:
-                    </span>
-                    <span style={{ fontWeight: 700, color: 'var(--text)', fontSize: '0.92rem' }}>
-                      {selectedColor?.colorName || 'Select Colour'}
-                    </span>
-                  </div>
-                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: 10 }}>
-                    {product.colorVariants.map((cVar) => {
-                      const isSelected = (selectedColor?._id && cVar._id && selectedColor._id.toString() === cVar._id.toString()) ||
-                                        selectedColor?.colorName === cVar.colorName;
-                      const thumbImg = cVar.images?.[0]?.url || product.images?.[0]?.url;
-                      return (
-                        <button
-                          key={cVar._id || cVar.colorName}
-                          type="button"
-                          onClick={() => handleColorSelect(cVar)}
-                          style={{
-                            position: 'relative',
-                            display: 'flex',
-                            flexDirection: 'column',
-                            alignItems: 'center',
-                            gap: 6,
-                            padding: '6px 8px',
-                            borderRadius: 12,
-                            border: isSelected ? '2px solid var(--accent, #C4386C)' : '1px solid var(--border)',
-                            background: isSelected ? 'rgba(196,56,108,0.08)' : 'var(--bg-secondary)',
-                            cursor: 'pointer',
-                            boxShadow: isSelected ? '0 4px 16px rgba(196,56,108,0.25)' : 'none',
-                            transition: 'all 0.2s ease',
-                            minWidth: 64,
-                            opacity: cVar.inStock === false ? 0.6 : 1,
-                          }}
-                        >
-                          <div style={{
-                            width: 44,
-                            height: 44,
-                            borderRadius: 8,
-                            overflow: 'hidden',
-                            border: '1px solid rgba(0,0,0,0.1)',
-                            background: cVar.colorCode || '#C4386C',
-                            position: 'relative'
-                          }}>
-                            {thumbImg && (
-                              <img
-                                src={optimizeImageUrl(thumbImg, 100)}
-                                alt={cVar.colorName}
-                                style={{ width: '100%', height: '100%', objectFit: 'cover' }}
-                              />
-                            )}
-                          </div>
-                          <span style={{ fontSize: '0.72rem', fontWeight: isSelected ? 700 : 500, color: 'var(--text)', whiteSpace: 'nowrap' }}>
-                            {cVar.colorName}
-                          </span>
-                          {cVar.inStock === false && (
-                            <span style={{ position: 'absolute', top: -4, right: -4, background: '#EF4444', color: '#FFF', fontSize: '9px', fontWeight: 800, padding: '1px 5px', borderRadius: 6 }}>
-                              Sold Out
-                            </span>
-                          )}
-                        </button>
-                      );
-                    })}
-                  </div>
-                </div>
+                <ColorVariationSelector
+                  colorVariants={product.colorVariants}
+                  selectedColor={selectedColor}
+                  onSelectColor={handleColorSelect}
+                  fallbackImage={product.images?.[0]?.url}
+                />
               )}
 
               {/* Bangle Size Selector with Live Stock Availability */}
@@ -939,6 +908,15 @@ const ProductDetail = () => {
       <BangleSizeChartModal
         isOpen={showSizeChart}
         onClose={() => setShowSizeChart(false)}
+      />
+
+      {/* Enlarged Product Image Lightbox Modal */}
+      <ProductImageModal
+        isOpen={isImageModalOpen}
+        onClose={() => setIsImageModalOpen(false)}
+        product={product}
+        images={galleryImages}
+        initialIndex={activeImage}
       />
     </div>
   );

@@ -21,6 +21,7 @@ import { optimizeImageUrl } from '../utils/cloudinary';
 import ProductDescriptionDisplay from './ProductDescriptionDisplay';
 import BangleSizeChartModal from './BangleSizeChartModal';
 import ProductImageModal from './ProductImageModal';
+import ColorVariationSelector from './ColorVariationSelector';
 import logoImg from '../assets/pretty-glitz-logo.png';
 
 const CollectionProductDetailCard = ({ product, isLast = false }) => {
@@ -532,66 +533,14 @@ const CollectionProductDetailCard = ({ product, isLast = false }) => {
             )}
           </div>
 
-          {/* Flipkart-Style Colour Variation Cards if present */}
+          {/* Colour Variation Selector with Expand/Collapse */}
           {product.colorVariants && product.colorVariants.length > 0 && (
-            <div style={{ marginBottom: 16 }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8 }}>
-                <span
-                  style={{
-                    fontSize: '0.76rem',
-                    fontWeight: 700,
-                    letterSpacing: '0.08em',
-                    textTransform: 'uppercase',
-                    color: 'var(--text)',
-                  }}
-                >
-                  Colour:
-                </span>
-                <span style={{ fontSize: '0.86rem', fontWeight: 700, color: 'var(--text)' }}>
-                  {selectedColor?.colorName || 'Select Colour'}
-                </span>
-              </div>
-              <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-                {product.colorVariants.map((cVar) => {
-                  const isSelected = selectedColor?._id?.toString() === cVar._id?.toString() || selectedColor?.colorName === cVar.colorName;
-                  const thumb = cVar.images?.[0]?.url || product.images?.[0]?.url;
-                  return (
-                    <button
-                      key={cVar._id || cVar.colorName}
-                      type="button"
-                      onClick={() => handleSelectColor(cVar)}
-                      style={{
-                        display: 'flex',
-                        alignItems: 'center',
-                        gap: 6,
-                        padding: '4px 8px',
-                        borderRadius: 10,
-                        border: isSelected ? '2px solid var(--accent, #C4386C)' : '1px solid var(--border)',
-                        background: isSelected ? 'rgba(196,56,108,0.08)' : 'var(--bg-secondary)',
-                        cursor: 'pointer',
-                        transition: 'all 0.15s ease',
-                      }}
-                    >
-                      <div
-                        style={{
-                          width: 22,
-                          height: 22,
-                          borderRadius: 6,
-                          overflow: 'hidden',
-                          background: cVar.colorCode || '#C4386C',
-                          flexShrink: 0,
-                        }}
-                      >
-                        {thumb && <img src={optimizeImageUrl(thumb, 60)} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />}
-                      </div>
-                      <span style={{ fontSize: '0.76rem', fontWeight: isSelected ? 700 : 500, color: 'var(--text)' }}>
-                        {cVar.colorName}
-                      </span>
-                    </button>
-                  );
-                })}
-              </div>
-            </div>
+            <ColorVariationSelector
+              colorVariants={product.colorVariants}
+              selectedColor={selectedColor}
+              onSelectColor={handleSelectColor}
+              fallbackImage={product.images?.[0]?.url}
+            />
           )}
 
           {/* Variant Selection: Bangles Sizes */}
@@ -879,6 +828,7 @@ const CollectionProductDetailCard = ({ product, isLast = false }) => {
         isOpen={isEnlargedModalOpen}
         onClose={() => setIsEnlargedModalOpen(false)}
         product={product}
+        images={images}
         initialIndex={activeImg}
       />
     </div>

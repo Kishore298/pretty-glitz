@@ -64,10 +64,18 @@ const ProductCard = ({ product, showVariants = false }) => {
     setIsEnlargedModalOpen(true);
   };
 
-  // Products with sizes/pieceCounts need the detail page for selection
-  const needsDetailPage =
-    ((product.category || '').toLowerCase().includes('bangles') && product.sizes?.length > 0) ||
-    product.pieceCounts?.length > 0;
+  // Standardise all products belonging to any bangle category, or having variations/sizes/pieces to 'Options'
+  const isBangleCategory =
+    Boolean(product.category && /bangle/i.test(product.category)) ||
+    Boolean(product.subcategory && /bangle/i.test(product.subcategory));
+
+  const hasOptions =
+    isBangleCategory ||
+    Boolean(product.colorVariants && product.colorVariants.length > 0) ||
+    Boolean(product.sizes && product.sizes.length > 0) ||
+    Boolean(product.pieceCounts && product.pieceCounts.length > 0);
+
+  const needsDetailPage = hasOptions;
 
   const inCart = isInCart(product._id);
   const cartQty = getCartItemQuantity(product._id);
