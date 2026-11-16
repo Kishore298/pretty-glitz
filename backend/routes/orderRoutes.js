@@ -1,15 +1,19 @@
 const express = require('express');
 const router = express.Router();
-const { protectAdmin } = require('../middleware/authMiddleware');
+const { protectAdmin, protectCustomer } = require('../middleware/authMiddleware');
 const {
   createOrder,
   getOrders,
   getOrderById,
+  getMyOrders,
   updateOrderStatus,
 } = require('../controllers/orderController');
 
 // Customer places order request
 router.post('/', createOrder);
+
+// Customer view their own orders
+router.get('/my-orders', protectCustomer, getMyOrders);
 
 // Admin Order Management
 router.get('/', protectAdmin, getOrders);

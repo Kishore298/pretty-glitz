@@ -301,7 +301,6 @@ const AddEditProductModal = ({ isOpen, onClose, productId, onSuccess, isOfferPre
             justifyContent: 'center',
             padding: 24,
           }}
-          onClick={onClose}
         >
           <motion.div
             initial={{ opacity: 0, scale: 0.94, y: 16 }}

@@ -37,6 +37,14 @@ const STATUS_CONFIG = {
     border: 'rgba(59, 130, 246, 0.35)',
     icon: CheckCircle,
   },
+  PROCESSING: {
+    label: 'Processing',
+    badge: 'Processing',
+    color: '#EC4899',
+    bg: 'rgba(236, 72, 153, 0.12)',
+    border: 'rgba(236, 72, 153, 0.35)',
+    icon: Clock,
+  },
   DISPATCHED: {
     label: 'Dispatched',
     badge: 'Dispatched',
@@ -75,7 +83,14 @@ const Orders = () => {
   const [searchQuery, setSearchQuery] = useState('');
   const [statusCounts, setStatusCounts] = useState({});
   const [selectedOrder, setSelectedOrder] = useState(null);
+  const [trackingInput, setTrackingInput] = useState('');
   const [statusUpdating, setStatusUpdating] = useState(false);
+
+  useEffect(() => {
+    if (selectedOrder) {
+      setTrackingInput(selectedOrder.trackingId || '');
+    }
+  }, [selectedOrder]);
   const [page, setPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
   const [totalOrders, setTotalOrders] = useState(0);
@@ -144,18 +159,23 @@ const Orders = () => {
     fetchOrders();
   }, [fetchOrders]);
 
-  // Update order status
-  const handleUpdateStatus = async (orderId, newStatus) => {
+  // Update order status & tracking
+  const handleUpdateStatus = async (orderId, newStatus, trackingNum = null) => {
     setStatusUpdating(true);
     try {
-      const res = await api.patch(`/orders/${orderId}/status`, { status: newStatus });
+      const payload = { status: newStatus };
+      if (trackingNum !== null) {
+        payload.trackingId = trackingNum;
+        payload.courierPartner = 'ST Courier';
+      }
+      const res = await api.patch(`/orders/${orderId}/status`, payload);
       if (res.data && res.data.success) {
         toast.success(`Order status updated to ${newStatus}`);
         setOrders((prev) =>
-          prev.map((o) => (o.orderId === orderId ? { ...o, status: newStatus } : o))
+          prev.map((o) => (o.orderId === orderId ? { ...o, ...res.data.order } : o))
         );
         if (selectedOrder && selectedOrder.orderId === orderId) {
-          setSelectedOrder((prev) => ({ ...prev, status: newStatus }));
+          setSelectedOrder((prev) => ({ ...prev, ...res.data.order }));
         }
       }
     } catch (err) {
@@ -661,7 +681,7 @@ const Orders = () => {
                   <select
                     value={selectedOrder.status}
                     disabled={statusUpdating}
-                    onChange={(e) => handleUpdateStatus(selectedOrder.orderId, e.target.value)}
+                    onChange={(e) => handleUpdateStatus(selectedOrder.orderId, e.target.value, trackingInput)}
                     style={{
                       background: '#1A1828',
                       border: '1px solid rgba(201, 168, 76, 0.35)',
@@ -676,10 +696,71 @@ const Orders = () => {
                   >
                     <option value="PENDING_WHATSAPP">Pending WhatsApp</option>
                     <option value="CONFIRMED">Confirmed</option>
+                    <option value="PROCESSING">Processing</option>
                     <option value="DISPATCHED">Dispatched</option>
                     <option value="DELIVERED">Delivered</option>
                     <option value="CANCELLED">Cancelled</option>
                   </select>
+                </div>
+              </div>
+
+              {/* Courier Tracking Section */}
+              <div
+                style={{
+                  background: 'rgba(139, 92, 246, 0.08)',
+                  border: '1px solid rgba(139, 92, 246, 0.25)',
+                  borderRadius: 12,
+                  padding: '14px 18px',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  gap: 10,
+                }}
+              >
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 8 }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                    <Truck size={17} color="#8B5CF6" />
+                    <span style={{ fontSize: '0.84rem', fontWeight: 700, color: '#FAF9FC' }}>
+                      ST Courier Tracking Information
+                    </span>
+                  </div>
+                  {selectedOrder.trackingId && (
+                    <a
+                      href={`https://stcourier.com/track?tracking_no=${encodeURIComponent(selectedOrder.trackingId)}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      style={{
+                        fontSize: '0.78rem',
+                        color: '#A78BFA',
+                        textDecoration: 'none',
+                        display: 'inline-flex',
+                        alignItems: 'center',
+                        gap: 4,
+                        fontWeight: 600,
+                      }}
+                    >
+                      Open ST Courier Tracker <ExternalLink size={12} />
+                    </a>
+                  )}
+                </div>
+
+                <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+                  <input
+                    type="text"
+                    value={trackingInput}
+                    onChange={(e) => setTrackingInput(e.target.value)}
+                    placeholder="Enter ST Courier tracking / waybill number..."
+                    className="admin-input"
+                    style={{ height: 38, fontSize: '0.84rem', flex: 1 }}
+                  />
+                  <button
+                    type="button"
+                    onClick={() => handleUpdateStatus(selectedOrder.orderId, selectedOrder.status, trackingInput)}
+                    disabled={statusUpdating}
+                    className="btn-primary"
+                    style={{ height: 38, padding: '0 16px', fontSize: '0.82rem', whiteSpace: 'nowrap' }}
+                  >
+                    Save Tracking
+                  </button>
                 </div>
               </div>
 

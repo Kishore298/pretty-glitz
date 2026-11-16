@@ -50,6 +50,11 @@ const Home = () => {
         const el = document.getElementById('bestsellers');
         if (el) el.scrollIntoView({ behavior: 'smooth' });
       }, 350);
+    } else if (window.location.hash === '#categories') {
+      setTimeout(() => {
+        const el = document.getElementById('categories');
+        if (el) el.scrollIntoView({ behavior: 'smooth' });
+      }, 350);
     }
   }, []);
 
@@ -278,6 +283,7 @@ const Home = () => {
 
       {/* Collections Grid — restored to the earlier collection-grid/theme-card design */}
       <section
+        id="categories"
         ref={collectionsRef}
         className="section-padding section-py"
         style={{ maxWidth: 1280, margin: '0 auto', scrollMarginTop: 80 }}

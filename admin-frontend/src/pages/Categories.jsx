@@ -7,16 +7,9 @@ import {
   Trash2,
   Plus,
   Sparkles,
-  Gem,
-  Crown,
-  Heart,
-  Flower2,
-  Gift,
-  MoreHorizontal,
   X,
   GripVertical,
-  Layers,
-  ArrowRight
+  Layers
 } from 'lucide-react';
 import ImageUpload from '../components/ImageUpload';
 import ConfirmModal from '../components/ConfirmModal';
@@ -34,19 +27,6 @@ const luxuryGradients = [
   { from: 'rgba(236, 72, 153, 0.22)', to: 'rgba(138, 43, 226, 0.08)', accent: '#EC4899', ring: '#C9A84C' },
   { from: 'rgba(168, 85, 247, 0.22)', to: 'rgba(196, 56, 108, 0.08)', accent: '#A855F7', ring: '#C9A84C' },
 ];
-
-const catIcons = {
-  'Designer Glass Bangles': <Sparkles size={24} />,
-  'Bangles': <Sparkles size={24} />,
-  'Glass Bangles': <Gem size={24} />,
-  'Valaikaappu Bangles': <Crown size={24} />,
-  'Antique Bangles': <Crown size={24} />,
-  'Wedding Bangles': <Heart size={24} />,
-  'Artificial Flowers': <Flower2 size={24} />,
-  'Gift Box Combo': <Gift size={24} />,
-  'Jumkhas': <Gem size={24} />,
-  'Jewels': <Crown size={24} />,
-};
 
 const optimizeImageUrl = (url, opts = {}) => {
   if (!url || !url.includes('cloudinary.com')) return url;
@@ -67,21 +47,9 @@ const Categories = () => {
   const [editId, setEditId] = useState(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [deleteConfirm, setDeleteConfirm] = useState(null);
-  const [activeMenu, setActiveMenu] = useState(null);
 
   useEffect(() => {
     fetchCategories();
-  }, []);
-
-  // Close menus on outside click
-  useEffect(() => {
-    const handleOutside = (e) => {
-      if (!e.target.closest('.category-action-menu') && !e.target.closest('.category-menu-btn')) {
-        setActiveMenu(null);
-      }
-    };
-    document.addEventListener('mousedown', handleOutside);
-    return () => document.removeEventListener('mousedown', handleOutside);
   }, []);
 
   const fetchCategories = async () => {
@@ -208,7 +176,7 @@ const Categories = () => {
       >
         <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
           <Sparkles size={16} color="var(--accent-gold)" />
-          <span>Horizontal sequence reordering is synced automatically with the customer navigation and homepage collections.</span>
+          <span>Drag vertical cards up and down to customize collection hierarchy and storefront sequence.</span>
         </div>
         <div style={{ fontSize: '0.78rem', color: 'var(--accent-gold-light)', fontWeight: 600 }}>
           Auto-Saved
@@ -230,15 +198,18 @@ const Categories = () => {
         />
       ) : (
         <DragDropContext onDragEnd={onDragEnd}>
-          <Droppable droppableId="categories-list" direction="horizontal">
+          <Droppable droppableId="categories-list" direction="vertical">
             {(provided) => (
               <div
                 {...provided.droppableProps}
                 ref={provided.innerRef}
                 style={{
-                  display: 'grid',
-                  gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))',
-                  gap: 22,
+                  display: 'flex',
+                  flexDirection: 'column',
+                  gap: 12,
+                  maxWidth: 900,
+                  width: '100%',
+                  margin: '0 auto',
                 }}
               >
                 {categories.map((category, index) => {
@@ -260,101 +231,105 @@ const Categories = () => {
                           }}
                         >
                           <motion.div
-                            initial={{ opacity: 0, y: 16 }}
+                            initial={{ opacity: 0, y: 12 }}
                             animate={{ opacity: 1, y: 0 }}
-                            transition={{ delay: index * 0.04, duration: 0.25 }}
+                            transition={{ delay: index * 0.03, duration: 0.2 }}
                             style={{
                               cursor: snapshot.isDragging ? 'grabbing' : 'grab',
-                              borderRadius: 18,
-                              overflow: 'hidden',
-                              background: 'var(--surface-primary, #14131E)',
+                              borderRadius: 14,
+                              background: snapshot.isDragging
+                                ? 'linear-gradient(135deg, rgba(201, 168, 76, 0.15), rgba(30, 27, 45, 0.95))'
+                                : 'var(--surface-primary, #14131E)',
                               border: snapshot.isDragging
                                 ? '1px solid var(--accent-gold)'
                                 : '1px solid var(--card-border, rgba(201, 168, 76, 0.12))',
-                              display: 'flex',
-                              flexDirection: 'column',
-                              height: '100%',
-                              position: 'relative',
                               boxShadow: snapshot.isDragging
-                                ? '0 16px 40px rgba(0, 0, 0, 0.5), 0 0 24px rgba(201, 168, 76, 0.25)'
-                                : '0 4px 16px rgba(0, 0, 0, 0.2)',
-                              transform: snapshot.isDragging ? 'translateY(-6px)' : undefined,
-                              transition: 'border-color 0.2s, box-shadow 0.2s',
+                                ? '0 16px 36px rgba(0, 0, 0, 0.5), 0 0 20px rgba(201, 168, 76, 0.25)'
+                                : '0 4px 16px rgba(0, 0, 0, 0.15)',
+                              padding: '12px 18px',
+                              display: 'flex',
+                              alignItems: 'center',
+                              justifyContent: 'space-between',
+                              gap: 16,
+                              transition: 'border-color 0.2s, box-shadow 0.2s, transform 0.2s',
+                              transform: snapshot.isDragging ? 'scale(1.015)' : undefined,
                             }}
                             onMouseEnter={(e) => {
                               if (!snapshot.isDragging) {
                                 e.currentTarget.style.borderColor = 'rgba(201, 168, 76, 0.35)';
-                                e.currentTarget.style.boxShadow = '0 8px 24px rgba(0, 0, 0, 0.3)';
+                                e.currentTarget.style.boxShadow = '0 6px 20px rgba(0, 0, 0, 0.25)';
                               }
                             }}
                             onMouseLeave={(e) => {
                               if (!snapshot.isDragging) {
                                 e.currentTarget.style.borderColor = 'var(--card-border, rgba(201, 168, 76, 0.12))';
-                                e.currentTarget.style.boxShadow = '0 4px 16px rgba(0, 0, 0, 0.2)';
+                                e.currentTarget.style.boxShadow = '0 4px 16px rgba(0, 0, 0, 0.15)';
                               }
                             }}
                           >
-                            {/* Drag Indicator Top Pill */}
-                            <div
-                              style={{
-                                position: 'absolute',
-                                top: 12,
-                                left: 12,
-                                zIndex: 10,
-                                background: 'rgba(10, 10, 15, 0.75)',
-                                backdropFilter: 'blur(8px)',
-                                border: '1px solid rgba(255, 255, 255, 0.12)',
-                                padding: '4px 8px',
-                                borderRadius: 8,
-                                display: 'flex',
-                                alignItems: 'center',
-                                gap: 4,
-                                color: 'var(--text-secondary)',
-                                fontSize: '0.72rem',
-                                fontWeight: 700,
-                              }}
-                            >
-                              <GripVertical size={13} color="var(--accent-gold)" />
-                              <span>#{index + 1}</span>
-                            </div>
-
-                            {/* Image Showcase Area */}
-                            <div style={{ aspectRatio: '16/9', width: '100%', overflow: 'hidden', flexShrink: 0, position: 'relative', background: 'var(--surface-secondary, #1a1829)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                              <img
-                                src={col.bannerImage ? optimizeImageUrl(col.bannerImage, 500) : '/pretty-glitz-logo.png'}
-                                alt={col.name}
-                                onError={(e) => {
-                                  e.currentTarget.onerror = null;
-                                  e.currentTarget.src = '/pretty-glitz-logo.png';
-                                  e.currentTarget.style.objectFit = 'contain';
-                                  e.currentTarget.style.padding = '20px';
-                                }}
-                                style={{
-                                  width: '100%',
-                                  height: '100%',
-                                  objectFit: col.bannerImage ? 'cover' : 'contain',
-                                  padding: col.bannerImage ? '0' : '20px',
-                                  transition: 'transform 0.3s ease',
-                                }}
-                              />
+                            {/* Left Group: Drag handle & Rank, Image Thumbnail, Title */}
+                            <div style={{ display: 'flex', alignItems: 'center', gap: 16, minWidth: 0, flex: 1 }}>
+                              {/* Drag Handle & Order Rank */}
                               <div
                                 style={{
-                                  position: 'absolute',
-                                  inset: 0,
-                                  background: 'linear-gradient(180deg, transparent 40%, rgba(20, 19, 30, 0.9) 100%)',
-                                  pointerEvents: 'none',
+                                  display: 'flex',
+                                  alignItems: 'center',
+                                  gap: 6,
+                                  background: 'rgba(255, 255, 255, 0.05)',
+                                  padding: '6px 10px',
+                                  borderRadius: 8,
+                                  border: '1px solid rgba(255, 255, 255, 0.08)',
+                                  color: 'var(--text-secondary)',
+                                  fontSize: '0.8rem',
+                                  fontWeight: 700,
+                                  userSelect: 'none',
+                                  flexShrink: 0,
                                 }}
-                              />
-                            </div>
+                              >
+                                <GripVertical size={16} color="var(--accent-gold)" />
+                                <span>#{index + 1}</span>
+                              </div>
 
-                            {/* Content Area */}
-                            <div style={{ padding: '18px 20px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12, position: 'relative', marginTop: 'auto' }}>
-                              <div style={{ minWidth: 0 }}>
+                              {/* Banner / Category Thumbnail */}
+                              <div
+                                style={{
+                                  width: 72,
+                                  height: 52,
+                                  borderRadius: 10,
+                                  overflow: 'hidden',
+                                  background: 'var(--surface-secondary, #1a1829)',
+                                  border: '1px solid rgba(255, 255, 255, 0.08)',
+                                  flexShrink: 0,
+                                  display: 'flex',
+                                  alignItems: 'center',
+                                  justifyContent: 'center',
+                                }}
+                              >
+                                <img
+                                  src={col.bannerImage ? optimizeImageUrl(col.bannerImage, 200) : '/pretty-glitz-logo.png'}
+                                  alt={col.name}
+                                  onError={(e) => {
+                                    e.currentTarget.onerror = null;
+                                    e.currentTarget.src = '/pretty-glitz-logo.png';
+                                    e.currentTarget.style.objectFit = 'contain';
+                                    e.currentTarget.style.padding = '8px';
+                                  }}
+                                  style={{
+                                    width: '100%',
+                                    height: '100%',
+                                    objectFit: col.bannerImage ? 'cover' : 'contain',
+                                    padding: col.bannerImage ? 0 : 8,
+                                  }}
+                                />
+                              </div>
+
+                              {/* Category Info */}
+                              <div style={{ minWidth: 0, flex: 1 }}>
                                 <h3
                                   style={{
                                     fontFamily: 'Outfit, sans-serif',
                                     fontWeight: 700,
-                                    fontSize: '1.1rem',
+                                    fontSize: '1rem',
                                     color: 'var(--text-primary)',
                                     margin: 0,
                                     whiteSpace: 'nowrap',
@@ -364,108 +339,86 @@ const Categories = () => {
                                 >
                                   {col.name}
                                 </h3>
-                                <div style={{ fontSize: '0.75rem', color: 'var(--accent-gold-light)', marginTop: 3 }}>
-                                  Front showcase active
+                                <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginTop: 4, flexWrap: 'wrap' }}>
+                                  <span style={{ fontSize: '0.74rem', color: 'var(--accent-gold-light)', fontWeight: 500 }}>
+                                    Storefront Rank: #{index + 1}
+                                  </span>
+                                  <span style={{ fontSize: '0.74rem', color: 'var(--text-secondary)', opacity: 0.7 }}>
+                                    • Synced with Navbar & Homepage
+                                  </span>
                                 </div>
                               </div>
+                            </div>
 
-                              {/* Action Menu */}
-                              <div style={{ position: 'relative' }}>
-                                <button
-                                  className="category-menu-btn"
-                                  onClick={(e) => {
-                                    e.stopPropagation();
-                                    setActiveMenu(activeMenu === category._id ? null : category._id);
-                                  }}
-                                  style={{
-                                    background: activeMenu === category._id ? 'var(--surface-elevated)' : 'rgba(255, 255, 255, 0.05)',
-                                    border: '1px solid var(--card-border)',
-                                    color: 'var(--text-secondary)',
-                                    cursor: 'pointer',
-                                    width: 34,
-                                    height: 34,
-                                    borderRadius: 10,
-                                    display: 'flex',
-                                    alignItems: 'center',
-                                    justifyContent: 'center',
-                                    transition: 'all 0.18s ease',
-                                  }}
-                                >
-                                  <MoreHorizontal size={18} />
-                                </button>
+                            {/* Right Group: Direct Actions (Edit & Delete) */}
+                            <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexShrink: 0 }}>
+                              <button
+                                type="button"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  handleEdit(category);
+                                }}
+                                title="Edit Category"
+                                style={{
+                                  background: 'rgba(201, 168, 76, 0.1)',
+                                  border: '1px solid rgba(201, 168, 76, 0.25)',
+                                  color: 'var(--accent-gold)',
+                                  cursor: 'pointer',
+                                  padding: '8px 14px',
+                                  borderRadius: 8,
+                                  display: 'flex',
+                                  alignItems: 'center',
+                                  gap: 6,
+                                  fontSize: '0.82rem',
+                                  fontWeight: 600,
+                                  transition: 'all 0.18s ease',
+                                }}
+                                onMouseEnter={(e) => {
+                                  e.currentTarget.style.background = 'rgba(201, 168, 76, 0.22)';
+                                  e.currentTarget.style.borderColor = 'var(--accent-gold)';
+                                }}
+                                onMouseLeave={(e) => {
+                                  e.currentTarget.style.background = 'rgba(201, 168, 76, 0.1)';
+                                  e.currentTarget.style.borderColor = 'rgba(201, 168, 76, 0.25)';
+                                }}
+                              >
+                                <Pencil size={14} />
+                                <span>Edit</span>
+                              </button>
 
-                                {activeMenu === category._id && (
-                                  <div
-                                    className="category-action-menu"
-                                    style={{
-                                      position: 'absolute',
-                                      bottom: '100%',
-                                      right: 0,
-                                      marginBottom: 8,
-                                      background: 'var(--surface-elevated, #222033)',
-                                      border: '1px solid var(--card-border, rgba(201, 168, 76, 0.25))',
-                                      borderRadius: 12,
-                                      padding: 6,
-                                      minWidth: 150,
-                                      boxShadow: '0 12px 32px rgba(0,0,0,0.6)',
-                                      zIndex: 30,
-                                    }}
-                                  >
-                                    <button
-                                      onClick={() => {
-                                        handleEdit(category);
-                                        setActiveMenu(null);
-                                      }}
-                                      style={{
-                                        width: '100%',
-                                        background: 'transparent',
-                                        border: 'none',
-                                        color: 'var(--text-primary)',
-                                        padding: '9px 12px',
-                                        borderRadius: 8,
-                                        display: 'flex',
-                                        alignItems: 'center',
-                                        gap: 10,
-                                        cursor: 'pointer',
-                                        fontSize: '0.85rem',
-                                        fontWeight: 500,
-                                        transition: 'background 0.15s',
-                                      }}
-                                      onMouseEnter={(e) => (e.currentTarget.style.background = 'rgba(255, 255, 255, 0.06)')}
-                                      onMouseLeave={(e) => (e.currentTarget.style.background = 'transparent')}
-                                    >
-                                      <Pencil size={15} style={{ color: 'var(--accent-gold)' }} />
-                                      <span>Edit Category</span>
-                                    </button>
-                                    <button
-                                      onClick={() => {
-                                        setDeleteConfirm(category._id);
-                                        setActiveMenu(null);
-                                      }}
-                                      style={{
-                                        width: '100%',
-                                        background: 'transparent',
-                                        border: 'none',
-                                        color: '#EF4444',
-                                        padding: '9px 12px',
-                                        borderRadius: 8,
-                                        display: 'flex',
-                                        alignItems: 'center',
-                                        gap: 10,
-                                        cursor: 'pointer',
-                                        fontSize: '0.85rem',
-                                        fontWeight: 500,
-                                        transition: 'background 0.15s',
-                                      }}
-                                      onMouseEnter={(e) => (e.currentTarget.style.background = 'rgba(239, 68, 68, 0.12)')}
-                                      onMouseLeave={(e) => (e.currentTarget.style.background = 'transparent')}
-                                    >
-                                      <Trash2 size={15} />
-                                      <span>Delete</span>
-                                    </button>
-                                  </div>
-                                )}
-                              </div>
+                              <button
+                                type="button"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  setDeleteConfirm(category._id);
+                                }}
+                                title="Delete Category"
+                                style={{
+                                  background: 'rgba(239, 68, 68, 0.1)',
+                                  border: '1px solid rgba(239, 68, 68, 0.25)',
+                                  color: '#EF4444',
+                                  cursor: 'pointer',
+                                  padding: '8px 12px',
+                                  borderRadius: 8,
+                                  display: 'flex',
+                                  alignItems: 'center',
+                                  gap: 6,
+                                  fontSize: '0.82rem',
+                                  fontWeight: 600,
+                                  transition: 'all 0.18s ease',
+                                }}
+                                onMouseEnter={(e) => {
+                                  e.currentTarget.style.background = 'rgba(239, 68, 68, 0.22)';
+                                  e.currentTarget.style.borderColor = '#EF4444';
+                                }}
+                                onMouseLeave={(e) => {
+                                  e.currentTarget.style.background = 'rgba(239, 68, 68, 0.1)';
+                                  e.currentTarget.style.borderColor = 'rgba(239, 68, 68, 0.25)';
+                                }}
+                              >
+                                <Trash2 size={14} />
+                                <span>Delete</span>
+                              </button>
                             </div>
                           </motion.div>
                         </div>

@@ -4,7 +4,7 @@ import { useTheme } from '../context/ThemeContext';
 import { CartContext } from '../context/CartContext';
 import { useWishlist } from '../context/WishlistContext';
 import { optimizeImageUrl } from '../utils/cloudinary';
-import { ShoppingBag, Plus, Minus, Sparkles, Heart, Maximize2, ChevronLeft, ChevronRight } from 'lucide-react';
+import { ShoppingBag, Plus, Minus, Sparkles, Heart, ChevronLeft, ChevronRight } from 'lucide-react';
 import ProductImageModal from './ProductImageModal';
 import logoImg from '../assets/pretty-glitz-logo.png';
 
@@ -189,7 +189,7 @@ const ProductCard = ({ product, showVariants = false }) => {
             </div>
           )}
 
-          {/* Dots Indicator for Mobile Swipe */}
+          {/* Dots Indicator for Multi-Image (Clean loop without jump or auto-scroll) */}
           {hasMultipleImages && (
             <div
               style={{
@@ -199,21 +199,35 @@ const ProductCard = ({ product, showVariants = false }) => {
                 transform: 'translateX(-50%)',
                 display: 'flex',
                 alignItems: 'center',
-                gap: 4,
-                zIndex: 2,
-                background: 'rgba(0,0,0,0.35)',
-                backdropFilter: 'blur(4px)',
-                WebkitBackdropFilter: 'blur(4px)',
-                padding: '3px 7px',
+                gap: 5,
+                zIndex: 4,
+                background: 'rgba(0,0,0,0.45)',
+                backdropFilter: 'blur(6px)',
+                WebkitBackdropFilter: 'blur(6px)',
+                padding: '3px 8px',
                 borderRadius: 999,
-                pointerEvents: 'none',
+              }}
+              onClick={(e) => {
+                e.preventDefault();
+                e.stopPropagation();
               }}
             >
               {images.map((_, i) => (
-                <span
+                <button
                   key={i}
+                  type="button"
+                  onClick={(e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    setActiveImgIndex(i);
+                  }}
+                  aria-label={`View image ${i + 1}`}
                   style={{
-                    width: i === activeImgIndex ? 12 : 5,
+                    border: 'none',
+                    padding: 0,
+                    margin: 0,
+                    cursor: 'pointer',
+                    width: i === activeImgIndex ? 14 : 5,
                     height: 5,
                     borderRadius: 999,
                     background: i === activeImgIndex ? '#FFFFFF' : 'rgba(255,255,255,0.45)',
@@ -333,48 +347,6 @@ const ProductCard = ({ product, showVariants = false }) => {
             )}
           </div>
 
-          {/* Top-Right Expand Pop-out Button */}
-          <button
-            type="button"
-            onClick={(e) => {
-              e.preventDefault();
-              e.stopPropagation();
-              setIsEnlargedModalOpen(true);
-            }}
-            aria-label={`Enlarge photo for ${product.name}`}
-            title="Enlarge preview"
-            style={{
-              position: 'absolute',
-              top: 6,
-              right: 6,
-              zIndex: 3,
-              width: 26,
-              height: 26,
-              borderRadius: '50%',
-              background: 'rgba(10, 10, 16, 0.65)',
-              backdropFilter: 'blur(4px)',
-              WebkitBackdropFilter: 'blur(4px)',
-              border: '1px solid rgba(255, 255, 255, 0.25)',
-              color: '#FFFFFF',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              cursor: 'pointer',
-              padding: 0,
-              transition: 'all 0.2s ease',
-              boxShadow: '0 2px 6px rgba(0,0,0,0.3)',
-            }}
-            onMouseEnter={(e) => {
-              e.currentTarget.style.background = 'var(--accent, #C4386C)';
-              e.currentTarget.style.transform = 'scale(1.1)';
-            }}
-            onMouseLeave={(e) => {
-              e.currentTarget.style.background = 'rgba(10, 10, 16, 0.65)';
-              e.currentTarget.style.transform = 'scale(1)';
-            }}
-          >
-            <Maximize2 size={13} strokeWidth={2.2} />
-          </button>
 
           {/* Bottom-Right Wishlist Button */}
           <button

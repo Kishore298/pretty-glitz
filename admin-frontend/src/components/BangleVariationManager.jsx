@@ -661,6 +661,10 @@ const BangleVariationManager = ({
                   flexDirection: 'column',
                   gap: 16,
                   position: 'relative',
+                  boxSizing: 'border-box',
+                  overflow: 'hidden',
+                  width: '100%',
+                  maxWidth: '100%',
                 }}
               >
                 {/* ─── Card Header Row ─── */}
@@ -680,8 +684,8 @@ const BangleVariationManager = ({
                       display: 'flex',
                       alignItems: 'center',
                       gap: 10,
-                      flex: 1,
-                      minWidth: 260,
+                      flex: '1 1 240px',
+                      minWidth: 0,
                     }}
                   >
                     {/* Swatch color picker input */}
@@ -759,8 +763,10 @@ const BangleVariationManager = ({
                     style={{
                       display: 'flex',
                       alignItems: 'center',
-                      gap: 12,
-                      flexShrink: 0,
+                      gap: 10,
+                      flexWrap: 'wrap',
+                      justifyContent: 'flex-end',
+                      maxWidth: '100%',
                     }}
                   >
                     {/* Default Colour Radio */}

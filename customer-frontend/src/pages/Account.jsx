@@ -1,12 +1,13 @@
-import React, { useContext } from 'react';
+import React, { useContext, useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { User, Phone, Heart, ShoppingBag, LogOut, MessageCircle, ArrowRight } from 'lucide-react';
+import { User, Phone, Heart, ShoppingBag, LogOut, MessageCircle, ArrowRight, Package, Truck, ExternalLink } from 'lucide-react';
 import { AuthContext } from '../context/AuthContext';
 import { CartContext } from '../context/CartContext';
 import { useWishlist } from '../context/WishlistContext';
 import { useTheme } from '../context/ThemeContext';
 import { getWhatsAppUrl, IS_WHATSAPP_CONFIGURED } from '../config/constants';
+import api from '../utils/api';
 
 const Account = () => {
   const { user, logout } = useContext(AuthContext);
@@ -15,8 +16,22 @@ const Account = () => {
   const { isDark } = useTheme();
   const navigate = useNavigate();
 
+  const [orders, setOrders] = useState([]);
+  const [loadingOrders, setLoadingOrders] = useState(true);
+
   const cartCount = getCartCount();
   const wishlistCount = getWishlistCount();
+
+  useEffect(() => {
+    if (user) {
+      api.get('/orders/my-orders')
+        .then(res => setOrders(res.data.orders || []))
+        .catch(err => console.error('Failed to load orders', err))
+        .finally(() => setLoadingOrders(false));
+    } else {
+      setLoadingOrders(false);
+    }
+  }, [user]);
 
   const handleLogout = () => {
     logout();
@@ -246,6 +261,181 @@ const Account = () => {
           </div>
           <ArrowRight size={18} style={{ color: 'var(--text-muted)' }} />
         </Link>
+      </div>
+
+      {/* My Orders & Delivery Tracking Section */}
+      <div style={{ marginBottom: 28 }}>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16 }}>
+          <h2 style={{ fontSize: '1.25rem', fontWeight: 700, margin: 0, color: 'var(--text)', fontFamily: "'Cormorant Garamond', Georgia, serif" }}>
+            My Orders & Tracking
+          </h2>
+          <span style={{ fontSize: '0.8rem', color: 'var(--text-secondary)' }}>
+            {orders.length} order{orders.length !== 1 ? 's' : ''}
+          </span>
+        </div>
+
+        {loadingOrders ? (
+          <div style={{ padding: '24px', textAlign: 'center', color: 'var(--text-secondary)', background: isDark ? 'var(--bg-secondary)' : '#FFF', borderRadius: 16, border: '1px solid var(--border)' }}>
+            Loading your orders...
+          </div>
+        ) : orders.length === 0 ? (
+          <div style={{
+            padding: '32px 20px',
+            textAlign: 'center',
+            background: isDark ? 'var(--bg-secondary)' : '#FFF',
+            borderRadius: 16,
+            border: '1px solid var(--border)',
+          }}>
+            <Package size={32} style={{ color: 'var(--text-muted)', margin: '0 auto 12px' }} />
+            <p style={{ margin: '0 0 6px', fontWeight: 600, color: 'var(--text)' }}>No orders placed yet</p>
+            <p style={{ margin: '0 0 16px', fontSize: '0.82rem', color: 'var(--text-secondary)' }}>Browse our collections and place your first handcrafted order.</p>
+            <Link
+              to="/"
+              style={{
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: 6,
+                padding: '8px 18px',
+                borderRadius: 999,
+                background: 'var(--accent-gradient)',
+                color: '#FFF',
+                textDecoration: 'none',
+                fontSize: '0.82rem',
+                fontWeight: 600,
+              }}
+            >
+              Explore Shop <ArrowRight size={14} />
+            </Link>
+          </div>
+        ) : (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+            {orders.map((ord) => {
+              const isDispatched = ord.status === 'DISPATCHED';
+              const statusColors = {
+                PENDING: { bg: 'rgba(245, 158, 11, 0.1)', text: '#F59E0B', border: 'rgba(245, 158, 11, 0.25)' },
+                PENDING_WHATSAPP: { bg: 'rgba(245, 158, 11, 0.1)', text: '#F59E0B', border: 'rgba(245, 158, 11, 0.25)' },
+                CONFIRMED: { bg: 'rgba(59, 130, 246, 0.1)', text: '#3B82F6', border: 'rgba(59, 130, 246, 0.25)' },
+                PROCESSING: { bg: 'rgba(236, 72, 153, 0.1)', text: '#EC4899', border: 'rgba(236, 72, 153, 0.25)' },
+                DISPATCHED: { bg: 'rgba(139, 92, 246, 0.12)', text: '#8B5CF6', border: 'rgba(139, 92, 246, 0.3)' },
+                DELIVERED: { bg: 'rgba(16, 185, 129, 0.1)', text: '#10B981', border: 'rgba(16, 185, 129, 0.25)' },
+                CANCELLED: { bg: 'rgba(239, 68, 68, 0.1)', text: '#EF4444', border: 'rgba(239, 68, 68, 0.25)' },
+              };
+              const sColor = statusColors[ord.status] || statusColors.PENDING;
+
+              return (
+                <div
+                  key={ord._id}
+                  style={{
+                    background: isDark ? 'var(--bg-secondary, #14141C)' : '#FFFFFF',
+                    border: `1px solid var(--border)`,
+                    borderRadius: 16,
+                    padding: '18px 20px',
+                    transition: 'border-color 0.2s ease',
+                  }}
+                >
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 10, marginBottom: 12, borderBottom: '1px solid var(--border)', paddingBottom: 10 }}>
+                    <div>
+                      <span style={{ fontSize: '0.88rem', fontWeight: 700, color: 'var(--text)', fontFamily: 'Outfit, sans-serif' }}>
+                        Order #{ord.orderId}
+                      </span>
+                      <span style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', marginLeft: 8 }}>
+                        {new Date(ord.createdAt).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })}
+                      </span>
+                    </div>
+
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                      <span
+                        style={{
+                          fontSize: '0.72rem',
+                          fontWeight: 700,
+                          padding: '3px 10px',
+                          borderRadius: 999,
+                          background: sColor.bg,
+                          color: sColor.text,
+                          border: `1px solid ${sColor.border}`,
+                          textTransform: 'uppercase',
+                          letterSpacing: '0.04em',
+                        }}
+                      >
+                        {ord.status.replace('_', ' ')}
+                      </span>
+                      <span style={{ fontSize: '0.95rem', fontWeight: 700, color: 'var(--text)', fontFamily: 'Outfit, sans-serif' }}>
+                        ₹{ord.totalAmount}
+                      </span>
+                    </div>
+                  </div>
+
+                  {/* Order Items */}
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: 8, marginBottom: isDispatched && ord.trackingId ? 14 : 4 }}>
+                    {ord.items?.map((it, idx) => (
+                      <div key={idx} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', fontSize: '0.84rem' }}>
+                        <span style={{ color: 'var(--text)', fontWeight: 500 }}>
+                          {it.name} {it.size ? `(${it.size})` : ''} {it.colorName ? `• ${it.colorName}` : ''} <span style={{ color: 'var(--text-muted)' }}>× {it.quantity}</span>
+                        </span>
+                        <span style={{ fontWeight: 600, color: 'var(--text)' }}>
+                          ₹{it.price * it.quantity}
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+
+                  {/* ST Courier Live Tracking Box */}
+                  {ord.trackingId && (
+                    <div
+                      style={{
+                        marginTop: 12,
+                        padding: '12px 16px',
+                        borderRadius: 12,
+                        background: isDark ? 'rgba(139, 92, 246, 0.08)' : 'rgba(139, 92, 246, 0.05)',
+                        border: '1px solid rgba(139, 92, 246, 0.25)',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'space-between',
+                        flexWrap: 'wrap',
+                        gap: 10,
+                      }}
+                    >
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                        <div style={{ width: 34, height: 34, borderRadius: 8, background: 'rgba(139, 92, 246, 0.15)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#8B5CF6' }}>
+                          <Truck size={18} />
+                        </div>
+                        <div>
+                          <div style={{ fontSize: '0.74rem', color: 'var(--text-secondary)', textTransform: 'uppercase', letterSpacing: '0.06em', fontWeight: 600 }}>
+                            {ord.courierPartner || 'ST Courier'} Tracking
+                          </div>
+                          <div style={{ fontSize: '0.88rem', fontWeight: 700, color: 'var(--text)', fontFamily: 'monospace' }}>
+                            {ord.trackingId}
+                          </div>
+                        </div>
+                      </div>
+
+                      <a
+                        href={`https://stcourier.com/track?tracking_no=${encodeURIComponent(ord.trackingId)}`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        style={{
+                          display: 'inline-flex',
+                          alignItems: 'center',
+                          gap: 6,
+                          padding: '7px 14px',
+                          borderRadius: 8,
+                          background: '#8B5CF6',
+                          color: '#FFFFFF',
+                          textDecoration: 'none',
+                          fontSize: '0.78rem',
+                          fontWeight: 700,
+                          transition: 'opacity 0.2s',
+                        }}
+                      >
+                        Track Shipment <ExternalLink size={13} />
+                      </a>
+                    </div>
+                  )}
+                </div>
+              );
+            })}
+          </div>
+        )}
       </div>
 
       {/* Support / WhatsApp Card */}

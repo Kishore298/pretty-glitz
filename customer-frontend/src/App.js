@@ -1,5 +1,5 @@
 import React, { Suspense, lazy, useContext, useEffect } from 'react';
-import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
+import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider, AuthContext } from './context/AuthContext';
 import { CartProvider, CartContext } from './context/CartContext';
 import { WishlistProvider, WishlistContext } from './context/WishlistContext';
@@ -12,7 +12,6 @@ import ScrollToTop from './components/ScrollToTop';
 // Lazy loaded pages for performance optimization
 const Home        = lazy(() => import('./pages/Home'));
 const CategoryPage= lazy(() => import('./pages/CategoryPage'));
-const Categories  = lazy(() => import('./pages/Categories'));
 const ProductDetail = lazy(() => import('./pages/ProductDetail'));
 const Search      = lazy(() => import('./pages/Search'));
 const Cart        = lazy(() => import('./pages/Cart'));
@@ -84,7 +83,7 @@ function App() {
                       {/* ── Existing routes (UNCHANGED) ── */}
                       <Route path="/"                          element={<Home />} />
                       <Route path="/products"                 element={<AllProducts />} />
-                      <Route path="/categories"              element={<Categories />} />
+                      <Route path="/categories"              element={<Navigate to="/#categories" replace />} />
                       <Route path="/category/:categoryName"  element={<CategoryPage />} />
                       <Route path="/product/:id"             element={<ProductDetail />} />
                       <Route path="/search"                  element={<Search />} />

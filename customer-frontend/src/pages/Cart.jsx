@@ -81,11 +81,11 @@ const Cart = () => {
                         key={uniqueKey}
                         layout initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, height: 0 }}
                         style={{
-                          padding: '24px 32px', display: 'flex', gap: 24, flexWrap: 'wrap', alignItems: 'center',
+                          padding: '14px 20px', display: 'flex', gap: 16, flexWrap: 'wrap', alignItems: 'center',
                           borderBottom: isLast ? 'none' : `1px solid var(--border)`
                         }}
                       >
-                        <div style={{ width: 100, height: 120, borderRadius: 12, background: 'var(--bg-secondary)', overflow: 'hidden', flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                        <div style={{ width: 72, height: 88, borderRadius: 10, background: 'var(--bg-secondary)', overflow: 'hidden', flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                           <img
                             src={item.product.images?.[0] ? optimizeImageUrl(item.product.images[0].url, 200) : logoImg}
                             alt={item.product.name}
@@ -94,54 +94,58 @@ const Cart = () => {
                               e.currentTarget.onerror = null;
                               e.currentTarget.src = logoImg;
                               e.currentTarget.style.objectFit = 'contain';
-                              e.currentTarget.style.padding = '12px';
+                              e.currentTarget.style.padding = '8px';
                             }}
                             style={{
                               width: '100%',
                               height: '100%',
                               objectFit: item.product.images?.[0] ? 'cover' : 'contain',
-                              padding: item.product.images?.[0] ? 0 : '12px',
+                              padding: item.product.images?.[0] ? 0 : '8px',
                             }}
                           />
                         </div>
 
-                        <div style={{ flex: '1 1 200px' }}>
-                          <Link to={`/product/${item.product._id}`} style={{ fontSize: '1.1rem', fontWeight: 600, color: 'var(--text)', textDecoration: 'none', display: 'block', marginBottom: 4 }}>
+                        <div style={{ flex: '1 1 180px', minWidth: 160 }}>
+                          <Link to={`/product/${item.product._id}`} style={{ fontSize: '0.98rem', fontWeight: 600, color: 'var(--text)', textDecoration: 'none', display: 'block', marginBottom: 2 }}>
                             {item.product.name}
                           </Link>
-                          <p style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', textTransform: 'uppercase', letterSpacing: '0.1em', margin: '0 0 12px' }}>
+                          <p style={{ fontSize: '0.7rem', color: 'var(--text-secondary)', textTransform: 'uppercase', letterSpacing: '0.08em', margin: '0 0 6px' }}>
                             {item.product.category}
                           </p>
                           
-                          {item.colorName && (
-                            <p style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', margin: '0 0 4px' }}>
-                              Colour: <span style={{ fontWeight: 600, color: 'var(--text)', background: 'var(--bg-secondary)', padding: '2px 6px', borderRadius: 4, marginLeft: 6 }}>{item.colorName}</span>
-                            </p>
-                          )}
-                          {item.size && (
-                            <p style={{ fontSize: '0.85rem', color: 'var(--text-secondary)', margin: 0 }}>
-                              Size: <span style={{ fontWeight: 600, color: 'var(--text)', background: 'var(--bg-secondary)', padding: '2px 6px', borderRadius: 4, marginLeft: 6 }}>{item.size}</span>
-                            </p>
-                          )}
-                          <p style={{ fontSize: '1.1rem', fontWeight: 700, color: 'var(--text)', marginTop: 12, fontFamily: 'Outfit, sans-serif' }}>
+                          <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap', marginBottom: 6 }}>
+                            {item.colorName && (
+                              <span style={{ fontSize: '0.76rem', color: 'var(--text-secondary)', background: 'var(--bg-secondary)', padding: '2px 7px', borderRadius: 6, fontWeight: 500 }}>
+                                Colour: <strong style={{ color: 'var(--text)' }}>{item.colorName}</strong>
+                              </span>
+                            )}
+                            {item.size && (
+                              <span style={{ fontSize: '0.76rem', color: 'var(--text-secondary)', background: 'var(--bg-secondary)', padding: '2px 7px', borderRadius: 6, fontWeight: 500 }}>
+                                Size: <strong style={{ color: 'var(--text)' }}>{item.size}</strong>
+                              </span>
+                            )}
+                          </div>
+                          
+                          <p style={{ fontSize: '1.05rem', fontWeight: 700, color: 'var(--text)', margin: 0, fontFamily: 'Outfit, sans-serif' }}>
                             ₹{item.price || item.product.price}
                           </p>
                         </div>
 
-                        <div style={{ display: 'flex', alignItems: 'center', gap: 24, marginLeft: 'auto' }}>
-                          <div style={{ display: 'flex', alignItems: 'center', border: `1px solid var(--border-strong)`, borderRadius: 8, height: 40, width: 110, background: 'var(--bg)' }}>
-                            <button onClick={() => updateQuantity(item.product._id, item.size, item.quantity - 1, item.pieceCount, item.colorVariantId)} style={{ flex: 1, height: '100%', background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-secondary)' }}>-</button>
-                            <span style={{ flex: 1, textAlign: 'center', fontSize: '0.9rem', fontWeight: 600, color: 'var(--text)' }}>{item.quantity}</span>
-                            <button onClick={() => updateQuantity(item.product._id, item.size, item.quantity + 1, item.pieceCount, item.colorVariantId)} style={{ flex: 1, height: '100%', background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-secondary)' }}>+</button>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 14, marginLeft: 'auto' }}>
+                          <div style={{ display: 'flex', alignItems: 'center', border: `1px solid var(--border)`, borderRadius: 8, height: 32, width: 94, background: 'var(--bg)' }}>
+                            <button onClick={() => updateQuantity(item.product._id, item.size, item.quantity - 1, item.pieceCount, item.colorVariantId)} style={{ flex: 1, height: '100%', background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-secondary)', fontSize: '0.9rem' }}>-</button>
+                            <span style={{ flex: 1, textAlign: 'center', fontSize: '0.84rem', fontWeight: 600, color: 'var(--text)' }}>{item.quantity}</span>
+                            <button onClick={() => updateQuantity(item.product._id, item.size, item.quantity + 1, item.pieceCount, item.colorVariantId)} style={{ flex: 1, height: '100%', background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-secondary)', fontSize: '0.9rem' }}>+</button>
                           </div>
                           
                           <button 
                             onClick={() => removeFromCart(item.product._id, item.size, item.pieceCount, item.colorVariantId)}
-                            style={{ background: 'var(--bg-secondary)', border: 'none', borderRadius: '50%', cursor: 'pointer', color: 'var(--text-muted)', transition: 'all 0.2s', display: 'flex', alignItems: 'center', justifyContent: 'center', width: 40, height: 40 }}
+                            style={{ background: 'var(--bg-secondary)', border: 'none', borderRadius: 8, cursor: 'pointer', color: 'var(--text-muted)', transition: 'all 0.2s', display: 'flex', alignItems: 'center', justifyContent: 'center', width: 32, height: 32 }}
                             onMouseEnter={e => { e.currentTarget.style.color = '#ef4444'; e.currentTarget.style.background = 'rgba(239,68,68,0.1)'; }}
                             onMouseLeave={e => { e.currentTarget.style.color = 'var(--text-muted)'; e.currentTarget.style.background = 'var(--bg-secondary)'; }}
+                            title="Remove item"
                           >
-                            <Trash2 size={18} />
+                            <Trash2 size={15} />
                           </button>
                         </div>
                       </motion.li>

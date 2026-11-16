@@ -94,9 +94,19 @@ const orderSchema = new mongoose.Schema(
     },
     status: {
       type: String,
-      enum: ['PENDING_WHATSAPP', 'CONFIRMED', 'DISPATCHED', 'DELIVERED', 'CANCELLED'],
+      enum: ['PENDING', 'PENDING_WHATSAPP', 'CONFIRMED', 'PROCESSING', 'DISPATCHED', 'DELIVERED', 'CANCELLED'],
       default: 'PENDING_WHATSAPP',
       index: true,
+    },
+    trackingId: {
+      type: String,
+      default: '',
+      trim: true,
+    },
+    courierPartner: {
+      type: String,
+      default: 'ST Courier',
+      trim: true,
     },
     whatsappSentAt: {
       type: Date,

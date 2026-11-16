@@ -40,9 +40,9 @@ const CollectionProductDetailCard = ({ product, isLast = false }) => {
   const [activeImg, setActiveImg] = useState(0);
   const [touchStartX, setTouchStartX] = useState(null);
   const [touchEndX, setTouchEndX] = useState(null);
-  const [didSwipe, setDidSwipe] = useState(false);
   const [isEnlargedModalOpen, setIsEnlargedModalOpen] = useState(false);
   const [detailsOpen, setDetailsOpen] = useState(false);
+  const [shippingOpen, setShippingOpen] = useState(false);
 
   // Available Sizes for currently selected variant
   const activeSizes = (selectedColor && selectedColor.sizes?.length > 0)
@@ -130,30 +130,17 @@ const CollectionProductDetailCard = ({ product, isLast = false }) => {
   };
   const handleTouchMove = (e) => {
     setTouchEndX(e.targetTouches[0].clientX);
-    if (touchStartX && Math.abs(e.targetTouches[0].clientX - touchStartX) > 10) {
-      setDidSwipe(true);
-    }
   };
   const handleTouchEnd = () => {
     if (!touchStartX || !touchEndX || !hasMultipleImages) return;
     const distance = touchStartX - touchEndX;
     if (Math.abs(distance) > 35) {
-      setDidSwipe(true);
       if (distance > 35) {
         setActiveImg((prev) => (prev + 1) % images.length);
       } else {
         setActiveImg((prev) => (prev - 1 + images.length) % images.length);
       }
     }
-  };
-
-  const handleImageClick = (e) => {
-    e.preventDefault();
-    if (didSwipe) {
-      setDidSwipe(false);
-      return;
-    }
-    setIsEnlargedModalOpen(true);
   };
 
   const currentImageUrl = images[activeImg]?.url || images[0]?.url;
@@ -169,27 +156,18 @@ const CollectionProductDetailCard = ({ product, isLast = false }) => {
             onTouchStart={handleTouchStart}
             onTouchMove={handleTouchMove}
             onTouchEnd={handleTouchEnd}
-            onClick={handleImageClick}
             style={{
               position: 'relative',
               touchAction: hasMultipleImages ? 'pan-y' : 'auto',
               borderRadius: 18,
               overflow: 'hidden',
               background: isDark ? '#14141C' : '#F7F5F2',
-              aspectRatio: '1 / 1',
+              aspectRatio: '3 / 4',
               width: '100%',
-              maxWidth: 540,
-              cursor: 'pointer',
+              maxWidth: 440,
+              maxHeight: 580,
+              cursor: 'default',
             }}
-            role="button"
-            tabIndex={0}
-            onKeyDown={(e) => {
-              if (e.key === 'Enter' || e.key === ' ') {
-                e.preventDefault();
-                setIsEnlargedModalOpen(true);
-              }
-            }}
-            aria-label={`View enlarged images for ${product.name}`}
           >
             <img
               src={currentImageUrl ? optimizeImageUrl(currentImageUrl, 1000) : logoImg}
@@ -273,30 +251,19 @@ const CollectionProductDetailCard = ({ product, isLast = false }) => {
               </>
             )}
 
-            {/* Tap to Enlarge Indicator */}
-            <div
-              style={{
-                position: 'absolute',
-                top: 12,
-                right: 12,
-                zIndex: 2,
-                width: 32,
-                height: 32,
-                borderRadius: '50%',
-                background: 'rgba(10, 10, 16, 0.65)',
-                backdropFilter: 'blur(4px)',
-                WebkitBackdropFilter: 'blur(4px)',
-                border: '1px solid rgba(255, 255, 255, 0.2)',
-                color: '#FFFFFF',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                pointerEvents: 'none',
+            {/* Dedicated Expand Button to open enlarged image pop-up */}
+            <button
+              type="button"
+              className="product-gallery-zoom-badge"
+              onClick={(e) => {
+                e.stopPropagation();
+                setIsEnlargedModalOpen(true);
               }}
               title="Click to enlarge"
+              aria-label="Enlarge image"
             >
               <Maximize2 size={16} strokeWidth={2.2} />
-            </div>
+            </button>
 
             {/* Mobile swipe dot indicators */}
             {hasMultipleImages && (
@@ -479,18 +446,28 @@ const CollectionProductDetailCard = ({ product, isLast = false }) => {
             )}
           </div>
 
-          {/* Product Title (In-Place viewing, NO REDIRECTION link away from page!) */}
+          {/* Clickable Product Title Link */}
           <h3
             style={{
               fontFamily: '"Cormorant Garamond", Georgia, serif',
               fontSize: 'clamp(1.4rem, 2.8vw, 2rem)',
               fontWeight: 600,
               lineHeight: 1.25,
-              color: 'var(--text)',
               margin: '0 0 12px',
             }}
           >
-            {product.name}
+            <Link
+              to={`/product/${product._id}`}
+              style={{
+                color: 'var(--text)',
+                textDecoration: 'none',
+                transition: 'color 0.2s ease',
+              }}
+              onMouseEnter={(e) => (e.currentTarget.style.color = 'var(--accent, #C4386C)')}
+              onMouseLeave={(e) => (e.currentTarget.style.color = 'var(--text)')}
+            >
+              {product.name}
+            </Link>
           </h3>
 
           {/* Dynamic Pricing Display */}
@@ -805,14 +782,59 @@ const CollectionProductDetailCard = ({ product, isLast = false }) => {
             </AnimatePresence>
           </div>
 
-          {/* Shipping Info Card */}
-          <div className="product-shipping-card" style={{ marginTop: 0 }}>
-            <h4 className="product-shipping-title">
-              <span>🚚</span> Shipping & Returns
-            </h4>
-            <p className="product-shipping-text">
-              All-India delivery available. We take extreme care in packaging your products to ensure they arrive in perfect condition. Handcrafted pieces are dispatched within 2-3 business days.
-            </p>
+          {/* Collapsible Shipping Info Accordion (Collapsed by default) */}
+          <div
+            style={{
+              borderRadius: 14,
+              border: '1px solid var(--border)',
+              background: isDark ? 'rgba(255, 255, 255, 0.02)' : '#FAF8F5',
+              overflow: 'hidden',
+              marginTop: 12,
+            }}
+          >
+            <button
+              type="button"
+              onClick={() => setShippingOpen(!shippingOpen)}
+              style={{
+                width: '100%',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+                padding: '14px 18px',
+                background: 'transparent',
+                border: 'none',
+                color: 'var(--text)',
+                fontSize: '0.88rem',
+                fontWeight: 600,
+                cursor: 'pointer',
+                textAlign: 'left',
+              }}
+            >
+              <span style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                <span>🚚</span> Shipping & Returns
+              </span>
+              <motion.div animate={{ rotate: shippingOpen ? 180 : 0 }} transition={{ duration: 0.2 }}>
+                <ChevronDown size={17} style={{ color: 'var(--text-muted)' }} />
+              </motion.div>
+            </button>
+
+            <AnimatePresence>
+              {shippingOpen && (
+                <motion.div
+                  initial={{ height: 0, opacity: 0 }}
+                  animate={{ height: 'auto', opacity: 1 }}
+                  exit={{ height: 0, opacity: 0 }}
+                  transition={{ duration: 0.25 }}
+                  style={{ overflow: 'hidden' }}
+                >
+                  <div style={{ padding: '0 18px 16px', borderTop: '1px solid var(--border)', paddingTop: 12 }}>
+                    <p style={{ margin: 0, fontSize: '0.82rem', color: 'var(--text-secondary)', lineHeight: 1.6 }}>
+                      All-India delivery available. We take extreme care in packaging your products to ensure they arrive in perfect condition. Handcrafted pieces are dispatched within 2-3 business days with real-time tracking.
+                    </p>
+                  </div>
+                </motion.div>
+              )}
+            </AnimatePresence>
           </div>
         </div>
 

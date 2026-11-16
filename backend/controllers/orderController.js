@@ -235,6 +235,16 @@ const createOrder = async (req, res) => {
       }
 
       // 3. Post-Persistence Actions (Only executed AFTER confirmed database write)
+      // Auto-check and mark out-of-stock if quantities hit 0
+      try {
+        const uniqueProductIds = [...new Set(deductedItemsLog.map((d) => d.productId?.toString()).filter(Boolean))];
+        for (const pid of uniqueProductIds) {
+          await checkAndUpdateOutOfStock(pid);
+        }
+      } catch (stockErr) {
+        console.warn('[Orders] Out-of-stock check warning:', stockErr.message);
+      }
+
       // a. Socket.IO instant alert to Admin Panel
       try {
         emitToAdmin('new_order_request', {
@@ -429,13 +439,113 @@ const getOrderById = async (req, res) => {
   }
 };
 
+// Helper: Automatically check stock levels and toggle inStock to false if 0
+const checkAndUpdateOutOfStock = async (productId) => {
+  try {
+    const product = await Product.findById(productId);
+    if (!product) return;
+    let modified = false;
+
+    // Check colorVariants sizes
+    if (Array.isArray(product.colorVariants) && product.colorVariants.length > 0) {
+      let anyVariantInStock = false;
+      product.colorVariants.forEach((cVar) => {
+        if (Array.isArray(cVar.sizes) && cVar.sizes.length > 0) {
+          let anySizeInStock = false;
+          cVar.sizes.forEach((s) => {
+            if (typeof s.stockCount === 'number' && s.stockCount <= 0 && s.inStock) {
+              s.inStock = false;
+              modified = true;
+            }
+            if (s.inStock && s.stockCount > 0) anySizeInStock = true;
+          });
+          if (!anySizeInStock && cVar.inStock) {
+            cVar.inStock = false;
+            modified = true;
+          }
+        }
+        if (cVar.inStock) anyVariantInStock = true;
+      });
+      if (!anyVariantInStock && product.inStock) {
+        product.inStock = false;
+        modified = true;
+      }
+    } else if (Array.isArray(product.sizes) && product.sizes.length > 0) {
+      let anySizeInStock = false;
+      product.sizes.forEach((s) => {
+        if (typeof s.stockCount === 'number' && s.stockCount <= 0 && s.inStock) {
+          s.inStock = false;
+          modified = true;
+        }
+        if (s.inStock && s.stockCount > 0) anySizeInStock = true;
+      });
+      if (!anySizeInStock && product.inStock) {
+        product.inStock = false;
+        modified = true;
+      }
+    } else if (typeof product.inStockCount === 'number') {
+      if (product.inStockCount <= 0 && product.inStock) {
+        product.inStock = false;
+        modified = true;
+      }
+    }
+
+    if (modified) {
+      await product.save();
+      if (!product.inStock) {
+        try {
+          emitToAdmin('product_out_of_stock', {
+            productId: product._id,
+            name: product.name,
+            category: product.category,
+          });
+          await Notification.create({
+            type: 'STOCK_ALERT',
+            title: 'Out of Stock Alert',
+            message: `Product "${product.name}" is now OUT OF STOCK.`,
+            data: { productId: product._id },
+            read: false,
+          });
+        } catch {
+          // Non-critical
+        }
+      }
+    }
+  } catch (err) {
+    console.error('[Orders] checkAndUpdateOutOfStock error:', err.message);
+  }
+};
+
+// ─── GET /api/orders/my-orders (Customer lists their orders) ─────────────────
+const getMyOrders = async (req, res) => {
+  try {
+    const userId = req.user?.userId || extractUserId(req);
+    if (!userId) {
+      return res.status(401).json({ message: 'Authentication required to view orders.' });
+    }
+    const orders = await Order.find({ userId }).sort({ createdAt: -1 }).lean();
+    return res.status(200).json({ orders });
+  } catch (err) {
+    console.error('[Orders] getMyOrders error:', err);
+    return res.status(500).json({ message: 'Failed to fetch customer orders.' });
+  }
+};
+
 // ─── PATCH /api/orders/:id/status (Admin updates order status) ─────────────────
 const updateOrderStatus = async (req, res) => {
   try {
     const { id } = req.params;
-    const { status, internalNotes } = req.body;
+    const { status, internalNotes, trackingId, courierPartner } = req.body;
 
-    const validStatuses = ['PENDING_WHATSAPP', 'CONFIRMED', 'DISPATCHED', 'DELIVERED', 'CANCELLED'];
+    const validStatuses = [
+      'PENDING',
+      'PENDING_WHATSAPP',
+      'CONFIRMED',
+      'PROCESSING',
+      'DISPATCHED',
+      'DELIVERED',
+      'CANCELLED',
+    ];
     if (status && !validStatuses.includes(status)) {
       return res.status(400).json({ message: `Invalid status. Allowed: ${validStatuses.join(', ')}` });
     }
@@ -448,13 +558,21 @@ const updateOrderStatus = async (req, res) => {
       return res.status(404).json({ message: 'Order not found.' });
     }
 
+    const now = new Date();
     if (status) {
       order.status = status;
-      const now = new Date();
       if (status === 'CONFIRMED') order.confirmedAt = now;
+      if (status === 'PROCESSING') order.processingAt = now;
       if (status === 'DISPATCHED') order.dispatchedAt = now;
       if (status === 'DELIVERED') order.deliveredAt = now;
       if (status === 'CANCELLED') order.cancelledAt = now;
+    }
+
+    if (trackingId !== undefined) {
+      order.trackingId = trackingId ? trackingId.trim() : '';
+    }
+    if (courierPartner !== undefined) {
+      order.courierPartner = courierPartner ? courierPartner.trim() : 'ST Courier';
     }
 
     if (internalNotes !== undefined) {
@@ -468,6 +586,8 @@ const updateOrderStatus = async (req, res) => {
       emitToAdmin('order_status_updated', {
         orderId: order.orderId,
         status: order.status,
+        trackingId: order.trackingId,
+        courierPartner: order.courierPartner,
         updatedAt: order.updatedAt,
       });
 
@@ -475,8 +595,29 @@ const updateOrderStatus = async (req, res) => {
         emitToUser(order.userId.toString(), 'order_status_updated', {
           orderId: order.orderId,
           status: order.status,
+          trackingId: order.trackingId,
+          courierPartner: order.courierPartner,
           updatedAt: order.updatedAt,
         });
+
+        // Customer in-app notification
+        let notifMsg = `Your order #${order.orderId} status has been updated to ${order.status}.`;
+        if (order.status === 'DISPATCHED' && order.trackingId) {
+          notifMsg = `Your order #${order.orderId} has been dispatched via ${order.courierPartner || 'ST Courier'}. Tracking ID: ${order.trackingId}`;
+        }
+        await Notification.create({
+          userId: order.userId,
+          type: 'ORDER_UPDATE',
+          title: `Order #${order.orderId} ${order.status}`,
+          message: notifMsg,
+          data: {
+            orderId: order.orderId,
+            status: order.status,
+            trackingId: order.trackingId,
+            trackingUrl: order.trackingId ? `https://stcourier.com/track?tracking_no=${order.trackingId}` : '',
+          },
+          read: false,
+        }).catch(() => {});
       }
     } catch {
       // Non-critical
@@ -497,6 +638,7 @@ module.exports = {
   createOrder,
   getOrders,
   getOrderById,
+  getMyOrders,
   updateOrderStatus,
 };
 

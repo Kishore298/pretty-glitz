@@ -47,8 +47,8 @@ const ProductDetail = () => {
   const [showSizeChart, setShowSizeChart] = useState(false);
   const [isImageModalOpen, setIsImageModalOpen] = useState(false);
 
-  // Accordion States (Collapsed by default as required)
-  const [detailsOpen, setDetailsOpen] = useState(false);
+  // Accordion States: Specifications expanded by default on ProductDetail; Shipping collapsed
+  const [detailsOpen, setDetailsOpen] = useState(true);
   const [shippingOpen, setShippingOpen] = useState(false);
   const [copyToast, setCopyToast] = useState(false);
 

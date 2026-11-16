@@ -12,8 +12,7 @@ import {
   AlertCircle,
   ExternalLink,
   Sparkles,
-  ShoppingBag,
-  TrendingUp
+  ShoppingBag
 } from 'lucide-react';
 import api from '../utils/api';
 import { Link } from 'react-router-dom';
@@ -311,6 +310,70 @@ const Dashboard = () => {
             to="/offers"
             badge={{ text: 'Promotions', className: 'badge-warning' }}
           />
+        </div>
+      )}
+
+      {/* Out of Stock Alert Banner */}
+      {!loading && stats.outOfStock > 0 && (
+        <div
+          style={{
+            background: 'linear-gradient(135deg, rgba(239, 68, 68, 0.12) 0%, rgba(220, 38, 38, 0.06) 100%)',
+            border: '1px solid rgba(239, 68, 68, 0.35)',
+            borderRadius: 16,
+            padding: '16px 22px',
+            marginBottom: 32,
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            flexWrap: 'wrap',
+            gap: 16,
+            boxShadow: '0 8px 24px rgba(239, 68, 68, 0.12)',
+          }}
+        >
+          <div style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
+            <div
+              style={{
+                width: 42,
+                height: 42,
+                borderRadius: 12,
+                background: 'rgba(239, 68, 68, 0.2)',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                color: '#EF4444',
+                flexShrink: 0,
+              }}
+            >
+              <AlertCircle size={22} />
+            </div>
+            <div>
+              <div style={{ fontSize: '0.98rem', fontWeight: 700, color: '#FAF9FC', marginBottom: 2 }}>
+                {stats.outOfStock} Product{stats.outOfStock > 1 ? 's' : ''} Out of Stock
+              </div>
+              <div style={{ fontSize: '0.82rem', color: '#F87171' }}>
+                Inventory has been depleted from customer orders or manual updates. Restock items to restore storefront availability.
+              </div>
+            </div>
+          </div>
+
+          <Link
+            to="/products"
+            style={{
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: 8,
+              padding: '9px 18px',
+              borderRadius: 10,
+              background: '#EF4444',
+              color: '#FFFFFF',
+              fontSize: '0.82rem',
+              fontWeight: 700,
+              textDecoration: 'none',
+              transition: 'opacity 0.2s',
+            }}
+          >
+            Review Depleted Inventory <ArrowUpRight size={15} />
+          </Link>
         </div>
       )}
 

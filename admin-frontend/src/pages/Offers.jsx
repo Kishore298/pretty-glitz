@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { Plus, Tag, ArrowRight, Sparkles, Percent, Pencil, Trash2 } from 'lucide-react';
 import api from '../utils/api';
 import { optimizeImageUrl } from '../utils/cloudinary';
@@ -85,7 +85,28 @@ const Offers = () => {
     }
   };
 
+  const [productFilterQuery, setProductFilterQuery] = useState('');
+
   const nonOfferProducts = products.filter((p) => !p.isOffer);
+
+  const productsByCategory = useMemo(() => {
+    const q = productFilterQuery.trim().toLowerCase();
+    const filtered = q
+      ? nonOfferProducts.filter(
+          (p) =>
+            p.name.toLowerCase().includes(q) ||
+            (p.category && p.category.toLowerCase().includes(q))
+        )
+      : nonOfferProducts;
+
+    const grouped = {};
+    filtered.forEach((p) => {
+      const cat = p.category || 'Other Jewellery';
+      if (!grouped[cat]) grouped[cat] = [];
+      grouped[cat].push(p);
+    });
+    return grouped;
+  }, [nonOfferProducts, productFilterQuery]);
 
   return (
     <PageWrapper>
@@ -150,46 +171,164 @@ const Offers = () => {
           Select an active product from the catalog to mark down with a discounted sale price and offer banner.
         </p>
 
-        <form onSubmit={handleMakeOffer} style={{ display: 'flex', gap: 16, alignItems: 'flex-end', flexWrap: 'wrap' }}>
-          <div style={{ flex: 2, minWidth: 260 }}>
-            <label style={{ display: 'block', fontSize: '0.82rem', color: 'var(--text-secondary)', marginBottom: 8, fontWeight: 600 }}>
-              Select Catalog Product
-            </label>
-            <select
-              value={selectedProductId}
-              onChange={(e) => setSelectedProductId(e.target.value)}
-              className="admin-input"
-              required
-              style={{ height: 44, borderRadius: 12 }}
-            >
-              <option value="">-- Choose a product from catalog --</option>
-              {nonOfferProducts.map((p) => (
-                <option key={p._id} value={p._id}>
-                  {p.name} (Current Price: ₹{p.price})
-                </option>
-              ))}
-            </select>
-          </div>
-          <div style={{ flex: 1, minWidth: 180 }}>
-            <label style={{ display: 'block', fontSize: '0.82rem', color: 'var(--text-secondary)', marginBottom: 8, fontWeight: 600 }}>
-              Promotional Offer Price (₹)
+        {/* Category-Grouped Horizontal Scrolling Product Selector with Fixed Container Height */}
+        <div style={{ marginBottom: 18 }}>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 10, flexWrap: 'wrap', gap: 10 }}>
+            <label style={{ fontSize: '0.84rem', color: 'var(--text-secondary)', fontWeight: 600 }}>
+              Select Catalog Product to Discount:
             </label>
             <input
-              type="number"
-              value={discountPrice}
-              onChange={(e) => setDiscountPrice(e.target.value)}
-              placeholder="e.g. 799"
+              type="text"
+              value={productFilterQuery}
+              onChange={(e) => setProductFilterQuery(e.target.value)}
+              placeholder="Search product name or category..."
               className="admin-input"
-              required
-              min="0"
-              style={{ height: 44, borderRadius: 12 }}
+              style={{ height: 34, width: 240, fontSize: '0.8rem', borderRadius: 8 }}
             />
           </div>
-          <button type="submit" className="btn-primary" style={{ height: 44, padding: '0 24px', borderRadius: 12, gap: 8 }}>
-            <span>Activate Offer</span>
-            <ArrowRight size={16} />
-          </button>
-        </form>
+
+          <div
+            style={{
+              height: 220,
+              overflowY: 'auto',
+              background: 'rgba(255, 255, 255, 0.02)',
+              border: '1px solid rgba(255, 255, 255, 0.08)',
+              borderRadius: 14,
+              padding: '14px',
+              display: 'flex',
+              flexDirection: 'column',
+              gap: 16,
+            }}
+            className="no-scrollbar"
+          >
+            {Object.keys(productsByCategory).length === 0 ? (
+              <div style={{ padding: '30px 0', textAlign: 'center', color: 'var(--text-muted)', fontSize: '0.85rem' }}>
+                No matching products available for offer.
+              </div>
+            ) : (
+              Object.entries(productsByCategory).map(([categoryName, prods]) => (
+                <div key={categoryName}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 8 }}>
+                    <span style={{ fontSize: '0.74rem', fontWeight: 700, color: 'var(--accent-gold, #C9A84C)', textTransform: 'uppercase', letterSpacing: '0.06em' }}>
+                      {categoryName}
+                    </span>
+                    <span style={{ fontSize: '0.7rem', color: 'var(--text-muted)' }}>({prods.length})</span>
+                  </div>
+
+                  <div
+                    style={{
+                      display: 'flex',
+                      gap: 10,
+                      overflowX: 'auto',
+                      paddingBottom: 6,
+                    }}
+                    className="no-scrollbar"
+                  >
+                    {prods.map((p) => {
+                      const isSelected = selectedProductId === p._id;
+                      const thumb = p.images?.[0]?.url;
+                      return (
+                        <div
+                          key={p._id}
+                          onClick={() => {
+                            setSelectedProductId(p._id);
+                            if (!discountPrice) {
+                              setDiscountPrice(Math.round(p.price * 0.85));
+                            }
+                          }}
+                          style={{
+                            flex: '0 0 170px',
+                            background: isSelected ? 'rgba(201, 168, 76, 0.16)' : 'var(--surface-primary, #14131E)',
+                            border: isSelected
+                              ? '1.5px solid var(--accent-gold, #C9A84C)'
+                              : '1px solid rgba(255, 255, 255, 0.08)',
+                            borderRadius: 10,
+                            padding: '8px 10px',
+                            cursor: 'pointer',
+                            transition: 'all 0.18s ease',
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: 10,
+                            boxShadow: isSelected ? '0 0 14px rgba(201, 168, 76, 0.28)' : 'none',
+                          }}
+                        >
+                          <div style={{ width: 44, height: 54, borderRadius: 6, background: '#111019', overflow: 'hidden', flexShrink: 0 }}>
+                            <img
+                              src={thumb ? optimizeImageUrl(thumb, 120) : '/pretty-glitz-logo.png'}
+                              alt={p.name}
+                              style={{ width: '100%', height: '100%', objectFit: thumb ? 'cover' : 'contain' }}
+                            />
+                          </div>
+                          <div style={{ minWidth: 0, flex: 1 }}>
+                            <div style={{ fontSize: '0.78rem', fontWeight: 600, color: '#FAF9FC', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                              {p.name}
+                            </div>
+                            <div style={{ fontSize: '0.74rem', color: 'var(--accent-gold, #C9A84C)', fontWeight: 700, marginTop: 2 }}>
+                              ₹{p.price}
+                            </div>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              ))
+            )}
+          </div>
+        </div>
+
+        {/* Selected Product Action Bar */}
+        {selectedProductId ? (
+          <form onSubmit={handleMakeOffer} style={{ display: 'flex', gap: 16, alignItems: 'center', flexWrap: 'wrap', background: 'rgba(201, 168, 76, 0.08)', padding: '14px 18px', borderRadius: 12, border: '1px solid rgba(201, 168, 76, 0.25)' }}>
+            <div style={{ flex: '1 1 240px' }}>
+              <div style={{ fontSize: '0.74rem', color: 'var(--text-secondary)', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
+                Selected for Promotion:
+              </div>
+              <div style={{ fontSize: '0.94rem', fontWeight: 700, color: '#FAF9FC', marginTop: 2 }}>
+                {products.find((p) => p._id === selectedProductId)?.name}
+                <span style={{ color: 'var(--text-muted)', fontWeight: 500, fontSize: '0.82rem', marginLeft: 8 }}>
+                  (Current: ₹{products.find((p) => p._id === selectedProductId)?.price})
+                </span>
+              </div>
+            </div>
+
+            <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
+              <div>
+                <input
+                  type="number"
+                  value={discountPrice}
+                  onChange={(e) => setDiscountPrice(e.target.value)}
+                  placeholder="Offer Price (₹)"
+                  className="admin-input"
+                  required
+                  min="0"
+                  style={{ height: 40, width: 150, borderRadius: 8, fontSize: '0.88rem' }}
+                />
+              </div>
+
+              <button type="submit" className="btn-primary" style={{ height: 40, padding: '0 20px', borderRadius: 8, gap: 6, fontSize: '0.84rem' }}>
+                <span>Activate Offer</span>
+                <ArrowRight size={15} />
+              </button>
+
+              <button
+                type="button"
+                onClick={() => {
+                  setSelectedProductId('');
+                  setDiscountPrice('');
+                }}
+                className="btn-secondary"
+                style={{ height: 40, padding: '0 14px', borderRadius: 8, fontSize: '0.82rem' }}
+              >
+                Clear
+              </button>
+            </div>
+          </form>
+        ) : (
+          <p style={{ margin: 0, fontSize: '0.82rem', color: 'var(--text-muted)', fontStyle: 'italic' }}>
+            Click any product above to set a promotional offer price.
+          </p>
+        )}
       </div>
 
       {/* Header */}
@@ -257,12 +396,13 @@ const Offers = () => {
                   e.currentTarget.style.boxShadow = '0 4px 14px rgba(0, 0, 0, 0.22)';
                 }}
               >
-                {/* Media Showcase Area - Compact, Clean & Clear */}
+                {/* Media Showcase Area - Vertical Aspect Ratio 3:4 */}
                 <div
                   style={{
                     position: 'relative',
                     width: '100%',
-                    height: 140,
+                    aspectRatio: '3 / 4',
+                    maxHeight: 240,
                     background: '#111019',
                     overflow: 'hidden',
                     display: 'flex',

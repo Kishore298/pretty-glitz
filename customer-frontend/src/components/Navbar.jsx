@@ -1,9 +1,10 @@
-import React, { useState, useContext, useEffect, useRef } from 'react';
+import React, { useState, useContext, useEffect, useRef, useMemo } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
-import { Menu, X, ChevronDown, Gift, Search, ChevronRight, User, Heart } from 'lucide-react';
+import { Menu, X, ChevronDown, Gift, Search, ChevronRight, User, Heart, ShoppingBag } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useTheme } from '../context/ThemeContext';
 import { AuthContext } from '../context/AuthContext';
+import { CartContext } from '../context/CartContext';
 import { useWishlist } from '../context/WishlistContext';
 import api from '../utils/api';
 import logoImg from '../assets/pretty-glitz-logo.png';
@@ -37,6 +38,8 @@ const Navbar = () => {
   const { isDark } = useTheme();
   const { getWishlistCount } = useWishlist();
   const wishlistCount = getWishlistCount();
+  const { getCartCount } = useContext(CartContext);
+  const cartCount = getCartCount();
   const [allCategories, setAllCategories] = useState([]);
   const [bangleSubcategories, setBangleSubcategories] = useState(DEFAULT_BANGLE_SUBS);
   const [searchResults, setSearchResults] = useState([]);
@@ -162,6 +165,32 @@ const Navbar = () => {
       name !== 'Bangles'
   );
   const nonBangleCats = otherCatsFromApi.length > 0 ? otherCatsFromApi : NON_BANGLE_CATEGORIES;
+
+  // Dynamically map all DB bangle categories under Bangles dropdown without duplication
+  const otherBangleCategories = useMemo(() => {
+    const defaultOthers = [
+      { name: 'Valaikaappu Bangles', desc: 'Auspicious ceremony & celebration sets' },
+      { name: 'Antique Bangles', desc: 'Heritage temple antique & matte gold designs' },
+      { name: 'Wedding Bangles', desc: 'Bridal chura & bridal occasion collection' },
+    ];
+    if (!allCategories || allCategories.length === 0) return defaultOthers;
+    const fromApi = allCategories
+      .filter(
+        (name) =>
+          name &&
+          name.toLowerCase().includes('bangle') &&
+          !name.toLowerCase().includes('designer') &&
+          name.toLowerCase() !== 'bangles'
+      )
+      .map((name) => {
+        const found = defaultOthers.find((d) => d.name.toLowerCase() === name.toLowerCase());
+        return {
+          name,
+          desc: found?.desc || 'Handcrafted celebratory collection',
+        };
+      });
+    return fromApi.length > 0 ? fromApi : defaultOthers;
+  }, [allCategories]);
 
   const linkStyle = (path, forceActive = false) => {
     const decodedPathname = decodeURIComponent(pathname);
@@ -440,20 +469,7 @@ const Navbar = () => {
                         </div>
 
                         <div style={{ display: 'flex', flexDirection: 'column', gap: 6, flex: 1 }}>
-                          {[
-                            {
-                              name: 'Valaikaappu Bangles',
-                              desc: 'Auspicious ceremony & celebration sets',
-                            },
-                            {
-                              name: 'Antique Bangles',
-                              desc: 'Heritage temple antique & matte gold designs',
-                            },
-                            {
-                              name: 'Wedding Bangles',
-                              desc: 'Bridal chura & bridal occasion collection',
-                            },
-                          ].map((cat) => {
+                          {otherBangleCategories.map((cat) => {
                             const isCatActive = decodedPathname === `/category/${cat.name}`;
                             return (
                               <Link
@@ -644,7 +660,10 @@ const Navbar = () => {
                               Popular Categories
                             </p>
                             <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
-                              {['Designer Glass Bangles', 'Wedding Bangles', 'Antique Bangles', 'Valaikaappu Bangles', 'Artificial Flowers', 'Gift Box Combo'].map(cat => (
+                              {(allCategories.length > 0
+                                ? allCategories
+                                : ['Designer Glass Bangles', 'Wedding Bangles', 'Antique Bangles', 'Valaikaappu Bangles', 'Artificial Flowers', 'Gift Box Combo']
+                              ).map(cat => (
                                 <Link
                                   key={cat} to={`/category/${encodeURIComponent(cat)}`} onClick={() => setSearchOpen(false)}
                                   style={{
@@ -774,10 +793,61 @@ const Navbar = () => {
                       boxShadow: '0 2px 8px rgba(225, 29, 72, 0.45)',
                       pointerEvents: 'none',
                       lineHeight: 1,
-                      border: '1.5px solid var(--nav-bg)',
+                      border: 'none',
                     }}
                   >
                     {wishlistCount > 99 ? '99+' : wishlistCount}
+                  </motion.span>
+                )}
+              </Link>
+
+              {/* Desktop Cart Link with Live Badge Counter */}
+              <Link
+                to="/cart"
+                style={{
+                  position: 'relative',
+                  color: pathname === '/cart' ? 'var(--accent)' : 'var(--text-secondary)',
+                  transition: 'color 0.2s',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  padding: '4px',
+                }}
+                onMouseEnter={e => e.currentTarget.style.color = 'var(--text)'}
+                onMouseLeave={e => e.currentTarget.style.color = pathname === '/cart' ? 'var(--accent)' : 'var(--text-secondary)'}
+                title="Shopping Bag"
+                aria-label="Cart"
+              >
+                <ShoppingBag
+                  size={20}
+                  style={pathname === '/cart' ? { fill: 'var(--accent)', stroke: 'var(--accent)' } : {}}
+                />
+                {cartCount > 0 && (
+                  <motion.span
+                    initial={{ scale: 0 }}
+                    animate={{ scale: 1 }}
+                    style={{
+                      position: 'absolute',
+                      top: 0,
+                      right: -2,
+                      background: 'var(--accent, #C4386C)',
+                      color: '#ffffff',
+                      fontSize: '0.62rem',
+                      fontWeight: 700,
+                      minWidth: 16,
+                      height: 16,
+                      borderRadius: 999,
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      padding: '0 4px',
+                      boxShadow: '0 2px 8px rgba(196, 56, 108, 0.45)',
+                      pointerEvents: 'none',
+                      lineHeight: 1,
+                      border: 'none',
+                    }}
+                  >
+                    {cartCount > 99 ? '99+' : cartCount}
                   </motion.span>
                 )}
               </Link>
@@ -1058,12 +1128,8 @@ const Navbar = () => {
                           </AnimatePresence>
                         </div>
 
-                        {/* Other 3 Bangle Categories as Direct Links */}
-                        {[
-                          'Valaikaappu Bangles',
-                          'Antique Bangles',
-                          'Wedding Bangles',
-                        ].map((catName) => {
+                        {/* Other Bangle Categories from DB as Direct Links */}
+                        {otherBangleCategories.map((c) => c.name).map((catName) => {
                           const isCatActive = decodedPathname === `/category/${catName}`;
                           return (
                             <Link
