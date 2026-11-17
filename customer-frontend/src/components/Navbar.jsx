@@ -801,14 +801,14 @@ const Navbar = () => {
                 )}
               </Link>
 
-              {/* Desktop Cart Link with Live Badge Counter */}
+              {/* Desktop Cart Link with Live Badge Counter (Hidden on mobile < 768px) */}
               <Link
                 to="/cart"
+                className="desktop-cart-link"
                 style={{
                   position: 'relative',
                   color: pathname === '/cart' ? 'var(--accent)' : 'var(--text-secondary)',
                   transition: 'color 0.2s',
-                  display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'center',
                   padding: '4px',
@@ -889,10 +889,22 @@ const Navbar = () => {
             exit={{ opacity: 0, y: -12 }}
             transition={{ duration: 0.2 }}
             style={{
-              position: 'fixed', inset: 0, zIndex: 40,
+              position: 'fixed',
+              top: 0,
+              left: 0,
+              right: 0,
+              bottom: 0,
+              zIndex: 40,
               background: 'var(--bg)',
-              paddingTop: 90, paddingLeft: 32, paddingRight: 32,
+              paddingTop: 88,
+              paddingLeft: 24,
+              paddingRight: 24,
+              paddingBottom: 130,
+              height: '100vh',
+              maxHeight: '100vh',
               overflowY: 'auto',
+              WebkitOverflowScrolling: 'touch',
+              overscrollBehaviorY: 'contain',
             }}
           >
             <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
@@ -1240,6 +1252,10 @@ const Navbar = () => {
       </AnimatePresence>
 
       <style>{`
+        .desktop-cart-link { display: none !important; }
+        @media (min-width: 768px) {
+          .desktop-cart-link { display: flex !important; }
+        }
         @media (min-width: 1024px) {
           .desktop-nav { display: flex !important; gap: 20px !important; }
           .mobile-menu-btn { display: none !important; }

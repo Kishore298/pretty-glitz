@@ -1,7 +1,7 @@
 import React, { createContext, useState, useEffect, useCallback, useRef, useContext } from 'react';
 import api from '../utils/api';
 import { LS_CART_KEY } from '../config/constants';
-import { trackProductEvent } from '../utils/analytics';
+import { trackProductEvent, syncGuestState } from '../utils/analytics';
 
 export const CartContext = createContext();
 
@@ -27,11 +27,12 @@ export const CartProvider = ({ children }) => {
 
   const syncedRef = useRef(false);
 
-  // ── Persist guest cart to localStorage ───────────────────────────────────────
+  // ── Persist guest cart to localStorage & sync with analytics ────────────────
   useEffect(() => {
     const token = localStorage.getItem('customerToken');
     if (!token) {
       localStorage.setItem(LS_CART_KEY, JSON.stringify(cartItems));
+      syncGuestState(cartItems);
     }
   }, [cartItems]);
 

@@ -313,6 +313,8 @@ const ProductDetail = () => {
   );
 
   const hasPieceCounts = product.pieceCounts?.length > 0;
+  const hasColorVariants = Array.isArray(product.colorVariants) && product.colorVariants.length > 0;
+  const isDesignerBangles = (product.category && /designer/i.test(product.category)) || hasColorVariants;
 
   return (
     <div className="product-detail-page">
@@ -396,11 +398,12 @@ const ProductDetail = () => {
                 </motion.div>
               </AnimatePresence>
 
-              {/* Desktop Hover Next/Prev Arrows */}
+              {/* Desktop Hover Next/Prev Arrows (Removed on smaller devices) */}
               {allGalleryThumbnails.length > 1 && (
                 <>
                   <button
                     type="button"
+                    className="product-gallery-nav-btn"
                     onClick={(e) => {
                       e.stopPropagation();
                       const currentIdx = allGalleryThumbnails.findIndex(t => t.url === currentMainImageUrl);
@@ -420,7 +423,6 @@ const ProductDetail = () => {
                       backdropFilter: 'blur(6px)',
                       border: '1px solid rgba(255, 255, 255, 0.15)',
                       color: '#FFFFFF',
-                      display: 'flex',
                       alignItems: 'center',
                       justifyContent: 'center',
                       cursor: 'pointer',
@@ -435,6 +437,7 @@ const ProductDetail = () => {
 
                   <button
                     type="button"
+                    className="product-gallery-nav-btn"
                     onClick={(e) => {
                       e.stopPropagation();
                       const currentIdx = allGalleryThumbnails.findIndex(t => t.url === currentMainImageUrl);
@@ -454,7 +457,6 @@ const ProductDetail = () => {
                       backdropFilter: 'blur(6px)',
                       border: '1px solid rgba(255, 255, 255, 0.15)',
                       color: '#FFFFFF',
-                      display: 'flex',
                       alignItems: 'center',
                       justifyContent: 'center',
                       cursor: 'pointer',
@@ -467,6 +469,40 @@ const ProductDetail = () => {
                     <ChevronRight size={20} />
                   </button>
                 </>
+              )}
+
+              {/* Mobile Swipe Dot Indicators (Shown on smaller devices) */}
+              {allGalleryThumbnails.length > 1 && (
+                <div
+                  className="product-gallery-dots"
+                  style={{
+                    position: 'absolute',
+                    bottom: 14,
+                    left: '50%',
+                    transform: 'translateX(-50%)',
+                    alignItems: 'center',
+                    gap: 6,
+                    zIndex: 3,
+                    pointerEvents: 'none',
+                  }}
+                >
+                  {allGalleryThumbnails.map((item, dotIdx) => {
+                    const isCurrent = item.url === currentMainImageUrl;
+                    return (
+                      <span
+                        key={item.id || dotIdx}
+                        style={{
+                          width: isCurrent ? 18 : 6,
+                          height: 6,
+                          borderRadius: 3,
+                          background: isCurrent ? 'var(--accent, #C4386C)' : 'rgba(255, 255, 255, 0.5)',
+                          boxShadow: '0 1px 4px rgba(0, 0, 0, 0.4)',
+                          transition: 'all 0.25s ease',
+                        }}
+                      />
+                    );
+                  })}
+                </div>
               )}
 
               <button
@@ -483,8 +519,8 @@ const ProductDetail = () => {
               </button>
             </div>
 
-            {/* ── Thumbnail Strip: Showcase & Colour Variant Images ── */}
-            {allGalleryThumbnails.length > 1 && (
+            {/* ── Thumbnail Strip: Showcase & Colour Variant Images (Hidden for Designer Bangles) ── */}
+            {allGalleryThumbnails.length > 1 && !isDesignerBangles && (
               <div
                 className="product-gallery-thumbnails"
                 style={{

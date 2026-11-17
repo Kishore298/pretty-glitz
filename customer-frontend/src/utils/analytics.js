@@ -43,3 +43,52 @@ export const trackProductEvent = async (productId, eventType, quantity = 1, meta
   }
 };
 
+let syncTimer = null;
+
+/**
+ * Synchronizes live unauthenticated guest cart & wishlist arrays with the backend
+ * so that Admin Product Demand Analytics reflects real-time customer intent accurately.
+ */
+export const syncGuestState = (cartItems = null, wishlistItems = null) => {
+  const token = localStorage.getItem('customerToken');
+  if (token) return; // Authenticated users are already persisted to server models
+
+  if (syncTimer) clearTimeout(syncTimer);
+  syncTimer = setTimeout(() => {
+    try {
+      const sessionId = getAnalyticsSessionId();
+
+      let currentCart = cartItems;
+      if (!currentCart) {
+        const saved = localStorage.getItem('prettyglitz_cart');
+        currentCart = saved ? JSON.parse(saved) : [];
+      }
+
+      let currentWishlist = wishlistItems;
+      if (!currentWishlist) {
+        const saved = localStorage.getItem('prettyglitz_wishlist');
+        currentWishlist = saved ? JSON.parse(saved) : [];
+      }
+
+      const cartPayload = (Array.isArray(currentCart) ? currentCart : [])
+        .map(i => ({
+          productId: typeof i.product === 'object' ? i.product?._id : (i.productId || i.product),
+          quantity: i.quantity || 1,
+        }))
+        .filter(i => !!i.productId);
+
+      const wishlistPayload = (Array.isArray(currentWishlist) ? currentWishlist : [])
+        .map(item => typeof item === 'object' ? item?._id : item)
+        .filter(Boolean);
+
+      api.post('/analytics/sync-guest', {
+        sessionId,
+        cart: cartPayload,
+        wishlist: wishlistPayload,
+      }).catch(() => {});
+    } catch {
+      // Non-blocking swallow
+    }
+  }, 350);
+};
+

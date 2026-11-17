@@ -1,7 +1,7 @@
 import React, { createContext, useContext, useState, useEffect, useCallback, useRef } from 'react';
 import api from '../utils/api';
 import { LS_WISHLIST_KEY } from '../config/constants';
-import { trackProductEvent } from '../utils/analytics';
+import { trackProductEvent, syncGuestState } from '../utils/analytics';
 
 export const WishlistContext = createContext();
 
@@ -27,12 +27,13 @@ export const WishlistProvider = ({ children }) => {
   const [syncing, setSyncing] = useState(false);
   const syncedRef = useRef(false); // prevents double-sync on strict-mode mount
 
-  // ── Persist guest wishlist to localStorage on every change (unauthenticated) ──
+  // ── Persist guest wishlist to localStorage & sync with analytics ───────────
   useEffect(() => {
     // Only persist locally when there is no server token.
     const token = localStorage.getItem('customerToken');
     if (!token) {
       localStorage.setItem(LS_WISHLIST_KEY, JSON.stringify(wishlist));
+      syncGuestState(null, wishlist);
     }
   }, [wishlist]);
 

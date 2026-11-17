@@ -443,26 +443,25 @@ const ProductImageModal = ({
                     display: 'inline-flex',
                     alignItems: 'center',
                     gap: 6,
-                    color: 'var(--text)',
+                    color: '#FFFFFF',
                     fontSize: '0.82rem',
                     fontWeight: 700,
                     textDecoration: 'none',
-                    padding: '8px 16px',
+                    padding: '8px 18px',
                     borderRadius: 999,
-                    background: isDark ? 'rgba(255, 255, 255, 0.08)' : 'rgba(26, 17, 24, 0.05)',
-                    border: '1px solid var(--border)',
+                    background: 'var(--accent-gradient, linear-gradient(135deg, #C4386C, #8A2BE2))',
+                    boxShadow: '0 4px 16px rgba(196, 56, 108, 0.35)',
+                    border: 'none',
                     transition: 'all 0.2s ease',
                     marginLeft: 'auto',
                   }}
                   onMouseEnter={(e) => {
-                    e.currentTarget.style.background = 'var(--accent, #C4386C)';
-                    e.currentTarget.style.color = '#FFFFFF';
-                    e.currentTarget.style.borderColor = 'var(--accent, #C4386C)';
+                    e.currentTarget.style.transform = 'translateY(-1px)';
+                    e.currentTarget.style.boxShadow = '0 6px 20px rgba(196, 56, 108, 0.45)';
                   }}
                   onMouseLeave={(e) => {
-                    e.currentTarget.style.background = isDark ? 'rgba(255, 255, 255, 0.08)' : 'rgba(26, 17, 24, 0.05)';
-                    e.currentTarget.style.color = 'var(--text)';
-                    e.currentTarget.style.borderColor = 'var(--border)';
+                    e.currentTarget.style.transform = 'none';
+                    e.currentTarget.style.boxShadow = '0 4px 16px rgba(196, 56, 108, 0.35)';
                   }}
                 >
                   <span>View Full Details</span>

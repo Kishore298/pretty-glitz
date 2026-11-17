@@ -7,6 +7,7 @@ const Wishlist = require('../models/Wishlist');
 const Cart = require('../models/Cart');
 const ProductAnalytics = require('../models/ProductAnalytics');
 const AnalyticsEvent = require('../models/AnalyticsEvent');
+const ActiveGuestSession = require('../models/ActiveGuestSession');
 
 // Configurable rolling deduplication window (default 24 hours)
 const COOLDOWN_HOURS = parseInt(process.env.ANALYTICS_COOLDOWN_HOURS || '24', 10);
@@ -153,6 +154,53 @@ const trackEvent = async (req, res) => {
   }
 };
 
+// ─── POST /api/analytics/sync-guest ───────────────────────────────────────────
+// Upserts active guest cart & wishlist arrays by persistent sessionId
+const syncGuestSession = async (req, res) => {
+  try {
+    const { sessionId, wishlist = [], cart = [] } = req.body;
+    if (!sessionId) {
+      return res.status(400).json({ message: 'sessionId is required.' });
+    }
+
+    const validWishlistIds = (Array.isArray(wishlist) ? wishlist : [])
+      .map(id => typeof id === 'object' ? (id?._id || id?.productId) : id)
+      .filter(id => id && mongoose.Types.ObjectId.isValid(id.toString()))
+      .map(id => new mongoose.Types.ObjectId(id.toString()));
+
+    const validCartItems = (Array.isArray(cart) ? cart : [])
+      .map(item => {
+        const rawId = item?.productId || item?.product?._id || item?.product;
+        return {
+          product: rawId && mongoose.Types.ObjectId.isValid(rawId.toString()) ? new mongoose.Types.ObjectId(rawId.toString()) : null,
+          quantity: Math.max(1, parseInt(item?.quantity, 10) || 1),
+        };
+      })
+      .filter(item => item.product !== null);
+
+    await ActiveGuestSession.findOneAndUpdate(
+      { sessionId },
+      {
+        $set: {
+          wishlist: validWishlistIds,
+          cart: validCartItems,
+          lastActive: new Date(),
+        },
+      },
+      { upsert: true, returnDocument: 'after' }
+    );
+
+    return res.status(200).json({
+      success: true,
+      message: 'Guest session synchronized.',
+      counts: { wishlist: validWishlistIds.length, cart: validCartItems.length },
+    });
+  } catch (err) {
+    console.error('[analytics] syncGuestSession error:', err);
+    return res.status(500).json({ message: 'Failed to sync guest session.' });
+  }
+};
+
 // ─── GET /api/analytics/products ──────────────────────────────────────────────
 // Aggregates live active counts with lifetime metrics and opportunity detection
 const getProductAnalytics = async (req, res) => {
@@ -200,8 +248,11 @@ const getProductAnalytics = async (req, res) => {
       });
     }
 
-    // 2. Aggregate active wishlist counts from Wishlist collection
-    const activeWishlistAgg = await Wishlist.aggregate([
+    // 2. Aggregate active wishlist counts (Authenticated Users + Active Guest Sessions)
+    const activeWishlistMap = new Map();
+    const thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
+
+    const authWishlistAgg = await Wishlist.aggregate([
       { $unwind: '$products' },
       {
         $group: {
@@ -210,13 +261,62 @@ const getProductAnalytics = async (req, res) => {
         },
       },
     ]);
-    const activeWishlistMap = new Map();
-    activeWishlistAgg.forEach((w) => {
+    authWishlistAgg.forEach((w) => {
       activeWishlistMap.set(w._id.toString(), w.activeWishlistCount);
     });
 
-    // 3. Aggregate active cart counts from Cart collection
-    const activeCartAgg = await Cart.aggregate([
+    const guestWishlistAgg = await ActiveGuestSession.aggregate([
+      { $match: { lastActive: { $gte: thirtyDaysAgo } } },
+      { $unwind: '$wishlist' },
+      {
+        $group: {
+          _id: '$wishlist',
+          activeWishlistCount: { $sum: 1 },
+        },
+      },
+    ]);
+    guestWishlistAgg.forEach((w) => {
+      const pId = w._id.toString();
+      activeWishlistMap.set(pId, (activeWishlistMap.get(pId) || 0) + w.activeWishlistCount);
+    });
+
+    // Fallback: include recent AnalyticsEvent records for guest sessions that haven't synced yet
+    const guestEventWishlistAgg = await AnalyticsEvent.aggregate([
+      {
+        $match: {
+          userId: null,
+          sessionId: { $ne: null },
+          eventType: { $in: ['WISHLIST_ADD', 'WISHLIST_REMOVE'] },
+          createdAt: { $gte: thirtyDaysAgo },
+        },
+      },
+      { $sort: { createdAt: 1 } },
+      {
+        $group: {
+          _id: { sessionId: '$sessionId', productId: '$productId' },
+          lastEvent: { $last: '$eventType' },
+        },
+      },
+      { $match: { lastEvent: 'WISHLIST_ADD' } },
+      {
+        $group: {
+          _id: '$_id.productId',
+          activeWishlistCount: { $sum: 1 },
+        },
+      },
+    ]);
+    guestEventWishlistAgg.forEach((w) => {
+      const pId = w._id.toString();
+      const current = activeWishlistMap.get(pId) || 0;
+      if (w.activeWishlistCount > current) {
+        activeWishlistMap.set(pId, w.activeWishlistCount);
+      }
+    });
+
+    // 3. Aggregate active cart counts (Authenticated Users + Active Guest Sessions)
+    const activeCartMap = new Map();
+
+    const authCartAgg = await Cart.aggregate([
       { $unwind: '$items' },
       {
         $group: {
@@ -233,12 +333,76 @@ const getProductAnalytics = async (req, res) => {
         },
       },
     ]);
-    const activeCartMap = new Map();
-    activeCartAgg.forEach((c) => {
+    authCartAgg.forEach((c) => {
       activeCartMap.set(c._id.toString(), {
         activeCartUsers: c.activeCartUsers,
         activeCartUnits: c.activeCartUnits,
       });
+    });
+
+    const guestCartAgg = await ActiveGuestSession.aggregate([
+      { $match: { lastActive: { $gte: thirtyDaysAgo } } },
+      { $unwind: '$cart' },
+      {
+        $group: {
+          _id: '$cart.product',
+          sessionsSet: { $addToSet: '$sessionId' },
+          totalUnits: { $sum: '$cart.quantity' },
+        },
+      },
+      {
+        $project: {
+          _id: 1,
+          activeCartUsers: { $size: '$sessionsSet' },
+          activeCartUnits: '$totalUnits',
+        },
+      },
+    ]);
+    guestCartAgg.forEach((c) => {
+      const pId = c._id.toString();
+      const existing = activeCartMap.get(pId) || { activeCartUsers: 0, activeCartUnits: 0 };
+      activeCartMap.set(pId, {
+        activeCartUsers: existing.activeCartUsers + c.activeCartUsers,
+        activeCartUnits: existing.activeCartUnits + c.activeCartUnits,
+      });
+    });
+
+    // Fallback: include recent AnalyticsEvent records for guest sessions that haven't synced yet
+    const guestEventCartAgg = await AnalyticsEvent.aggregate([
+      {
+        $match: {
+          userId: null,
+          sessionId: { $ne: null },
+          eventType: { $in: ['CART_ADD', 'CART_REMOVE'] },
+          createdAt: { $gte: thirtyDaysAgo },
+        },
+      },
+      { $sort: { createdAt: 1 } },
+      {
+        $group: {
+          _id: { sessionId: '$sessionId', productId: '$productId' },
+          lastEvent: { $last: '$eventType' },
+          lastQty: { $last: '$quantity' },
+        },
+      },
+      { $match: { lastEvent: 'CART_ADD' } },
+      {
+        $group: {
+          _id: '$_id.productId',
+          sessionsCount: { $sum: 1 },
+          totalUnits: { $sum: '$lastQty' },
+        },
+      },
+    ]);
+    guestEventCartAgg.forEach((c) => {
+      const pId = c._id.toString();
+      const existing = activeCartMap.get(pId) || { activeCartUsers: 0, activeCartUnits: 0 };
+      if (c.sessionsCount > existing.activeCartUsers) {
+        activeCartMap.set(pId, {
+          activeCartUsers: Math.max(existing.activeCartUsers, c.sessionsCount),
+          activeCartUnits: Math.max(existing.activeCartUnits, c.totalUnits),
+        });
+      }
     });
 
     // 4. Fetch lifetime stats from ProductAnalytics
@@ -433,7 +597,19 @@ const exportProductAnalytics = async (req, res) => {
       { $unwind: '$products' },
       { $group: { _id: '$products', count: { $sum: 1 } } },
     ]);
-    const wishMap = new Map(activeWishlistAgg.map((w) => [w._id.toString(), w.count]));
+    const wishMap = new Map();
+    activeWishlistAgg.forEach((w) => wishMap.set(w._id.toString(), w.count));
+
+    const thirtyDaysAgo = new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
+    const guestWishlistAgg = await ActiveGuestSession.aggregate([
+      { $match: { lastActive: { $gte: thirtyDaysAgo } } },
+      { $unwind: '$wishlist' },
+      { $group: { _id: '$wishlist', count: { $sum: 1 } } },
+    ]);
+    guestWishlistAgg.forEach((w) => {
+      const pId = w._id.toString();
+      wishMap.set(pId, (wishMap.get(pId) || 0) + w.count);
+    });
 
     const activeCartAgg = await Cart.aggregate([
       { $unwind: '$items' },
@@ -452,7 +628,35 @@ const exportProductAnalytics = async (req, res) => {
         },
       },
     ]);
-    const cartMap = new Map(activeCartAgg.map((c) => [c._id.toString(), { users: c.users, units: c.units }]));
+    const cartMap = new Map();
+    activeCartAgg.forEach((c) => cartMap.set(c._id.toString(), { users: c.users, units: c.units }));
+
+    const guestCartAgg = await ActiveGuestSession.aggregate([
+      { $match: { lastActive: { $gte: thirtyDaysAgo } } },
+      { $unwind: '$cart' },
+      {
+        $group: {
+          _id: '$cart.product',
+          sessionsSet: { $addToSet: '$sessionId' },
+          totalUnits: { $sum: '$cart.quantity' },
+        },
+      },
+      {
+        $project: {
+          _id: 1,
+          users: { $size: '$sessionsSet' },
+          units: '$totalUnits',
+        },
+      },
+    ]);
+    guestCartAgg.forEach((c) => {
+      const pId = c._id.toString();
+      const existing = cartMap.get(pId) || { users: 0, units: 0 };
+      cartMap.set(pId, {
+        users: existing.users + c.users,
+        units: existing.units + c.units,
+      });
+    });
 
     const lifetimeStats = await ProductAnalytics.find({}).lean();
     const lifeMap = new Map(lifetimeStats.map((l) => [l.productId.toString(), l]));
@@ -508,6 +712,7 @@ const exportProductAnalytics = async (req, res) => {
 
 module.exports = {
   trackEvent,
+  syncGuestSession,
   getProductAnalytics,
   exportProductAnalytics,
 };
