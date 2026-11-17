@@ -423,7 +423,7 @@ const AdminLayout = ({ children }) => {
                             }}
                           />
                           <span style={{ fontSize: '0.72rem', color: '#10B981', fontWeight: 600 }}>
-                            Web Push Active
+                            Push Alerts Active (FCM)
                           </span>
                         </div>
                         <button

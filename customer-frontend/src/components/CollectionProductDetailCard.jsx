@@ -151,7 +151,7 @@ const CollectionProductDetailCard = ({ product, isLast = false }) => {
         {/* ── Left Column: Clean Hero Product Gallery ───────────────── */}
         <div className="product-gallery-wrapper">
           <div
-            className="product-gallery-main"
+            className="product-gallery-main collection-product-gallery-main"
             onTouchStart={handleTouchStart}
             onTouchMove={handleTouchMove}
             onTouchEnd={handleTouchEnd}
@@ -163,8 +163,8 @@ const CollectionProductDetailCard = ({ product, isLast = false }) => {
               background: isDark ? '#14141C' : '#F7F5F2',
               aspectRatio: '3 / 4',
               width: '100%',
-              maxWidth: 440,
-              maxHeight: 580,
+              maxWidth: 360,
+              maxHeight: 460,
               cursor: 'default',
             }}
           >
@@ -336,7 +336,7 @@ const CollectionProductDetailCard = ({ product, isLast = false }) => {
               )}
             </div>
 
-            {/* Bottom-Right Wishlist Heart Button */}
+            {/* Top-Right Wishlist Heart Button (Pure Heart Icon, No White Background) */}
             <button
               type="button"
               onClick={(e) => {
@@ -348,33 +348,39 @@ const CollectionProductDetailCard = ({ product, isLast = false }) => {
               title={inWishlist ? 'Remove from wishlist' : 'Add to wishlist'}
               style={{
                 position: 'absolute',
-                bottom: 12,
+                top: 12,
                 right: 12,
-                width: 36,
-                height: 36,
-                borderRadius: '50%',
-                background: isDark ? 'rgba(20,20,28,0.85)' : 'rgba(255,255,255,0.92)',
-                backdropFilter: 'blur(8px)',
-                WebkitBackdropFilter: 'blur(8px)',
-                border: `1px solid ${inWishlist ? 'rgba(225,29,72,0.4)' : isDark ? 'rgba(255,255,255,0.15)' : 'rgba(0,0,0,0.08)'}`,
+                background: 'transparent',
+                border: 'none',
+                padding: 4,
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
                 cursor: 'pointer',
-                zIndex: 3,
-                color: inWishlist ? '#E11D48' : (isDark ? '#F5F0EA' : '#1A1118'),
+                zIndex: 6,
+                outline: 'none',
                 transition: 'transform 0.2s cubic-bezier(0.16, 1, 0.3, 1)',
-                boxShadow: inWishlist ? '0 4px 12px rgba(225,29,72,0.35)' : '0 2px 8px rgba(0,0,0,0.08)',
+                filter: inWishlist
+                  ? 'drop-shadow(0 2px 6px rgba(225,29,72,0.65))'
+                  : 'drop-shadow(0 1px 3px rgba(0,0,0,0.65)) drop-shadow(0 0 1px rgba(0,0,0,0.8))',
               }}
-              onMouseEnter={(e) => (e.currentTarget.style.transform = 'scale(1.12)')}
-              onMouseLeave={(e) => (e.currentTarget.style.transform = 'scale(1)')}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.transform = 'scale(1.22)';
+                const heart = e.currentTarget.querySelector('svg');
+                if (heart && !inWishlist) heart.style.stroke = '#E11D48';
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.transform = 'scale(1)';
+                const heart = e.currentTarget.querySelector('svg');
+                if (heart && !inWishlist) heart.style.stroke = '#FFFFFF';
+              }}
             >
               <Heart
-                size={17}
+                size={22}
                 style={{
                   fill: inWishlist ? '#E11D48' : 'transparent',
-                  stroke: inWishlist ? '#E11D48' : 'currentColor',
-                  strokeWidth: 2,
+                  stroke: inWishlist ? '#E11D48' : '#FFFFFF',
+                  strokeWidth: 2.2,
                   transition: 'fill 0.2s ease, stroke 0.2s ease',
                 }}
               />
@@ -398,51 +404,95 @@ const CollectionProductDetailCard = ({ product, isLast = false }) => {
               {product.subcategoryId?.name || product.category}
             </span>
 
-            {product.inStock ? (
-              typeof product.inStockCount === 'number' && product.inStockCount <= 5 ? (
-                <span
-                  style={{
-                    fontSize: '0.72rem',
-                    fontWeight: 700,
-                    color: '#D97706',
-                    background: 'rgba(217,119,6,0.1)',
-                    padding: '3px 9px',
-                    borderRadius: 999,
-                    border: '1px solid rgba(217,119,6,0.25)',
-                  }}
-                >
-                  Only {product.inStockCount} left
-                </span>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+              {product.inStock ? (
+                typeof product.inStockCount === 'number' && product.inStockCount <= 5 ? (
+                  <span
+                    style={{
+                      fontSize: '0.72rem',
+                      fontWeight: 700,
+                      color: '#D97706',
+                      background: 'rgba(217,119,6,0.1)',
+                      padding: '3px 9px',
+                      borderRadius: 999,
+                      border: '1px solid rgba(217,119,6,0.25)',
+                    }}
+                  >
+                    Only {product.inStockCount} left
+                  </span>
+                ) : (
+                  <span
+                    style={{
+                      fontSize: '0.72rem',
+                      fontWeight: 600,
+                      color: '#10B981',
+                      background: 'rgba(16,185,129,0.1)',
+                      padding: '3px 9px',
+                      borderRadius: 999,
+                      border: '1px solid rgba(16,185,129,0.25)',
+                    }}
+                  >
+                    ✓ In Stock
+                  </span>
+                )
               ) : (
                 <span
                   style={{
                     fontSize: '0.72rem',
-                    fontWeight: 600,
-                    color: '#10B981',
-                    background: 'rgba(16,185,129,0.1)',
+                    fontWeight: 700,
+                    color: '#EF4444',
+                    background: 'rgba(239,68,68,0.1)',
                     padding: '3px 9px',
                     borderRadius: 999,
-                    border: '1px solid rgba(16,185,129,0.25)',
+                    border: '1px solid rgba(239,68,68,0.25)',
                   }}
                 >
-                  ✓ In Stock
+                  Sold Out
                 </span>
-              )
-            ) : (
-              <span
+              )}
+
+              {/* In-header Wishlist Heart Icon (No White Background) */}
+              <button
+                type="button"
+                onClick={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  toggleWishlist(product);
+                }}
+                title={inWishlist ? 'Remove from Wishlist' : 'Add to Wishlist'}
+                aria-label={inWishlist ? 'Remove from Wishlist' : 'Add to Wishlist'}
                 style={{
-                  fontSize: '0.72rem',
-                  fontWeight: 700,
-                  color: '#EF4444',
-                  background: 'rgba(239,68,68,0.1)',
-                  padding: '3px 9px',
-                  borderRadius: 999,
-                  border: '1px solid rgba(239,68,68,0.25)',
+                  background: 'transparent',
+                  border: 'none',
+                  padding: 4,
+                  cursor: 'pointer',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  color: inWishlist ? '#E11D48' : 'var(--text-secondary)',
+                  transition: 'transform 0.2s ease, color 0.2s ease',
+                  outline: 'none',
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.transform = 'scale(1.18)';
+                  e.currentTarget.style.color = '#E11D48';
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.transform = 'scale(1)';
+                  e.currentTarget.style.color = inWishlist ? '#E11D48' : 'var(--text-secondary)';
                 }}
               >
-                Sold Out
-              </span>
-            )}
+                <Heart
+                  size={18}
+                  style={{
+                    fill: inWishlist ? '#E11D48' : 'transparent',
+                    stroke: inWishlist ? '#E11D48' : 'currentColor',
+                    strokeWidth: 2,
+                    transition: 'fill 0.2s ease, stroke 0.2s ease',
+                  }}
+                />
+              </button>
+            </div>
           </div>
 
           {/* Clickable Product Title Link */}

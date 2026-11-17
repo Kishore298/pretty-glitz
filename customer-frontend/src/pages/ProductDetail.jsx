@@ -342,7 +342,7 @@ const ProductDetail = () => {
           {/* ── Image Gallery (Showcase Default + Colour-Specific Selection + Thumbnail Strip) ── */}
           <div className="product-gallery-wrapper">
             <div
-              className="product-gallery-main"
+              className="product-gallery-main product-detail-gallery-main"
               onTouchStart={(e) => {
                 setTouchEndX(null);
                 setTouchStartX(e.targetTouches[0].clientX);
@@ -504,6 +504,56 @@ const ProductDetail = () => {
                   })}
                 </div>
               )}
+
+              {/* Floating Top-Right Wishlist Heart Button (No White Background) */}
+              <button
+                type="button"
+                onClick={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  if (product) toggleWishlist(product);
+                }}
+                aria-label={inWishlist ? 'Remove from wishlist' : 'Add to wishlist'}
+                title={inWishlist ? 'Remove from wishlist' : 'Add to wishlist'}
+                style={{
+                  position: 'absolute',
+                  top: 14,
+                  right: 14,
+                  background: 'transparent',
+                  border: 'none',
+                  padding: 4,
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  cursor: 'pointer',
+                  zIndex: 4,
+                  outline: 'none',
+                  transition: 'transform 0.2s cubic-bezier(0.16, 1, 0.3, 1)',
+                  filter: inWishlist
+                    ? 'drop-shadow(0 2px 6px rgba(225,29,72,0.65))'
+                    : 'drop-shadow(0 1px 3px rgba(0,0,0,0.65)) drop-shadow(0 0 1px rgba(0,0,0,0.8))',
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.transform = 'scale(1.22)';
+                  const heart = e.currentTarget.querySelector('svg');
+                  if (heart && !inWishlist) heart.style.stroke = '#E11D48';
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.transform = 'scale(1)';
+                  const heart = e.currentTarget.querySelector('svg');
+                  if (heart && !inWishlist) heart.style.stroke = '#FFFFFF';
+                }}
+              >
+                <Heart
+                  size={22}
+                  style={{
+                    fill: inWishlist ? '#E11D48' : 'transparent',
+                    stroke: inWishlist ? '#E11D48' : '#FFFFFF',
+                    strokeWidth: 2.2,
+                    transition: 'fill 0.2s ease, stroke 0.2s ease',
+                  }}
+                />
+              </button>
 
               <button
                 type="button"

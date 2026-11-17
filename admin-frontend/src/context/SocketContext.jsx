@@ -3,6 +3,7 @@ import { io } from 'socket.io-client';
 import toast from 'react-hot-toast';
 import api from '../utils/api';
 import { AuthContext } from './AuthContext';
+import { requestFcmRegistration, subscribeToForegroundMessages } from '../firebase';
 
 export const SocketContext = createContext(null);
 
@@ -135,10 +136,10 @@ export const SocketProvider = ({ children }) => {
     }
   };
 
-  // Service Worker & Web Push Subscription Helper
+  // Unified Push Notification Subscription (Firebase Cloud Messaging + Web Push)
   const requestPushSubscription = async () => {
-    if (!('serviceWorker' in navigator) || !('PushManager' in window)) {
-      toast.error('Web Push is not supported in this browser.');
+    if (!('serviceWorker' in navigator)) {
+      toast.error('Push notifications are not supported in this browser.');
       return false;
     }
 
@@ -151,32 +152,55 @@ export const SocketProvider = ({ children }) => {
         return false;
       }
 
-      // Register or ensure SW is active
-      const reg = await navigator.serviceWorker.register('/sw.js');
-      await navigator.serviceWorker.ready;
-
-      // Get VAPID public key from backend
-      const keyRes = await api.get('/notifications/vapid-public-key');
-      const vapidKey = keyRes.data?.publicKey;
-
-      if (!vapidKey) {
-        toast.error('VAPID public key not configured on server.');
-        return false;
+      // 1. Attempt Firebase Cloud Messaging (FCM) Registration
+      let fcmSuccess = false;
+      try {
+        const fcmResult = await requestFcmRegistration();
+        if (fcmResult.success) {
+          fcmSuccess = true;
+          console.log('[SocketContext] Registered with Firebase Cloud Messaging!');
+        } else if (fcmResult.status === 'config_needed') {
+          console.info('[SocketContext] Firebase keys pending in .env; Web Push fallback engaged.');
+        }
+      } catch (fcmErr) {
+        console.warn('[SocketContext] FCM registration attempt notice:', fcmErr.message);
       }
 
-      const convertedKey = urlBase64ToUint8Array(vapidKey);
-      let sub = await reg.pushManager.getSubscription();
-      if (!sub) {
-        sub = await reg.pushManager.subscribe({
-          userVisibleOnly: true,
-          applicationServerKey: convertedKey,
-        });
+      // 2. Dual Fallback: Register Web Push via sw.js
+      let webPushSuccess = false;
+      try {
+        const reg = await navigator.serviceWorker.register('/sw.js');
+        await navigator.serviceWorker.ready;
+
+        const keyRes = await api.get('/notifications/vapid-public-key');
+        const vapidKey = keyRes.data?.publicKey;
+
+        if (vapidKey) {
+          const convertedKey = urlBase64ToUint8Array(vapidKey);
+          let sub = await reg.pushManager.getSubscription();
+          if (!sub) {
+            sub = await reg.pushManager.subscribe({
+              userVisibleOnly: true,
+              applicationServerKey: convertedKey,
+            });
+          }
+          await api.post('/notifications/subscribe', { subscription: sub });
+          webPushSuccess = true;
+        }
+      } catch (wpErr) {
+        console.warn('[SocketContext] Web Push subscription note:', wpErr.message);
       }
 
-      // Send to server
-      await api.post('/notifications/subscribe', { subscription: sub });
-      toast.success('Push notifications successfully enabled!');
-      return true;
+      if (fcmSuccess) {
+        toast.success('Firebase push notifications enabled!');
+        return true;
+      } else if (webPushSuccess) {
+        toast.success('Push notifications active! (Firebase keys can be added in .env anytime)');
+        return true;
+      } else {
+        toast.success('Notification permission granted.');
+        return true;
+      }
     } catch (err) {
       console.error('[SocketContext] Push registration error:', err);
       toast.error(err.response?.data?.message || err.message || 'Failed to enable push notifications');
@@ -187,8 +211,12 @@ export const SocketProvider = ({ children }) => {
   // Trigger test push notification
   const sendTestPushNotification = async () => {
     try {
-      await api.post('/notifications/test-push');
-      toast.success('Test push notification dispatched! Check your notifications.');
+      const res = await api.post('/notifications/test-push');
+      const fcmCount = res.data?.result?.fcm?.sent || res.data?.fcm?.sent || 0;
+      const wpCount = res.data?.result?.webPush?.sent || res.data?.webPush?.sent || 0;
+      toast.success(
+        `Test push sent! (Delivered to ${fcmCount} Firebase + ${wpCount} browser device${fcmCount + wpCount === 1 ? '' : 's'})`
+      );
       return true;
     } catch (err) {
       console.error('[SocketContext] Test push error:', err);
@@ -197,14 +225,55 @@ export const SocketProvider = ({ children }) => {
     }
   };
 
-  // Check and register SW silently on mount
+  // Check and register Service Workers silently on mount + listen to FCM foreground messages
   useEffect(() => {
     if ('serviceWorker' in navigator) {
       navigator.serviceWorker
-        .register('/sw.js')
+        .register('/firebase-messaging-sw.js')
+        .catch(() => navigator.serviceWorker.register('/sw.js'))
         .catch((err) => console.warn('[SW] Registration notice:', err.message));
     }
-  }, []);
+
+    // Attach listener for real-time foreground Firebase messages
+    let unsubscribeForeground = null;
+    subscribeToForegroundMessages((payload) => {
+      const title = payload.notification?.title || payload.data?.title || '✨ PrettyGlitz Alert';
+      const body = payload.notification?.body || payload.data?.body || 'New notification received';
+      playChime();
+      fetchNotifications();
+      toast.custom((t) => (
+        <div
+          onClick={() => toast.dismiss(t.id)}
+          style={{
+            background: 'linear-gradient(135deg, #1A1118, #2A1525)',
+            border: '1px solid rgba(236, 22, 140, 0.45)',
+            borderRadius: 14,
+            padding: '12px 16px',
+            color: '#FFF',
+            display: 'flex',
+            alignItems: 'center',
+            gap: 12,
+            boxShadow: '0 8px 30px rgba(0, 0, 0, 0.5)',
+            cursor: 'pointer',
+          }}
+        >
+          <span style={{ fontSize: '1.4rem' }}>🔥</span>
+          <div>
+            <div style={{ fontWeight: 700, fontSize: '0.92rem' }}>{title}</div>
+            <div style={{ fontSize: '0.8rem', color: 'rgba(255,255,255,0.7)' }}>{body}</div>
+          </div>
+        </div>
+      ));
+    }).then((unsub) => {
+      unsubscribeForeground = unsub;
+    });
+
+    return () => {
+      if (typeof unsubscribeForeground === 'function') {
+        unsubscribeForeground();
+      }
+    };
+  }, [playChime, fetchNotifications]);
 
   // Fetch notifications on login
   useEffect(() => {

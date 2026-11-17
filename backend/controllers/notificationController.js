@@ -1,6 +1,12 @@
 const Notification = require('../models/Notification');
 const PushSubscription = require('../models/PushSubscription');
+const FcmToken = require('../models/FcmToken');
 const { getVapidPublicKey, sendPushToAllAdmins } = require('../services/pushService');
+const {
+  isFirebaseConfigured,
+  getFirebasePublicConfig,
+  sendFcmToAllAdmins,
+} = require('../services/firebaseService');
 
 // ─── GET /api/notifications (Admin list notifications) ───────────────────────
 const getNotifications = async (req, res) => {
@@ -26,13 +32,13 @@ const getNotifications = async (req, res) => {
 const markAsRead = async (req, res) => {
   try {
     const { id } = req.params;
-    const notification = await Notification.findByIdAndUpdate(
+    const notif = await Notification.findByIdAndUpdate(
       id,
-      { read: true, readAt: new Date() },
+      { read: true },
       { new: true }
     );
 
-    if (!notification) {
+    if (!notif) {
       return res.status(404).json({ message: 'Notification not found.' });
     }
 
@@ -40,19 +46,20 @@ const markAsRead = async (req, res) => {
 
     return res.status(200).json({
       success: true,
-      notification,
+      notification: notif,
       unreadCount,
     });
   } catch (err) {
     console.error('[Notifications] markAsRead error:', err);
-    return res.status(500).json({ message: 'Failed to update notification.' });
+    return res.status(500).json({ message: 'Failed to mark notification as read.' });
   }
 };
 
 // ─── PATCH /api/notifications/read-all (Mark all as read) ────────────────────
 const markAllAsRead = async (req, res) => {
   try {
-    await Notification.updateMany({ read: false }, { read: true, readAt: new Date() });
+    await Notification.updateMany({ read: false }, { read: true });
+
     return res.status(200).json({
       success: true,
       message: 'All notifications marked as read.',
@@ -60,11 +67,70 @@ const markAllAsRead = async (req, res) => {
     });
   } catch (err) {
     console.error('[Notifications] markAllAsRead error:', err);
-    return res.status(500).json({ message: 'Failed to mark all notifications as read.' });
+    return res.status(500).json({ message: 'Failed to mark all as read.' });
   }
 };
 
-// ─── POST /api/notifications/subscribe (Register push subscription) ──────────
+// ─── POST /api/notifications/fcm-token (Register Firebase Cloud Messaging Token)
+const saveFcmToken = async (req, res) => {
+  try {
+    const { token, deviceInfo } = req.body;
+    if (!token) {
+      return res.status(400).json({ message: 'FCM registration token is required.' });
+    }
+
+    const adminId = req.user?.userId || req.user?.id || null;
+    const agent = deviceInfo || req.headers['user-agent'] || '';
+
+    const saved = await FcmToken.findOneAndUpdate(
+      { token },
+      {
+        token,
+        adminId,
+        deviceInfo: agent,
+        lastUsedAt: new Date(),
+      },
+      { upsert: true, new: true }
+    );
+
+    return res.status(201).json({
+      success: true,
+      message: 'Firebase FCM token registered successfully.',
+      tokenId: saved._id,
+    });
+  } catch (err) {
+    console.error('[Notifications] saveFcmToken error:', err);
+    return res.status(500).json({ message: 'Failed to save Firebase FCM token.' });
+  }
+};
+
+// ─── POST /api/notifications/fcm-token/delete (Revoke FCM Token) ─────────────
+const deleteFcmToken = async (req, res) => {
+  try {
+    const { token } = req.body;
+    if (!token) {
+      return res.status(400).json({ message: 'FCM token is required to delete.' });
+    }
+
+    await FcmToken.deleteMany({ token });
+
+    return res.status(200).json({
+      success: true,
+      message: 'Firebase FCM token deleted.',
+    });
+  } catch (err) {
+    console.error('[Notifications] deleteFcmToken error:', err);
+    return res.status(500).json({ message: 'Failed to delete FCM token.' });
+  }
+};
+
+// ─── GET /api/notifications/firebase-config ──────────────────────────────────
+const getFirebaseConfig = (req, res) => {
+  const config = getFirebasePublicConfig();
+  return res.status(200).json(config);
+};
+
+// ─── POST /api/notifications/subscribe (Register web push subscription) ──────
 const subscribePush = async (req, res) => {
   try {
     const subObj = req.body.subscription || (req.body.endpoint ? req.body : null);
@@ -121,19 +187,22 @@ const unsubscribePush = async (req, res) => {
   }
 };
 
-// ─── POST /api/notifications/test-push (Admin sends a test push alert) ───────
+// ─── POST /api/notifications/test-push (Admin sends a test alert) ────────────
 const sendTestPush = async (req, res) => {
   try {
-    const result = await sendPushToAllAdmins({
+    const payload = {
       title: '✨ PrettyGlitz Push Test',
-      body: 'Web Push is active and working! You will receive live alerts for orders, stock, and reviews.',
+      body: 'Firebase Cloud Messaging alert is active! You will receive live alerts for orders, stock, and reviews.',
       icon: '/pretty-glitz-logo.png',
-      data: { url: '/orders' },
-    });
+      url: '/orders',
+      type: 'test_alert',
+    };
+
+    const result = await sendPushToAllAdmins(payload);
 
     return res.status(200).json({
       success: true,
-      message: 'Test push notification sent successfully.',
+      message: 'Test notification dispatched across Firebase & Web Push.',
       result,
     });
   } catch (err) {
@@ -152,9 +221,11 @@ module.exports = {
   getNotifications,
   markAsRead,
   markAllAsRead,
+  saveFcmToken,
+  deleteFcmToken,
+  getFirebaseConfig,
   subscribePush,
   unsubscribePush,
   sendTestPush,
   getVapidKey,
 };
-

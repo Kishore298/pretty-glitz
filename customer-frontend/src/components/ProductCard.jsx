@@ -348,7 +348,7 @@ const ProductCard = ({ product, showVariants = false }) => {
           </div>
 
 
-          {/* Bottom-Right Wishlist Button */}
+          {/* Bottom-Right Wishlist Button (Pure Heart Icon, No White Background) */}
           <button
             type="button"
             onClick={(e) => {
@@ -362,35 +362,37 @@ const ProductCard = ({ product, showVariants = false }) => {
               position: 'absolute',
               bottom: 8,
               right: 8,
-              width: 30,
-              height: 30,
-              borderRadius: '50%',
-              background: isDark ? 'rgba(20,20,28,0.78)' : 'rgba(255,255,255,0.88)',
-              backdropFilter: 'blur(8px)',
-              WebkitBackdropFilter: 'blur(8px)',
-              border: `1px solid ${inWishlist ? 'rgba(225,29,72,0.35)' : isDark ? 'rgba(255,255,255,0.12)' : 'rgba(0,0,0,0.08)'}`,
+              background: 'transparent',
+              border: 'none',
+              padding: 4,
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
               cursor: 'pointer',
-              zIndex: 3,
-              color: inWishlist ? '#E11D48' : (isDark ? '#F5F0EA' : '#1A1118'),
-              transition: 'transform 0.2s cubic-bezier(0.16, 1, 0.3, 1), background 0.2s, border-color 0.2s',
-              boxShadow: inWishlist ? '0 2px 8px rgba(225,29,72,0.35)' : '0 2px 6px rgba(0,0,0,0.08)',
+              zIndex: 4,
+              outline: 'none',
+              transition: 'transform 0.2s cubic-bezier(0.16, 1, 0.3, 1)',
+              filter: inWishlist
+                ? 'drop-shadow(0 2px 6px rgba(225,29,72,0.65))'
+                : 'drop-shadow(0 1px 3px rgba(0,0,0,0.65)) drop-shadow(0 0 1px rgba(0,0,0,0.8))',
             }}
             onMouseEnter={(e) => {
-              e.currentTarget.style.transform = 'scale(1.12)';
+              e.currentTarget.style.transform = 'scale(1.22)';
+              const heart = e.currentTarget.querySelector('svg');
+              if (heart && !inWishlist) heart.style.stroke = '#E11D48';
             }}
             onMouseLeave={(e) => {
               e.currentTarget.style.transform = 'scale(1)';
+              const heart = e.currentTarget.querySelector('svg');
+              if (heart && !inWishlist) heart.style.stroke = '#FFFFFF';
             }}
           >
             <Heart
-              size={15}
+              size={19}
               style={{
                 fill: inWishlist ? '#E11D48' : 'transparent',
-                stroke: inWishlist ? '#E11D48' : 'currentColor',
-                strokeWidth: 2,
+                stroke: inWishlist ? '#E11D48' : '#FFFFFF',
+                strokeWidth: 2.2,
                 transition: 'fill 0.2s ease, stroke 0.2s ease',
               }}
             />

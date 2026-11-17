@@ -31,8 +31,8 @@ const ProductImageModal = ({
   const rawImages = overrideImages && overrideImages.length > 0
     ? overrideImages
     : (product?.images && product.images.length > 0
-        ? product.images
-        : (product?.image ? [{ url: product.image }] : []));
+      ? product.images
+      : (product?.image ? [{ url: product.image }] : []));
 
   const images = Array.isArray(rawImages) ? rawImages : [];
   const [activeIndex, setActiveIndex] = useState(initialIndex || 0);
@@ -138,13 +138,11 @@ const ProductImageModal = ({
             display: 'flex',
             flexDirection: 'column',
             alignItems: 'center',
-            justifyContent: 'center',
             background: isDark
               ? 'rgba(10, 10, 16, 0.88)'
               : 'rgba(253, 250, 245, 0.88)',
             backdropFilter: 'blur(20px)',
             WebkitBackdropFilter: 'blur(20px)',
-            padding: '16px',
             userSelect: 'none',
           }}
           onClick={onClose}
@@ -156,30 +154,27 @@ const ProductImageModal = ({
             animate={{ opacity: 1, scale: 1, y: 0 }}
             exit={{ opacity: 0, scale: 0.94, y: 14 }}
             transition={{ duration: 0.24, ease: [0.16, 1, 0.3, 1] }}
+            className="product-image-modal-card"
             style={{
               position: 'relative',
-              width: '100%',
-              maxWidth: 920,
-              maxHeight: '94vh',
               display: 'flex',
               flexDirection: 'column',
               alignItems: 'center',
-              justifyContent: 'center',
             }}
             onClick={(e) => e.stopPropagation()}
           >
             {/* Header Bar */}
             <div
+              className="product-image-modal-header"
               style={{
                 width: '100%',
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'space-between',
-                padding: '8px 12px 14px',
                 color: 'var(--text)',
               }}
             >
-              <div style={{ minWidth: 0, paddingRight: 16 }}>
+              <div style={{ minWidth: 0, paddingRight: 12 }}>
                 <h3
                   style={{
                     fontFamily: '"Cormorant Garamond", Georgia, serif',
@@ -195,7 +190,7 @@ const ProductImageModal = ({
                 >
                   {product.name}
                 </h3>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginTop: 4 }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginTop: 3 }}>
                   <span style={{ fontSize: '0.92rem', fontWeight: 800, color: 'var(--accent, #C4386C)' }}>
                     ₹{product.price}
                   </span>
@@ -212,9 +207,8 @@ const ProductImageModal = ({
                 type="button"
                 onClick={onClose}
                 aria-label="Close enlarged preview"
+                className="product-image-modal-close-btn"
                 style={{
-                  width: 42,
-                  height: 42,
                   borderRadius: '50%',
                   background: isDark ? 'rgba(255, 255, 255, 0.1)' : 'rgba(26, 17, 24, 0.06)',
                   border: '1px solid var(--border)',
@@ -240,18 +234,18 @@ const ProductImageModal = ({
                   e.currentTarget.style.transform = 'scale(1)';
                 }}
               >
-                <X size={20} />
+                <X size={19} />
               </button>
             </div>
 
             {/* Main Enlarged Image Stage with Light Background & Swipe */}
             <div
+              className="product-image-modal-stage"
               onTouchStart={handleTouchStart}
               onTouchMove={handleTouchMove}
               onTouchEnd={handleTouchEnd}
               style={{
                 position: 'relative',
-                width: '100%',
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
@@ -262,19 +256,14 @@ const ProductImageModal = ({
                   ? '0 20px 60px rgba(0, 0, 0, 0.55), 0 0 0 1px rgba(255, 255, 255, 0.08)'
                   : '0 20px 60px rgba(196, 56, 108, 0.12), 0 4px 20px rgba(0, 0, 0, 0.06), 0 0 0 1px var(--border)',
                 touchAction: images.length > 1 ? 'pan-y' : 'auto',
-                minHeight: '260px',
               }}
             >
               <img
                 key={activeIndex}
                 src={currentImage ? optimizeImageUrl(currentImage, 1600) : logoImg}
                 alt={`${product.name} enlarged view`}
+                className="product-image-modal-img"
                 style={{
-                  maxWidth: '100%',
-                  maxHeight: '66vh',
-                  width: 'auto',
-                  height: 'auto',
-                  objectFit: 'contain',
                   display: 'block',
                   borderRadius: 18,
                   transition: 'opacity 0.2s ease',
@@ -409,6 +398,7 @@ const ProductImageModal = ({
 
             {/* Bottom Thumbnails & Action Controls Row */}
             <div
+              className="product-image-modal-bottom"
               style={{
                 width: '100%',
                 display: 'flex',
@@ -541,6 +531,55 @@ const ProductImageModal = ({
             </div>
 
             <style>{`
+              .product-image-modal-root {
+                justify-content: flex-start !important;
+                padding: max(8px, env(safe-area-inset-top, 8px)) 10px max(10px, env(safe-area-inset-bottom, 10px)) !important;
+                overflow-y: auto !important;
+                -webkit-overflow-scrolling: touch !important;
+              }
+              .product-image-modal-card {
+                width: 100% !important;
+                max-width: 100% !important;
+                height: 100% !important;
+                max-height: calc(100dvh - max(16px, env(safe-area-inset-top, 8px) + env(safe-area-inset-bottom, 10px))) !important;
+                display: flex !important;
+                flex-direction: column !important;
+                justify-content: space-between !important;
+                align-items: center !important;
+                margin: 0 auto !important;
+              }
+              .product-image-modal-header {
+                flex-shrink: 0 !important;
+                padding: 2px 4px 6px !important;
+                width: 100% !important;
+              }
+              .product-image-modal-close-btn {
+                width: 36px !important;
+                height: 36px !important;
+              }
+              .product-image-modal-stage {
+                flex: 1 1 auto !important;
+                width: 100% !important;
+                min-height: 320px !important;
+                max-height: calc(100dvh - 165px) !important;
+                display: flex !important;
+                align-items: center !important;
+                justify-content: center !important;
+                position: relative !important;
+              }
+              .product-image-modal-img {
+                width: 100% !important;
+                height: 100% !important;
+                max-width: 100% !important;
+                max-height: 100% !important;
+                object-fit: contain !important;
+              }
+              .product-image-modal-bottom {
+                flex-shrink: 0 !important;
+                padding-top: 6px !important;
+                padding-bottom: 2px !important;
+                width: 100% !important;
+              }
               .modal-gallery-nav-btn {
                 display: none !important;
               }
@@ -548,6 +587,36 @@ const ProductImageModal = ({
                 display: flex !important;
               }
               @media (min-width: 769px) {
+                .product-image-modal-root {
+                  justify-content: center !important;
+                  padding: 24px !important;
+                }
+                .product-image-modal-card {
+                  height: auto !important;
+                  max-height: 92vh !important;
+                  max-width: 920px !important;
+                  justify-content: center !important;
+                }
+                .product-image-modal-header {
+                  padding: 8px 12px 14px !important;
+                }
+                .product-image-modal-close-btn {
+                  width: 42px !important;
+                  height: 42px !important;
+                }
+                .product-image-modal-stage {
+                  flex: 0 1 auto !important;
+                  min-height: 380px !important;
+                  max-height: 68vh !important;
+                }
+                .product-image-modal-img {
+                  height: auto !important;
+                  width: auto !important;
+                  max-height: 68vh !important;
+                }
+                .product-image-modal-bottom {
+                  padding-top: 12px !important;
+                }
                 .modal-gallery-nav-btn {
                   display: flex !important;
                 }

@@ -928,6 +928,13 @@ section,
 }
 
 @media (max-width: 480px) {
+  .product-detail-gallery-main {
+    max-height: 440px !important;
+  }
+  .collection-product-gallery-main {
+    max-height: 275px !important;
+    max-width: 230px !important;
+  }
   .product-gallery-zoom-badge {
     bottom: 10px;
     right: 10px;
@@ -1278,7 +1285,19 @@ section,
 
   .product-gallery-main {
     aspect-ratio: 3 / 4;
-    max-height: 350px;
+    border-radius: 14px;
+  }
+
+  .product-detail-gallery-main {
+    max-height: 460px !important;
+    max-width: 420px;
+    margin: 0 auto;
+  }
+
+  .collection-product-gallery-main {
+    max-height: 300px !important;
+    max-width: 250px !important;
+    margin: 0 auto;
     border-radius: 14px;
   }
 
