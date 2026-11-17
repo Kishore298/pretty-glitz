@@ -6,12 +6,12 @@ import {
   Plus,
   Minus,
   Check,
-  Sparkles,
   Ruler,
   Maximize2,
   ChevronLeft,
   ChevronRight,
   ChevronDown,
+  Share2,
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { CartContext } from '../context/CartContext';
@@ -43,6 +43,11 @@ const CollectionProductDetailCard = ({ product, isLast = false }) => {
   const [isEnlargedModalOpen, setIsEnlargedModalOpen] = useState(false);
   const [detailsOpen, setDetailsOpen] = useState(false);
   const [shippingOpen, setShippingOpen] = useState(false);
+  const [copyToast, setCopyToast] = useState(false);
+  const [addedFeedback, setAddedFeedback] = useState(false);
+  const [showSizeChart, setShowSizeChart] = useState(false);
+
+  const inWishlist = isInWishlist(product._id);
 
   // Available Sizes for currently selected variant
   const activeSizes = (selectedColor && selectedColor.sizes?.length > 0)
@@ -64,11 +69,6 @@ const CollectionProductDetailCard = ({ product, isLast = false }) => {
     }
     return null;
   });
-
-  const [addedFeedback, setAddedFeedback] = useState(false);
-  const [showSizeChart, setShowSizeChart] = useState(false);
-
-  const inWishlist = isInWishlist(product._id);
 
   // Images for currently selected variant
   const images = (selectedColor && selectedColor.images?.length > 0)
@@ -96,6 +96,29 @@ const CollectionProductDetailCard = ({ product, isLast = false }) => {
       if (!stillValid) {
         const firstAvailable = cVar.sizes.find(s => s.inStock !== false);
         setSelectedSize(firstAvailable ? firstAvailable.size : cVar.sizes[0].size);
+      }
+    }
+  };
+
+  const handleShare = async () => {
+    const shareUrl = `${window.location.origin}/product/${product._id}`;
+    if (navigator.share) {
+      try {
+        await navigator.share({
+          title: product.name,
+          text: `Check out ${product.name} on PrettyGlitz!`,
+          url: shareUrl,
+        });
+      } catch {
+        // User cancelled share
+      }
+    } else {
+      try {
+        await navigator.clipboard.writeText(shareUrl);
+        setCopyToast(true);
+        setTimeout(() => setCopyToast(false), 2500);
+      } catch {
+        // Fallback
       }
     }
   };
@@ -151,21 +174,13 @@ const CollectionProductDetailCard = ({ product, isLast = false }) => {
         {/* ── Left Column: Clean Hero Product Gallery ───────────────── */}
         <div className="product-gallery-wrapper">
           <div
-            className="product-gallery-main collection-product-gallery-main"
+            className="product-gallery-main product-detail-gallery-main collection-product-gallery-main"
             onTouchStart={handleTouchStart}
             onTouchMove={handleTouchMove}
             onTouchEnd={handleTouchEnd}
             style={{
               position: 'relative',
               touchAction: hasMultipleImages ? 'pan-y' : 'auto',
-              borderRadius: 18,
-              overflow: 'hidden',
-              background: isDark ? '#14141C' : '#F7F5F2',
-              aspectRatio: '3 / 4',
-              width: '100%',
-              maxWidth: 360,
-              maxHeight: 460,
-              cursor: 'default',
             }}
           >
             <img
@@ -187,11 +202,12 @@ const CollectionProductDetailCard = ({ product, isLast = false }) => {
               }}
             />
 
-            {/* Desktop Previous / Next Chevron Arrows */}
+            {/* Desktop Previous / Next Chevron Navigation Arrows */}
             {hasMultipleImages && (
               <>
                 <button
                   type="button"
+                  className="product-gallery-nav-btn"
                   onClick={(e) => {
                     e.stopPropagation();
                     setActiveImg((prev) => (prev - 1 + images.length) % images.length);
@@ -199,28 +215,31 @@ const CollectionProductDetailCard = ({ product, isLast = false }) => {
                   aria-label="Previous photo"
                   style={{
                     position: 'absolute',
-                    left: 10,
+                    left: 12,
                     top: '50%',
                     transform: 'translateY(-50%)',
-                    width: 34,
-                    height: 34,
+                    width: 38,
+                    height: 38,
                     borderRadius: '50%',
                     background: 'rgba(10, 10, 16, 0.65)',
-                    backdropFilter: 'blur(4px)',
+                    backdropFilter: 'blur(6px)',
                     border: '1px solid rgba(255, 255, 255, 0.15)',
                     color: '#FFFFFF',
-                    display: 'flex',
                     alignItems: 'center',
                     justifyContent: 'center',
                     cursor: 'pointer',
-                    zIndex: 4,
+                    zIndex: 3,
+                    transition: 'all 0.2s ease',
                   }}
+                  onMouseEnter={(e) => (e.currentTarget.style.background = 'rgba(196, 56, 108, 0.9)')}
+                  onMouseLeave={(e) => (e.currentTarget.style.background = 'rgba(10, 10, 16, 0.65)')}
                 >
-                  <ChevronLeft size={18} />
+                  <ChevronLeft size={20} />
                 </button>
 
                 <button
                   type="button"
+                  className="product-gallery-nav-btn"
                   onClick={(e) => {
                     e.stopPropagation();
                     setActiveImg((prev) => (prev + 1) % images.length);
@@ -228,27 +247,113 @@ const CollectionProductDetailCard = ({ product, isLast = false }) => {
                   aria-label="Next photo"
                   style={{
                     position: 'absolute',
-                    right: 10,
+                    right: 12,
                     top: '50%',
                     transform: 'translateY(-50%)',
-                    width: 34,
-                    height: 34,
+                    width: 38,
+                    height: 38,
                     borderRadius: '50%',
                     background: 'rgba(10, 10, 16, 0.65)',
-                    backdropFilter: 'blur(4px)',
+                    backdropFilter: 'blur(6px)',
                     border: '1px solid rgba(255, 255, 255, 0.15)',
                     color: '#FFFFFF',
-                    display: 'flex',
                     alignItems: 'center',
                     justifyContent: 'center',
                     cursor: 'pointer',
-                    zIndex: 4,
+                    zIndex: 3,
+                    transition: 'all 0.2s ease',
                   }}
+                  onMouseEnter={(e) => (e.currentTarget.style.background = 'rgba(196, 56, 108, 0.9)')}
+                  onMouseLeave={(e) => (e.currentTarget.style.background = 'rgba(10, 10, 16, 0.65)')}
                 >
-                  <ChevronRight size={18} />
+                  <ChevronRight size={20} />
                 </button>
               </>
             )}
+
+            {/* Mobile Swipe Dot Indicators */}
+            {hasMultipleImages && (
+              <div
+                className="product-gallery-dots"
+                style={{
+                  position: 'absolute',
+                  bottom: 14,
+                  left: '50%',
+                  transform: 'translateX(-50%)',
+                  alignItems: 'center',
+                  gap: 6,
+                  zIndex: 3,
+                  pointerEvents: 'none',
+                }}
+              >
+                {images.map((_, dotIdx) => {
+                  const isCurrent = dotIdx === activeImg;
+                  return (
+                    <span
+                      key={dotIdx}
+                      style={{
+                        width: isCurrent ? 18 : 6,
+                        height: 6,
+                        borderRadius: 3,
+                        background: isCurrent ? 'var(--accent, #C4386C)' : 'rgba(255, 255, 255, 0.5)',
+                        boxShadow: '0 1px 4px rgba(0, 0, 0, 0.4)',
+                        transition: 'all 0.25s ease',
+                      }}
+                    />
+                  );
+                })}
+              </div>
+            )}
+
+            {/* Floating Top-Right Wishlist Heart Button (Pure Heart Icon, No White Background) */}
+            <button
+              type="button"
+              onClick={(e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                toggleWishlist(product);
+              }}
+              aria-label={inWishlist ? 'Remove from wishlist' : 'Add to wishlist'}
+              title={inWishlist ? 'Remove from wishlist' : 'Add to wishlist'}
+              style={{
+                position: 'absolute',
+                top: 14,
+                right: 14,
+                background: 'transparent',
+                border: 'none',
+                padding: 4,
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                cursor: 'pointer',
+                zIndex: 4,
+                outline: 'none',
+                transition: 'transform 0.2s cubic-bezier(0.16, 1, 0.3, 1)',
+                filter: inWishlist
+                  ? 'drop-shadow(0 2px 6px rgba(225,29,72,0.65))'
+                  : 'drop-shadow(0 1px 2px rgba(255,255,255,0.95)) drop-shadow(0 1px 3px rgba(0,0,0,0.4))',
+              }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.transform = 'scale(1.22)';
+                const heart = e.currentTarget.querySelector('svg');
+                if (heart && !inWishlist) heart.style.stroke = '#E11D48';
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.transform = 'scale(1)';
+                const heart = e.currentTarget.querySelector('svg');
+                if (heart && !inWishlist) heart.style.stroke = isDark ? '#FFFFFF' : '#1A1118';
+              }}
+            >
+              <Heart
+                size={22}
+                style={{
+                  fill: inWishlist ? '#E11D48' : 'transparent',
+                  stroke: inWishlist ? '#E11D48' : (isDark ? '#FFFFFF' : '#1A1118'),
+                  strokeWidth: 2.2,
+                  transition: 'fill 0.2s ease, stroke 0.2s ease',
+                }}
+              />
+            </button>
 
             {/* Dedicated Expand Button to open enlarged image pop-up */}
             <button
@@ -263,636 +368,467 @@ const CollectionProductDetailCard = ({ product, isLast = false }) => {
             >
               <Maximize2 size={16} strokeWidth={2.2} />
             </button>
+          </div>
 
-            {/* Mobile swipe dot indicators */}
-            {hasMultipleImages && (
-              <div
+          {/* Thumbnail Strip: Showcase & Colour Variant Images */}
+          {images.length > 1 && (
+            <div
+              className="product-gallery-thumbnails"
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: 10,
+                marginTop: 14,
+                overflowX: 'auto',
+                padding: '4px 2px 8px',
+                scrollbarWidth: 'thin',
+              }}
+            >
+              {images.map((item, idx) => {
+                const isActive = idx === activeImg;
+                return (
+                  <button
+                    key={item._id || idx}
+                    type="button"
+                    onClick={() => setActiveImg(idx)}
+                    aria-label={`View photo ${idx + 1}`}
+                    title={`Photo ${idx + 1}`}
+                    style={{
+                      width: 58,
+                      height: 58,
+                      borderRadius: 12,
+                      overflow: 'hidden',
+                      padding: 0,
+                      border: isActive
+                        ? '2px solid var(--accent, #C4386C)'
+                        : '1.5px solid var(--border)',
+                      background: 'var(--bg-secondary)',
+                      cursor: 'pointer',
+                      flexShrink: 0,
+                      boxShadow: isActive
+                        ? '0 4px 12px rgba(196, 56, 108, 0.28)'
+                        : 'none',
+                      opacity: isActive ? 1 : 0.72,
+                      transition: 'all 0.2s cubic-bezier(0.16, 1, 0.3, 1)',
+                      transform: isActive ? 'scale(1.02)' : 'none',
+                    }}
+                    onMouseEnter={(e) => (e.currentTarget.style.opacity = '1')}
+                    onMouseLeave={(e) => {
+                      if (!isActive) e.currentTarget.style.opacity = '0.72';
+                    }}
+                  >
+                    <img
+                      src={optimizeImageUrl(item.url, 140)}
+                      alt={`${product.name} ${idx + 1}`}
+                      loading="lazy"
+                      style={{
+                        width: '100%',
+                        height: '100%',
+                        objectFit: 'cover',
+                        display: 'block',
+                      }}
+                    />
+                  </button>
+                );
+              })}
+            </div>
+          )}
+        </div>
+
+        {/* ── Right Column: Info Wrapper (Identical to Product Detail Section) ── */}
+        <div className="product-info-wrapper">
+          <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5 }}>
+
+            {/* Header Row: Category on left, Wishlist + Share buttons on right */}
+            <div className="product-detail-header-row">
+              <p className="product-detail-category">
+                {product.category}
+              </p>
+
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                <button
+                  type="button"
+                  onClick={(e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    toggleWishlist(product);
+                  }}
+                  className="product-detail-share-btn"
+                  title={inWishlist ? 'Remove from Wishlist' : 'Add to Wishlist'}
+                  aria-label={inWishlist ? 'Remove from Wishlist' : 'Add to Wishlist'}
+                  style={{
+                    color: inWishlist ? '#E11D48' : 'var(--text-secondary)',
+                    borderColor: inWishlist ? 'rgba(225,29,72,0.3)' : 'var(--border)',
+                    background: inWishlist ? 'rgba(225,29,72,0.08)' : 'transparent',
+                  }}
+                >
+                  <Heart size={16} style={{ fill: inWishlist ? '#E11D48' : 'transparent', stroke: inWishlist ? '#E11D48' : 'currentColor' }} />
+                </button>
+
+                <button
+                  type="button"
+                  onClick={handleShare}
+                  className="product-detail-share-btn"
+                  title="Share product"
+                  aria-label="Share product"
+                >
+                  <Share2 size={16} />
+                </button>
+              </div>
+            </div>
+
+            {/* Toast for copied link */}
+            {copyToast && (
+              <motion.div
+                initial={{ opacity: 0, y: -6 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0 }}
                 style={{
-                  position: 'absolute',
-                  bottom: 12,
-                  left: '50%',
-                  transform: 'translateX(-50%)',
+                  background: 'rgba(16, 185, 129, 0.15)',
+                  border: '1px solid rgba(16, 185, 129, 0.35)',
+                  color: '#10B981',
+                  fontSize: '0.82rem',
+                  fontWeight: 600,
+                  padding: '6px 12px',
+                  borderRadius: 8,
+                  marginBottom: 12,
                   display: 'flex',
                   alignItems: 'center',
-                  gap: 5,
-                  zIndex: 2,
-                  background: 'rgba(0,0,0,0.35)',
-                  backdropFilter: 'blur(4px)',
-                  WebkitBackdropFilter: 'blur(4px)',
-                  padding: '3px 7px',
-                  borderRadius: 999,
-                  pointerEvents: 'none',
+                  gap: 6,
                 }}
               >
-                {images.map((_, i) => (
-                  <span
-                    key={i}
+                <Check size={14} /> Product link copied to clipboard!
+              </motion.div>
+            )}
+
+            {/* Clickable Product Title Link matching .product-detail-title */}
+            <h3 className="product-detail-title">
+              <Link
+                to={`/product/${product._id}`}
+                style={{
+                  color: 'inherit',
+                  textDecoration: 'none',
+                  transition: 'color 0.2s ease',
+                }}
+                onMouseEnter={(e) => (e.currentTarget.style.color = 'var(--accent, #C4386C)')}
+                onMouseLeave={(e) => (e.currentTarget.style.color = 'inherit')}
+              >
+                {product.name}
+              </Link>
+            </h3>
+
+            {/* Dynamic Price Display */}
+            <div className="product-detail-price-row">
+              <span className="product-detail-price">
+                ₹{resolvedPrice}
+              </span>
+              {resolvedOriginalPrice && (
+                <span className="product-detail-original-price">
+                  ₹{resolvedOriginalPrice}
+                </span>
+              )}
+              {discountPercent > 0 && resolvedOriginalPrice && (
+                <span
+                  style={{
+                    fontSize: '0.78rem',
+                    fontWeight: 700,
+                    color: '#C4386C',
+                    background: 'rgba(196,56,108,0.1)',
+                    padding: '3px 9px',
+                    borderRadius: 6,
+                    marginBottom: 2,
+                  }}
+                >
+                  Save ₹{resolvedOriginalPrice - resolvedPrice}
+                </span>
+              )}
+              {!product.inStock && (
+                <span className="product-detail-stock-badge">
+                  Out of Stock
+                </span>
+              )}
+            </div>
+
+            {/* Colour Variation Selector with Expand/Collapse */}
+            {product.colorVariants && product.colorVariants.length > 0 && (
+              <ColorVariationSelector
+                colorVariants={product.colorVariants}
+                selectedColor={selectedColor}
+                onSelectColor={handleSelectColor}
+                fallbackImage={product.images?.[0]?.url}
+              />
+            )}
+
+            {/* Bangle Size Selector with Live Stock Availability */}
+            {activeSizes?.length > 0 && (
+              <div className="product-detail-section">
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 10 }}>
+                  <span className="product-detail-label" style={{ margin: 0 }}>
+                    Select Size
+                  </span>
+                  <button
+                    type="button"
+                    onClick={() => setShowSizeChart(true)}
                     style={{
-                      width: i === activeImg ? 12 : 5,
-                      height: 5,
-                      borderRadius: 999,
-                      background: i === activeImg ? '#FFFFFF' : 'rgba(255,255,255,0.45)',
-                      transition: 'all 0.2s ease',
+                      background: 'none',
+                      border: 'none',
+                      cursor: 'pointer',
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      gap: 5,
+                      fontSize: '0.8rem',
+                      fontWeight: 600,
+                      color: 'var(--accent, #C4386C)',
+                      textDecoration: 'underline',
+                      textUnderlineOffset: 3,
+                      padding: 0,
                     }}
-                  />
-                ))}
+                  >
+                    <Ruler size={14} /> Size Guide
+                  </button>
+                </div>
+                <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
+                  {activeSizes.map((s, idx) => {
+                    const isOutOfStock = s.inStock === false;
+                    const isSelected = selectedSize === s.size;
+                    return (
+                      <button
+                        key={idx}
+                        type="button"
+                        disabled={isOutOfStock}
+                        onClick={() => {
+                          if (!isOutOfStock) {
+                            setSelectedSize(s.size);
+                          }
+                        }}
+                        className="product-size-btn"
+                        style={{
+                          background: isOutOfStock
+                            ? 'rgba(0,0,0,0.06)'
+                            : isSelected ? 'var(--accent-gradient)' : 'var(--bg-secondary)',
+                          color: isOutOfStock
+                            ? 'var(--text-muted)'
+                            : isSelected ? 'white' : 'var(--text)',
+                          border: isSelected ? 'none' : '1px solid var(--border)',
+                          boxShadow: isSelected ? '0 8px 20px rgba(196,56,108,0.4)' : 'none',
+                          cursor: isOutOfStock ? 'not-allowed' : 'pointer',
+                          textDecoration: isOutOfStock ? 'line-through' : 'none',
+                          opacity: isOutOfStock ? 0.5 : 1,
+                          position: 'relative',
+                          minWidth: 46,
+                        }}
+                        title={isOutOfStock ? `${s.size} is currently out of stock` : `Select size ${s.size}`}
+                      >
+                        {s.size}
+                      </button>
+                    );
+                  })}
+                </div>
               </div>
             )}
 
-            {/* Top-Left Discount Pill */}
-            <div style={{ position: 'absolute', top: 12, left: 12, display: 'flex', flexDirection: 'column', gap: 4, zIndex: 2 }}>
-              {discountPercent > 0 && (
-                <span
-                  style={{
-                    background: 'linear-gradient(135deg, #C4386C, #8A2BE2)',
-                    color: '#FFF',
-                    fontSize: '11px',
-                    fontWeight: 700,
-                    padding: '4px 10px',
-                    borderRadius: 999,
-                    letterSpacing: '0.04em',
-                    boxShadow: '0 2px 8px rgba(196,56,108,0.35)',
-                  }}
-                >
-                  {discountPercent}% OFF
+            {/* Piece Count Selector */}
+            {product.pieceCounts?.length > 0 && (
+              <div className="product-detail-section">
+                <span className="product-detail-label">
+                  Piece Count
                 </span>
-              )}
-              {product.isBestseller && !discountPercent && (
-                <span
-                  style={{
-                    background: 'linear-gradient(135deg, #B8860B, #E5C158)',
-                    color: '#2A1800',
-                    fontSize: '10px',
-                    fontWeight: 800,
-                    padding: '4px 10px',
-                    borderRadius: 999,
-                    display: 'inline-flex',
-                    alignItems: 'center',
-                    gap: 4,
-                  }}
-                >
-                  <Sparkles size={11} /> Bestseller
-                </span>
-              )}
-            </div>
+                <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
+                  {[...product.pieceCounts].sort((a, b) => a.count - b.count).map((pc, idx) => {
+                    const isSelected = selectedPieceCount?.count === pc.count;
+                    return (
+                      <button
+                        key={idx}
+                        type="button"
+                        onClick={() => setSelectedPieceCount(pc)}
+                        className="product-piece-btn"
+                        style={{
+                          background: isSelected ? 'var(--accent-gradient)' : 'var(--bg-secondary)',
+                          color: isSelected ? 'white' : 'var(--text)',
+                          border: isSelected ? 'none' : `1px solid var(--border)`,
+                          boxShadow: isSelected ? '0 8px 20px rgba(196,56,108,0.4)' : 'none',
+                        }}
+                      >
+                        <span style={{ fontWeight: 700 }}>{pc.count} pcs</span>
+                        <span style={{ opacity: isSelected ? 0.85 : 0.7 }}>₹{pc.price}</span>
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
 
-            {/* Top-Right Wishlist Heart Button (Pure Heart Icon, No White Background) */}
-            <button
-              type="button"
-              onClick={(e) => {
-                e.preventDefault();
-                e.stopPropagation();
-                toggleWishlist(product);
-              }}
-              aria-label={inWishlist ? 'Remove from wishlist' : 'Add to wishlist'}
-              title={inWishlist ? 'Remove from wishlist' : 'Add to wishlist'}
-              style={{
-                position: 'absolute',
-                top: 12,
-                right: 12,
-                background: 'transparent',
-                border: 'none',
-                padding: 4,
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                cursor: 'pointer',
-                zIndex: 6,
-                outline: 'none',
-                transition: 'transform 0.2s cubic-bezier(0.16, 1, 0.3, 1)',
-                filter: inWishlist
-                  ? 'drop-shadow(0 2px 6px rgba(225,29,72,0.65))'
-                  : 'drop-shadow(0 1px 3px rgba(0,0,0,0.65)) drop-shadow(0 0 1px rgba(0,0,0,0.8))',
-              }}
-              onMouseEnter={(e) => {
-                e.currentTarget.style.transform = 'scale(1.22)';
-                const heart = e.currentTarget.querySelector('svg');
-                if (heart && !inWishlist) heart.style.stroke = '#E11D48';
-              }}
-              onMouseLeave={(e) => {
-                e.currentTarget.style.transform = 'scale(1)';
-                const heart = e.currentTarget.querySelector('svg');
-                if (heart && !inWishlist) heart.style.stroke = '#FFFFFF';
-              }}
-            >
-              <Heart
-                size={22}
-                style={{
-                  fill: inWishlist ? '#E11D48' : 'transparent',
-                  stroke: inWishlist ? '#E11D48' : '#FFFFFF',
-                  strokeWidth: 2.2,
-                  transition: 'fill 0.2s ease, stroke 0.2s ease',
-                }}
-              />
-            </button>
-          </div>
-        </div>
-
-        {/* ── Right Column: Info Wrapper (Complete In-Place Purchasing, No Redirection) ── */}
-        <div className="product-info-wrapper">
-          {/* Category & Stock Row */}
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 10, marginBottom: 8, flexWrap: 'wrap' }}>
-            <span
-              style={{
-                fontSize: '0.74rem',
-                fontWeight: 700,
-                color: 'var(--accent, #C4386C)',
-                textTransform: 'uppercase',
-                letterSpacing: '0.12em',
-              }}
-            >
-              {product.subcategoryId?.name || product.category}
-            </span>
-
-            <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-              {product.inStock ? (
-                typeof product.inStockCount === 'number' && product.inStockCount <= 5 ? (
-                  <span
-                    style={{
-                      fontSize: '0.72rem',
-                      fontWeight: 700,
-                      color: '#D97706',
-                      background: 'rgba(217,119,6,0.1)',
-                      padding: '3px 9px',
-                      borderRadius: 999,
-                      border: '1px solid rgba(217,119,6,0.25)',
-                    }}
-                  >
-                    Only {product.inStockCount} left
-                  </span>
+            {/* Cart Controls */}
+            {product.inStock && (
+              <div className="product-cart-section">
+                {variantInCart ? (
+                  /* Quantity Stepper when variant is in cart */
+                  <div style={{ display: 'flex', gap: 12, alignItems: 'center', flexWrap: 'wrap' }}>
+                    <div className="product-cart-stepper">
+                      <button type="button" onClick={handleDecrease} className="product-cart-stepper-btn" aria-label="Decrease quantity">
+                        <Minus size={16} />
+                      </button>
+                      <span className="product-cart-stepper-qty">
+                        {cartVariantQty}
+                      </span>
+                      <button type="button" onClick={handleIncrease} className="product-cart-stepper-btn" aria-label="Increase quantity">
+                        <Plus size={16} />
+                      </button>
+                    </div>
+                    <Link to="/cart" className="product-view-cart-btn">
+                      <ShoppingBag size={16} /> View Cart
+                    </Link>
+                  </div>
                 ) : (
-                  <span
-                    style={{
-                      fontSize: '0.72rem',
-                      fontWeight: 600,
-                      color: '#10B981',
-                      background: 'rgba(16,185,129,0.1)',
-                      padding: '3px 9px',
-                      borderRadius: 999,
-                      border: '1px solid rgba(16,185,129,0.25)',
-                    }}
+                  /* Add to Cart */
+                  <button
+                    type="button"
+                    onClick={handleAddToCart}
+                    className="product-add-cart-btn"
+                    onMouseEnter={e => { e.currentTarget.style.transform = 'translateY(-2px)'; e.currentTarget.style.boxShadow = '0 12px 40px rgba(196,56,108,0.4)'; }}
+                    onMouseLeave={e => { e.currentTarget.style.transform = 'none'; e.currentTarget.style.boxShadow = '0 8px 30px rgba(196,56,108,0.3)'; }}
                   >
-                    ✓ In Stock
-                  </span>
-                )
-              ) : (
-                <span
-                  style={{
-                    fontSize: '0.72rem',
-                    fontWeight: 700,
-                    color: '#EF4444',
-                    background: 'rgba(239,68,68,0.1)',
-                    padding: '3px 9px',
-                    borderRadius: 999,
-                    border: '1px solid rgba(239,68,68,0.25)',
-                  }}
-                >
-                  Sold Out
-                </span>
-              )}
-
-              {/* In-header Wishlist Heart Icon (No White Background) */}
-              <button
-                type="button"
-                onClick={(e) => {
-                  e.preventDefault();
-                  e.stopPropagation();
-                  toggleWishlist(product);
-                }}
-                title={inWishlist ? 'Remove from Wishlist' : 'Add to Wishlist'}
-                aria-label={inWishlist ? 'Remove from Wishlist' : 'Add to Wishlist'}
-                style={{
-                  background: 'transparent',
-                  border: 'none',
-                  padding: 4,
-                  cursor: 'pointer',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  color: inWishlist ? '#E11D48' : 'var(--text-secondary)',
-                  transition: 'transform 0.2s ease, color 0.2s ease',
-                  outline: 'none',
-                }}
-                onMouseEnter={(e) => {
-                  e.currentTarget.style.transform = 'scale(1.18)';
-                  e.currentTarget.style.color = '#E11D48';
-                }}
-                onMouseLeave={(e) => {
-                  e.currentTarget.style.transform = 'scale(1)';
-                  e.currentTarget.style.color = inWishlist ? '#E11D48' : 'var(--text-secondary)';
-                }}
-              >
-                <Heart
-                  size={18}
-                  style={{
-                    fill: inWishlist ? '#E11D48' : 'transparent',
-                    stroke: inWishlist ? '#E11D48' : 'currentColor',
-                    strokeWidth: 2,
-                    transition: 'fill 0.2s ease, stroke 0.2s ease',
-                  }}
-                />
-              </button>
-            </div>
-          </div>
-
-          {/* Clickable Product Title Link */}
-          <h3
-            style={{
-              fontFamily: '"Cormorant Garamond", Georgia, serif',
-              fontSize: 'clamp(1.4rem, 2.8vw, 2rem)',
-              fontWeight: 600,
-              lineHeight: 1.25,
-              margin: '0 0 12px',
-            }}
-          >
-            <Link
-              to={`/product/${product._id}`}
-              style={{
-                color: 'var(--text)',
-                textDecoration: 'none',
-                transition: 'color 0.2s ease',
-              }}
-              onMouseEnter={(e) => (e.currentTarget.style.color = 'var(--accent, #C4386C)')}
-              onMouseLeave={(e) => (e.currentTarget.style.color = 'var(--text)')}
-            >
-              {product.name}
-            </Link>
-          </h3>
-
-          {/* Dynamic Pricing Display */}
-          <div style={{ display: 'flex', alignItems: 'baseline', gap: 12, marginBottom: 18, flexWrap: 'wrap' }}>
-            <span
-              style={{
-                fontSize: '1.75rem',
-                fontWeight: 700,
-                color: 'var(--text)',
-                fontFamily: 'Outfit, sans-serif',
-                letterSpacing: '-0.02em',
-              }}
-            >
-              ₹{resolvedPrice}
-            </span>
-            {resolvedOriginalPrice && (
-              <span
-                style={{
-                  fontSize: '1.05rem',
-                  color: 'var(--text-muted)',
-                  textDecoration: 'line-through',
-                  fontWeight: 500,
-                }}
-              >
-                ₹{resolvedOriginalPrice}
-              </span>
+                    {addedFeedback ? <><Check size={18} /> Added to Cart</> : 'Add to Cart'}
+                  </button>
+                )}
+              </div>
             )}
-            {discountPercent > 0 && resolvedOriginalPrice && (
-              <span
+
+            {!product.inStock && (
+              <div className="product-cart-section">
+                <button disabled className="product-add-cart-btn" style={{
+                  background: 'var(--input-bg)', color: 'var(--text-muted)',
+                  cursor: 'not-allowed', boxShadow: 'none'
+                }}>
+                  Out of Stock
+                </button>
+              </div>
+            )}
+
+            {/* Collapsible Sections for Details and Shipping (Uniform styling & arrows) */}
+            <div className="product-accordions-group" style={{ marginTop: 28, display: 'flex', flexDirection: 'column', gap: 12 }}>
+              {/* Accordion 1: Product Details & Specifications */}
+              <div
                 style={{
-                  fontSize: '0.78rem',
-                  fontWeight: 700,
-                  color: '#C4386C',
-                  background: 'rgba(196,56,108,0.1)',
-                  padding: '3px 9px',
-                  borderRadius: 6,
+                  border: '1px solid var(--border)',
+                  borderRadius: 14,
+                  overflow: 'hidden',
+                  background: 'var(--bg-secondary)',
                 }}
               >
-                Save ₹{resolvedOriginalPrice - resolvedPrice}
-              </span>
-            )}
-          </div>
-
-          {/* Colour Variation Selector with Expand/Collapse */}
-          {product.colorVariants && product.colorVariants.length > 0 && (
-            <ColorVariationSelector
-              colorVariants={product.colorVariants}
-              selectedColor={selectedColor}
-              onSelectColor={handleSelectColor}
-              fallbackImage={product.images?.[0]?.url}
-            />
-          )}
-
-          {/* Variant Selection: Bangles Sizes */}
-          {activeSizes?.length > 0 && (
-            <div style={{ marginBottom: 16 }}>
-              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8 }}>
-                <span
-                  style={{
-                    fontSize: '0.76rem',
-                    fontWeight: 700,
-                    letterSpacing: '0.08em',
-                    textTransform: 'uppercase',
-                    color: 'var(--text)',
-                    display: 'block',
-                  }}
-                >
-                  Select Size:
-                </span>
                 <button
                   type="button"
-                  onClick={() => setShowSizeChart(true)}
+                  className="product-accordion-btn"
+                  onClick={() => setDetailsOpen(!detailsOpen)}
                   style={{
+                    width: '100%',
+                    padding: '16px 18px',
                     background: 'none',
                     border: 'none',
                     cursor: 'pointer',
-                    display: 'inline-flex',
+                    display: 'flex',
                     alignItems: 'center',
-                    gap: 5,
-                    fontSize: '0.76rem',
-                    fontWeight: 600,
-                    color: 'var(--accent, #C4386C)',
-                    textDecoration: 'underline',
-                    textUnderlineOffset: 3,
-                    padding: 0,
+                    justifyContent: 'space-between',
+                    color: 'var(--text)',
+                    fontWeight: 700,
+                    fontSize: '0.96rem',
                   }}
                 >
-                  <Ruler size={13} /> Size Guide
+                  <span>Product Details & Specifications</span>
+                  <motion.div
+                    animate={{ rotate: detailsOpen ? 180 : 0 }}
+                    transition={{ duration: 0.2 }}
+                    style={{ display: 'flex', alignItems: 'center', color: 'var(--text)' }}
+                  >
+                    <ChevronDown size={18} />
+                  </motion.div>
                 </button>
-              </div>
-              <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-                {activeSizes.map((s, i) => {
-                  const isOutOfStock = s.inStock === false;
-                  const isSelected = selectedSize === s.size;
-                  return (
-                    <button
-                      key={i}
-                      type="button"
-                      disabled={isOutOfStock}
-                      onClick={() => !isOutOfStock && setSelectedSize(s.size)}
-                      className="product-size-btn"
-                      style={{
-                        width: 44,
-                        height: 44,
-                        borderRadius: '50%',
-                        fontSize: '0.84rem',
-                        fontWeight: 600,
-                        background: isOutOfStock
-                          ? 'rgba(0,0,0,0.06)'
-                          : isSelected ? 'var(--accent-gradient)' : 'var(--bg-secondary)',
-                        color: isOutOfStock
-                          ? 'var(--text-muted)'
-                          : isSelected ? '#FFFFFF' : 'var(--text)',
-                        border: isSelected ? 'none' : '1px solid var(--border)',
-                        cursor: isOutOfStock ? 'not-allowed' : 'pointer',
-                        textDecoration: isOutOfStock ? 'line-through' : 'none',
-                        boxShadow: isSelected ? '0 4px 14px rgba(196,56,108,0.35)' : 'none',
-                        opacity: isOutOfStock ? 0.5 : 1,
-                        transition: 'all 0.15s ease',
-                      }}
-                      title={isOutOfStock ? `${s.size} is out of stock` : `Size ${s.size}`}
+
+                <AnimatePresence>
+                  {detailsOpen && (
+                    <motion.div
+                      initial={{ height: 0, opacity: 0 }}
+                      animate={{ height: 'auto', opacity: 1 }}
+                      exit={{ height: 0, opacity: 0 }}
+                      transition={{ duration: 0.25, ease: 'easeInOut' }}
+                      style={{ overflow: 'hidden' }}
                     >
-                      {s.size}
-                    </button>
-                  );
-                })}
-              </div>
-            </div>
-          )}
-
-          {/* Variant Selection: Piece Counts */}
-          {product.pieceCounts?.length > 0 && (
-            <div style={{ marginBottom: 16 }}>
-              <span
-                style={{
-                  fontSize: '0.76rem',
-                  fontWeight: 700,
-                  letterSpacing: '0.08em',
-                  textTransform: 'uppercase',
-                  color: 'var(--text)',
-                  display: 'block',
-                  marginBottom: 8,
-                }}
-              >
-                Select Piece Count:
-              </span>
-              <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-                {[...product.pieceCounts].sort((a, b) => a.count - b.count).map((pc, i) => {
-                  const isSelected = selectedPieceCount?.count === pc.count;
-                  return (
-                    <button
-                      key={i}
-                      type="button"
-                      onClick={() => setSelectedPieceCount(pc)}
-                      style={{
-                        padding: '6px 14px',
-                        borderRadius: 10,
-                        fontSize: '0.82rem',
-                        fontWeight: 600,
-                        background: isSelected ? 'var(--accent-gradient)' : 'var(--bg-secondary)',
-                        color: isSelected ? '#FFFFFF' : 'var(--text)',
-                        border: isSelected ? 'none' : '1px solid var(--border)',
-                        cursor: 'pointer',
-                        boxShadow: isSelected ? '0 4px 14px rgba(196,56,108,0.35)' : 'none',
-                        transition: 'all 0.15s ease',
-                        display: 'flex',
-                        alignItems: 'center',
-                        gap: 6,
-                      }}
-                    >
-                      <span>{pc.count} pcs</span>
-                      <span style={{ opacity: 0.85, fontSize: '0.78rem' }}>₹{pc.price}</span>
-                    </button>
-                  );
-                })}
-              </div>
-            </div>
-          )}
-
-          {/* Add to Cart Action Area (In-place purchasing) */}
-          <div style={{ display: 'flex', alignItems: 'center', gap: 14, flexWrap: 'wrap', marginBottom: 18, marginTop: 4 }}>
-            {variantInCart ? (
-              <div style={{ display: 'flex', alignItems: 'center', gap: 12, width: '100%', maxWidth: 400 }}>
-                <div className="product-cart-stepper" style={{ height: 48 }}>
-                  <button
-                    type="button"
-                    onClick={handleDecrease}
-                    className="product-cart-stepper-btn"
-                    aria-label="Decrease quantity"
-                  >
-                    <Minus size={15} />
-                  </button>
-                  <span className="product-cart-stepper-qty">{cartVariantQty}</span>
-                  <button
-                    type="button"
-                    onClick={handleIncrease}
-                    className="product-cart-stepper-btn"
-                    aria-label="Increase quantity"
-                  >
-                    <Plus size={15} />
-                  </button>
-                </div>
-
-                <Link
-                  to="/cart"
-                  className="product-view-cart-btn"
-                  style={{ height: 48, fontSize: '0.88rem', flex: 1 }}
-                >
-                  <ShoppingBag size={16} /> View Cart
-                </Link>
-              </div>
-            ) : (
-              <button
-                type="button"
-                onClick={handleAddToCart}
-                disabled={!product.inStock}
-                className="product-add-cart-btn"
-                style={{
-                  height: 48,
-                  maxWidth: 400,
-                  width: '100%',
-                  background: product.inStock ? 'var(--accent-gradient)' : 'var(--input-bg)',
-                  color: product.inStock ? '#FFFFFF' : 'var(--text-muted)',
-                  cursor: product.inStock ? 'pointer' : 'not-allowed',
-                  boxShadow: product.inStock ? '0 8px 24px rgba(196,56,108,0.3)' : 'none',
-                }}
-              >
-                {addedFeedback ? (
-                  <>
-                    <Check size={18} /> Added to Cart
-                  </>
-                ) : product.inStock ? (
-                  <>
-                    <ShoppingBag size={18} /> Add to Cart
-                  </>
-                ) : (
-                  'Out of Stock'
-                )}
-              </button>
-            )}
-          </div>
-
-          {/* Collapsible Product Details Accordion */}
-          <div
-            style={{
-              marginBottom: 10,
-              borderRadius: 14,
-              background: isDark ? 'rgba(255,255,255,0.025)' : 'rgba(26,17,24,0.02)',
-              border: '1px solid var(--border)',
-              overflow: 'hidden',
-            }}
-          >
-            <button
-              type="button"
-              onClick={() => setDetailsOpen(!detailsOpen)}
-              style={{
-                width: '100%',
-                padding: '13px 16px',
-                background: 'none',
-                border: 'none',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'space-between',
-                cursor: 'pointer',
-                color: 'var(--text)',
-                fontWeight: 700,
-                fontSize: '0.82rem',
-                letterSpacing: '0.04em',
-                textTransform: 'uppercase',
-              }}
-            >
-              <span>Product Details & Specs</span>
-              <motion.div
-                animate={{ rotate: detailsOpen ? 180 : 0 }}
-                transition={{ duration: 0.2 }}
-                style={{ display: 'flex', alignItems: 'center', color: 'var(--text)' }}
-              >
-                <ChevronDown size={18} />
-              </motion.div>
-            </button>
-
-            <AnimatePresence>
-              {detailsOpen && (
-                <motion.div
-                  initial={{ height: 0, opacity: 0 }}
-                  animate={{ height: 'auto', opacity: 1 }}
-                  exit={{ height: 0, opacity: 0 }}
-                  transition={{ duration: 0.2 }}
-                  style={{ overflow: 'hidden' }}
-                >
-                  <div style={{ padding: '0 16px 14px', borderTop: '1px solid var(--border)' }}>
-                    <div style={{ paddingTop: 10 }}>
-                      <ProductDescriptionDisplay description={product.description} />
-                    </div>
-                    {product.category?.toLowerCase() === 'gift box combo' && product.giftBoxDetails && (
-                      <div style={{ marginTop: 12, paddingTop: 10, borderTop: '1px solid var(--border)' }}>
-                        <span
-                          style={{
-                            fontSize: '0.72rem',
-                            fontWeight: 700,
-                            color: 'var(--text)',
-                            textTransform: 'uppercase',
-                            letterSpacing: '0.06em',
-                            display: 'block',
-                            marginBottom: 6,
-                          }}
-                        >
-                          Included Items:
-                        </span>
-                        <ProductDescriptionDisplay description={product.giftBoxDetails} />
+                      <div style={{ padding: '0 18px 18px', borderTop: '1px solid var(--border)' }}>
+                        <div style={{ paddingTop: 14 }}>
+                          <ProductDescriptionDisplay description={product.description} />
+                        </div>
+                        {product.category?.toLowerCase() === 'gift box combo' && product.giftBoxDetails && (
+                          <div style={{ marginTop: 14, paddingTop: 10, borderTop: '1px solid var(--border)' }}>
+                            <h4 style={{ fontSize: '0.88rem', fontWeight: 700, margin: '0 0 6px', color: 'var(--text)' }}>
+                              Included Items
+                            </h4>
+                            <ProductDescriptionDisplay description={product.giftBoxDetails} />
+                          </div>
+                        )}
                       </div>
-                    )}
-                  </div>
-                </motion.div>
-              )}
-            </AnimatePresence>
-          </div>
+                    </motion.div>
+                  )}
+                </AnimatePresence>
+              </div>
 
-          {/* Collapsible Shipping Info Accordion (Collapsed by default) */}
-          <div
-            style={{
-              borderRadius: 14,
-              border: '1px solid var(--border)',
-              background: isDark ? 'rgba(255,255,255,0.025)' : 'rgba(26,17,24,0.02)',
-              overflow: 'hidden',
-              marginTop: 0,
-            }}
-          >
-            <button
-              type="button"
-              onClick={() => setShippingOpen(!shippingOpen)}
-              style={{
-                width: '100%',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'space-between',
-                padding: '13px 16px',
-                background: 'transparent',
-                border: 'none',
-                color: 'var(--text)',
-                fontSize: '0.86rem',
-                fontWeight: 600,
-                cursor: 'pointer',
-                textAlign: 'left',
-              }}
-            >
-              <span style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                <span>🚚</span> Shipping & Returns
-              </span>
-              <motion.div
-                animate={{ rotate: shippingOpen ? 180 : 0 }}
-                transition={{ duration: 0.2 }}
-                style={{ display: 'flex', alignItems: 'center', color: 'var(--text)' }}
+              {/* Accordion 2: Shipping & Returns */}
+              <div
+                style={{
+                  border: '1px solid var(--border)',
+                  borderRadius: 14,
+                  overflow: 'hidden',
+                  background: 'var(--bg-secondary)',
+                }}
               >
-                <ChevronDown size={18} />
-              </motion.div>
-            </button>
-
-            <AnimatePresence>
-              {shippingOpen && (
-                <motion.div
-                  initial={{ height: 0, opacity: 0 }}
-                  animate={{ height: 'auto', opacity: 1 }}
-                  exit={{ height: 0, opacity: 0 }}
-                  transition={{ duration: 0.25 }}
-                  style={{ overflow: 'hidden' }}
+                <button
+                  type="button"
+                  className="product-accordion-btn"
+                  onClick={() => setShippingOpen(!shippingOpen)}
+                  style={{
+                    width: '100%',
+                    padding: '16px 18px',
+                    background: 'none',
+                    border: 'none',
+                    cursor: 'pointer',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'space-between',
+                    color: 'var(--text)',
+                    fontWeight: 700,
+                    fontSize: '0.96rem',
+                  }}
                 >
-                  <div style={{ padding: '0 18px 16px', borderTop: '1px solid var(--border)', paddingTop: 12 }}>
-                    <p style={{ margin: 0, fontSize: '0.82rem', color: 'var(--text-secondary)', lineHeight: 1.6 }}>
-                      All-India delivery available. We take extreme care in packaging your products to ensure they arrive in perfect condition. Handcrafted pieces are dispatched within 2-3 business days with real-time tracking.
-                    </p>
-                  </div>
-                </motion.div>
-              )}
-            </AnimatePresence>
-          </div>
+                  <span>🚚 Shipping & Returns</span>
+                  <motion.div
+                    animate={{ rotate: shippingOpen ? 180 : 0 }}
+                    transition={{ duration: 0.2 }}
+                    style={{ display: 'flex', alignItems: 'center', color: 'var(--text)' }}
+                  >
+                    <ChevronDown size={18} />
+                  </motion.div>
+                </button>
+
+                <AnimatePresence>
+                  {shippingOpen && (
+                    <motion.div
+                      initial={{ height: 0, opacity: 0 }}
+                      animate={{ height: 'auto', opacity: 1 }}
+                      exit={{ height: 0, opacity: 0 }}
+                      transition={{ duration: 0.25, ease: 'easeInOut' }}
+                      style={{ overflow: 'hidden' }}
+                    >
+                      <div style={{ padding: '14px 18px 18px', borderTop: '1px solid var(--border)' }}>
+                        <p style={{ margin: 0, fontSize: '0.86rem', lineHeight: 1.5, color: 'var(--text-secondary)' }}>
+                          All-India delivery available. We take extreme care in packaging your products to ensure they arrive in perfect condition. Handcrafted pieces are dispatched within 2-3 business days.
+                        </p>
+                      </div>
+                    </motion.div>
+                  )}
+                </AnimatePresence>
+              </div>
+            </div>
+
+          </motion.div>
         </div>
 
       </div>

@@ -928,13 +928,6 @@ section,
 }
 
 @media (max-width: 480px) {
-  .product-detail-gallery-main {
-    max-height: 440px !important;
-  }
-  .collection-product-gallery-main {
-    max-height: 275px !important;
-    max-width: 230px !important;
-  }
   .product-gallery-zoom-badge {
     bottom: 10px;
     right: 10px;
@@ -1288,17 +1281,16 @@ section,
     border-radius: 14px;
   }
 
-  .product-detail-gallery-main {
-    max-height: 460px !important;
-    max-width: 420px;
-    margin: 0 auto;
-  }
-
+  /* Product Details Page & Complete Your Look Section Hero Gallery: Prominently Taller & Bigger on Mobile */
+  .product-detail-gallery-main,
   .collection-product-gallery-main {
-    max-height: 300px !important;
-    max-width: 250px !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    aspect-ratio: 4 / 5 !important;
+    min-height: 480px !important;
+    max-height: 560px !important;
+    border-radius: 16px;
     margin: 0 auto;
-    border-radius: 14px;
   }
 
   .product-detail-header-row {

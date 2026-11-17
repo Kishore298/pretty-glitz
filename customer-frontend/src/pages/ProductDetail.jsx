@@ -25,10 +25,12 @@ import ProductDescriptionDisplay from '../components/ProductDescriptionDisplay';
 import BangleSizeChartModal from '../components/BangleSizeChartModal';
 import ProductImageModal from '../components/ProductImageModal';
 import ColorVariationSelector from '../components/ColorVariationSelector';
+import { useTheme } from '../context/ThemeContext';
 import logoImg from '../assets/pretty-glitz-logo.png';
 
 const ProductDetail = () => {
   const { id } = useParams();
+  const { isDark } = useTheme();
   const [product, setProduct] = useState(null);
   const [relatedProducts, setRelatedProducts] = useState([]);
   const [productsByCategory, setProductsByCategory] = useState({});
@@ -531,7 +533,7 @@ const ProductDetail = () => {
                   transition: 'transform 0.2s cubic-bezier(0.16, 1, 0.3, 1)',
                   filter: inWishlist
                     ? 'drop-shadow(0 2px 6px rgba(225,29,72,0.65))'
-                    : 'drop-shadow(0 1px 3px rgba(0,0,0,0.65)) drop-shadow(0 0 1px rgba(0,0,0,0.8))',
+                    : 'drop-shadow(0 1px 2px rgba(255,255,255,0.95)) drop-shadow(0 1px 3px rgba(0,0,0,0.4))',
                 }}
                 onMouseEnter={(e) => {
                   e.currentTarget.style.transform = 'scale(1.22)';
@@ -541,14 +543,14 @@ const ProductDetail = () => {
                 onMouseLeave={(e) => {
                   e.currentTarget.style.transform = 'scale(1)';
                   const heart = e.currentTarget.querySelector('svg');
-                  if (heart && !inWishlist) heart.style.stroke = '#FFFFFF';
+                  if (heart && !inWishlist) heart.style.stroke = isDark ? '#FFFFFF' : '#1A1118';
                 }}
               >
                 <Heart
                   size={22}
                   style={{
                     fill: inWishlist ? '#E11D48' : 'transparent',
-                    stroke: inWishlist ? '#E11D48' : '#FFFFFF',
+                    stroke: inWishlist ? '#E11D48' : (isDark ? '#FFFFFF' : '#1A1118'),
                     strokeWidth: 2.2,
                     transition: 'fill 0.2s ease, stroke 0.2s ease',
                   }}
