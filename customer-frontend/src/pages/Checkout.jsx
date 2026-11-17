@@ -276,68 +276,68 @@ const Checkout = () => {
             </form>
           </div>
 
-          <div style={{ flex: '1 1 350px', maxWidth: 450 }}>
-            <div style={{ background: 'var(--bg-card)', borderRadius: 20, border: `1px solid var(--border)`, padding: 32, position: 'sticky', top: 120 }}>
-              <h2 style={{ fontSize: '1.1rem', fontWeight: 700, color: 'var(--text)', textTransform: 'uppercase', letterSpacing: '0.1em', margin: '0 0 24px', borderBottom: `1px solid var(--border)`, paddingBottom: 16 }}>In Your Bag</h2>
+          <div style={{ flex: '1 1 320px', maxWidth: 420 }}>
+            <div style={{ background: 'var(--bg-card)', borderRadius: 16, border: '1px solid var(--border)', padding: '20px 22px', position: 'sticky', top: 100 }}>
+              <h2 style={{ fontSize: '0.92rem', fontWeight: 700, color: 'var(--text)', textTransform: 'uppercase', letterSpacing: '0.08em', margin: '0 0 14px', borderBottom: '1px solid var(--border)', paddingBottom: 10 }}>In Your Bag</h2>
               
-              <ul style={{ listStyle: 'none', padding: 0, margin: '0 0 24px', maxHeight: '40vh', overflowY: 'auto' }} className="no-scrollbar">
+              <ul style={{ listStyle: 'none', padding: 0, margin: '0 0 14px', maxHeight: '35vh', overflowY: 'auto' }} className="no-scrollbar">
                 {cartItems.map((item, idx) => (
-                  <li key={idx} style={{ display: 'flex', gap: 16, padding: '16px 0', borderBottom: idx === cartItems.length - 1 ? 'none' : `1px solid var(--border)` }}>
-                    <div style={{ width: 64, height: 64, borderRadius: 8, background: 'var(--bg-secondary)', overflow: 'hidden', flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                  <li key={idx} style={{ display: 'flex', gap: 12, padding: '10px 0', alignItems: 'center', borderBottom: idx === cartItems.length - 1 ? 'none' : '1px solid var(--border)' }}>
+                    <div style={{ width: 48, height: 48, borderRadius: 6, background: 'var(--bg-secondary)', overflow: 'hidden', flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
                       <img
-                        src={item.product.images?.[0] ? optimizeImageUrl(item.product.images[0].url, 150) : logoImg}
+                        src={item.product.images?.[0] ? optimizeImageUrl(item.product.images[0].url, 120) : logoImg}
                         alt={item.product.name}
                         loading="lazy"
                         onError={(e) => {
                           e.currentTarget.onerror = null;
                           e.currentTarget.src = logoImg;
                           e.currentTarget.style.objectFit = 'contain';
-                          e.currentTarget.style.padding = '8px';
+                          e.currentTarget.style.padding = '4px';
                         }}
                         style={{
                           width: '100%',
                           height: '100%',
                           objectFit: item.product.images?.[0] ? 'cover' : 'contain',
-                          padding: item.product.images?.[0] ? 0 : '8px',
+                          padding: item.product.images?.[0] ? 0 : '4px',
                         }}
                       />
                     </div>
-                    <div style={{ flex: 1 }}>
-                      <h4 style={{ fontSize: '0.9rem', fontWeight: 600, color: 'var(--text)', margin: '0 0 4px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{item.product.name}</h4>
-                      {item.size && <p style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', margin: '0 0 2px' }}>Size: {item.size}</p>}
-                      <p style={{ fontSize: '0.75rem', color: 'var(--text-secondary)', margin: 0 }}>Qty: {item.quantity}</p>
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      <h4 style={{ fontSize: '0.82rem', fontWeight: 600, color: 'var(--text)', margin: '0 0 2px', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{item.product.name}</h4>
+                      {item.size && <p style={{ fontSize: '0.7rem', color: 'var(--text-secondary)', margin: '0 0 1px' }}>Size: {item.size}</p>}
+                      <p style={{ fontSize: '0.7rem', color: 'var(--text-secondary)', margin: 0 }}>Qty: {item.quantity}</p>
                     </div>
-                    <div style={{ fontSize: '0.95rem', fontWeight: 700, color: 'var(--text)' }}>
+                    <div style={{ fontSize: '0.88rem', fontWeight: 700, color: 'var(--text)', flexShrink: 0 }}>
                       ₹{item.product.price * item.quantity}
                     </div>
                   </li>
                 ))}
               </ul>
 
-              <div style={{ borderTop: `1px solid var(--border)`, paddingTop: 24, marginBottom: 16, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                <span style={{ fontSize: '0.9rem', fontWeight: 600, color: 'var(--text-secondary)' }}>Subtotal</span>
-                <span style={{ fontSize: '1.1rem', fontWeight: 700, color: 'var(--text)', fontFamily: 'Outfit, sans-serif' }}>₹{getCartTotal()}</span>
+              <div style={{ borderTop: '1px solid var(--border)', paddingTop: 12, marginBottom: 8, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <span style={{ fontSize: '0.84rem', fontWeight: 600, color: 'var(--text-secondary)' }}>Subtotal</span>
+                <span style={{ fontSize: '0.98rem', fontWeight: 700, color: 'var(--text)', fontFamily: 'Outfit, sans-serif' }}>₹{getCartTotal()}</span>
               </div>
-              <div style={{ marginBottom: 32, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                <span style={{ fontSize: '0.9rem', fontWeight: 600, color: 'var(--text-secondary)' }}>Shipping</span>
-                <span style={{ fontSize: '0.85rem', fontWeight: 600, color: '#10B981' }}>Calculated on WhatsApp</span>
+              <div style={{ marginBottom: 16, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <span style={{ fontSize: '0.84rem', fontWeight: 600, color: 'var(--text-secondary)' }}>Shipping</span>
+                <span style={{ fontSize: '0.74rem', fontWeight: 600, color: '#10B981' }}>Calculated on WhatsApp</span>
               </div>
 
               <button 
                 type="submit" form="checkout-form"
                 style={{
-                  width: '100%', padding: '18px', background: '#25D366', color: 'white', border: 'none', borderRadius: 12,
-                  fontSize: '0.9rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.1em', cursor: 'pointer',
-                  display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 10, transition: 'transform 0.2s, box-shadow 0.2s',
-                  boxShadow: '0 8px 30px rgba(37,211,102,0.3)',
+                  width: '100%', padding: '12px 18px', background: '#25D366', color: 'white', border: 'none', borderRadius: 10,
+                  fontSize: '0.82rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.08em', cursor: 'pointer',
+                  display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, transition: 'transform 0.2s, box-shadow 0.2s',
+                  boxShadow: '0 6px 20px rgba(37,211,102,0.28)',
                 }}
-                onMouseEnter={e => { e.currentTarget.style.transform = 'translateY(-2px)'; e.currentTarget.style.boxShadow = '0 12px 40px rgba(37,211,102,0.4)'; e.currentTarget.style.background = '#128C7E'; }}
-                onMouseLeave={e => { e.currentTarget.style.transform = 'none'; e.currentTarget.style.boxShadow = '0 8px 30px rgba(37,211,102,0.3)'; e.currentTarget.style.background = '#25D366'; }}
+                onMouseEnter={e => { e.currentTarget.style.transform = 'translateY(-1px)'; e.currentTarget.style.boxShadow = '0 8px 24px rgba(37,211,102,0.38)'; e.currentTarget.style.background = '#128C7E'; }}
+                onMouseLeave={e => { e.currentTarget.style.transform = 'none'; e.currentTarget.style.boxShadow = '0 6px 20px rgba(37,211,102,0.28)'; e.currentTarget.style.background = '#25D366'; }}
               >
                 Place Order on WhatsApp
               </button>
               
-              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6, marginTop: 16, fontSize: '0.75rem', color: 'var(--text-muted)' }}>
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6, marginTop: 12, fontSize: '0.72rem', color: 'var(--text-muted)' }}>
                 <CheckCircle2 size={12} />
                 No payment required until confirmation
               </div>

@@ -127,28 +127,33 @@ const Cart = () => {
                           <Link
                             to={`/product/${item.product._id}`}
                             style={{
-                              fontSize: '0.88rem',
+                              fontSize: '0.81rem',
                               fontWeight: 600,
                               color: 'var(--text)',
                               textDecoration: 'none',
                               display: '-webkit-box',
-                              WebkitLineClamp: 1,
+                              WebkitLineClamp: 2,
                               WebkitBoxOrient: 'vertical',
                               overflow: 'hidden',
                               textOverflow: 'ellipsis',
-                              lineHeight: 1.25,
+                              lineHeight: 1.22,
                               marginBottom: 3,
                             }}
                           >
                             {item.product.name}
                           </Link>
 
-                          <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}>
+                          <div style={{ display: 'flex', alignItems: 'baseline', gap: 6, flexWrap: 'wrap' }}>
                             <span style={{ fontSize: '0.94rem', fontWeight: 700, color: 'var(--text)', fontFamily: 'Outfit, sans-serif' }}>
                               ₹{item.price || item.product.price}
                             </span>
+                            {item.product.originalPrice && item.product.originalPrice > (item.price || item.product.price) && (
+                              <span style={{ fontSize: '0.76rem', color: 'var(--text-muted)', textDecoration: 'line-through' }}>
+                                ₹{item.product.originalPrice}
+                              </span>
+                            )}
                             {(item.colorName || item.size) && (
-                              <span style={{ fontSize: '0.7rem', color: 'var(--text-secondary)', background: 'var(--bg-secondary)', padding: '1px 6px', borderRadius: 4, whiteSpace: 'nowrap' }}>
+                              <span style={{ fontSize: '0.68rem', color: 'var(--text-secondary)', background: 'var(--bg-secondary)', padding: '1px 5px', borderRadius: 4, whiteSpace: 'nowrap' }}>
                                 {[item.colorName, item.size ? `Size ${item.size}` : null].filter(Boolean).join(' • ')}
                               </span>
                             )}
@@ -216,45 +221,86 @@ const Cart = () => {
           </div>
 
           {/* Order Summary */}
-          <div style={{ flex: '1 1 350px', maxWidth: 450 }}>
-            <div style={{ background: 'var(--bg-card)', borderRadius: 20, border: `1px solid var(--border)`, padding: 32, position: 'sticky', top: 120 }}>
-              <h2 style={{ fontSize: '1.1rem', fontWeight: 700, color: 'var(--text)', textTransform: 'uppercase', letterSpacing: '0.1em', margin: '0 0 24px', borderBottom: `1px solid var(--border)`, paddingBottom: 16 }}>
+          <div style={{ flex: '1 1 320px', maxWidth: 420 }}>
+            <div
+              style={{
+                background: 'var(--bg-card)',
+                borderRadius: 16,
+                border: '1px solid var(--border)',
+                padding: '20px 22px',
+                position: 'sticky',
+                top: 100,
+              }}
+            >
+              <h2
+                style={{
+                  fontSize: '0.92rem',
+                  fontWeight: 700,
+                  color: 'var(--text)',
+                  textTransform: 'uppercase',
+                  letterSpacing: '0.08em',
+                  margin: '0 0 14px',
+                  borderBottom: '1px solid var(--border)',
+                  paddingBottom: 10,
+                }}
+              >
                 Order Summary
               </h2>
               
-              <div style={{ display: 'flex', flexDirection: 'column', gap: 16, borderBottom: `1px solid var(--border)`, paddingBottom: 24, marginBottom: 24 }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.9rem', color: 'var(--text-secondary)' }}>
+              <div
+                style={{
+                  display: 'flex',
+                  flexDirection: 'column',
+                  gap: 10,
+                  borderBottom: '1px solid var(--border)',
+                  paddingBottom: 12,
+                  marginBottom: 12,
+                }}
+              >
+                <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.84rem', color: 'var(--text-secondary)' }}>
                   <span>Subtotal</span>
                   <span style={{ fontWeight: 600, color: 'var(--text)' }}>₹{getCartTotal()}</span>
                 </div>
-                <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.9rem', color: 'var(--text-secondary)' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.84rem', color: 'var(--text-secondary)' }}>
                   <span>Shipping</span>
-                  <span style={{ fontSize: '0.75rem', fontWeight: 500, color: '#10B981' }}>Calculated on WhatsApp</span>
+                  <span style={{ fontSize: '0.74rem', fontWeight: 500, color: '#10B981' }}>Calculated on WhatsApp</span>
                 </div>
               </div>
 
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 32 }}>
-                <span style={{ fontSize: '1rem', fontWeight: 700, color: 'var(--text)', textTransform: 'uppercase', letterSpacing: '0.1em' }}>Total</span>
-                <span style={{ fontSize: '1.8rem', fontWeight: 800, color: 'var(--text)', fontFamily: 'Outfit, sans-serif' }}>₹{getCartTotal()}</span>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
+                <span style={{ fontSize: '0.88rem', fontWeight: 700, color: 'var(--text)', textTransform: 'uppercase', letterSpacing: '0.08em' }}>Total</span>
+                <span style={{ fontSize: '1.4rem', fontWeight: 800, color: 'var(--text)', fontFamily: 'Outfit, sans-serif' }}>₹{getCartTotal()}</span>
               </div>
 
               <button 
                 onClick={handleCheckout}
                 style={{
-                  width: '100%', padding: '18px', background: 'var(--accent-gradient)',
-                  color: 'white', border: 'none', borderRadius: 12,
-                  fontSize: '0.9rem', fontWeight: 700, textTransform: 'uppercase', letterSpacing: '0.1em',
-                  cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 10,
+                  width: '100%',
+                  padding: '12px 18px',
+                  background: 'var(--accent-gradient)',
+                  color: 'white',
+                  border: 'none',
+                  borderRadius: 10,
+                  fontSize: '0.82rem',
+                  fontWeight: 700,
+                  textTransform: 'uppercase',
+                  letterSpacing: '0.08em',
+                  cursor: 'pointer',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  gap: 8,
                   transition: 'transform 0.2s, box-shadow 0.2s',
-                  boxShadow: '0 8px 30px rgba(196,56,108,0.3)',
+                  boxShadow: '0 6px 20px rgba(196,56,108,0.28)',
                 }}
-                onMouseEnter={e => { e.currentTarget.style.transform = 'translateY(-2px)'; e.currentTarget.style.boxShadow = '0 12px 40px rgba(196,56,108,0.4)'; }}
-                onMouseLeave={e => { e.currentTarget.style.transform = 'none'; e.currentTarget.style.boxShadow = '0 8px 30px rgba(196,56,108,0.3)'; }}
+                onMouseEnter={e => { e.currentTarget.style.transform = 'translateY(-1px)'; e.currentTarget.style.boxShadow = '0 8px 24px rgba(196,56,108,0.38)'; }}
+                onMouseLeave={e => { e.currentTarget.style.transform = 'none'; e.currentTarget.style.boxShadow = '0 6px 20px rgba(196,56,108,0.28)'; }}
               >
-                Proceed to Checkout <ArrowRight size={18} />
+                <span>Proceed to Checkout</span>
+                <ArrowRight size={15} />
               </button>
 
-              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, marginTop: 24, fontSize: '0.75rem', color: 'var(--text-muted)' }}>
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6, marginTop: 14, fontSize: '0.72rem', color: 'var(--text-muted)' }}>
                 <Lock size={12} /> Secure Ordering & Data Protection
               </div>
             </div>
