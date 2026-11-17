@@ -1,6 +1,6 @@
 const Notification = require('../models/Notification');
 const PushSubscription = require('../models/PushSubscription');
-const { getVapidPublicKey } = require('../services/pushService');
+const { getVapidPublicKey, sendPushToAllAdmins } = require('../services/pushService');
 
 // ─── GET /api/notifications (Admin list notifications) ───────────────────────
 const getNotifications = async (req, res) => {
@@ -67,8 +67,8 @@ const markAllAsRead = async (req, res) => {
 // ─── POST /api/notifications/subscribe (Register push subscription) ──────────
 const subscribePush = async (req, res) => {
   try {
-    const { subscription } = req.body;
-    if (!subscription || !subscription.endpoint || !subscription.keys) {
+    const subObj = req.body.subscription || (req.body.endpoint ? req.body : null);
+    if (!subObj || !subObj.endpoint || !subObj.keys) {
       return res.status(400).json({ message: 'Valid push subscription object is required.' });
     }
 
@@ -76,13 +76,13 @@ const subscribePush = async (req, res) => {
     const userAgent = req.headers['user-agent'] || '';
 
     const saved = await PushSubscription.findOneAndUpdate(
-      { endpoint: subscription.endpoint },
+      { endpoint: subObj.endpoint },
       {
         adminId,
-        endpoint: subscription.endpoint,
+        endpoint: subObj.endpoint,
         keys: {
-          p256dh: subscription.keys.p256dh,
-          auth: subscription.keys.auth,
+          p256dh: subObj.keys.p256dh,
+          auth: subObj.keys.auth,
         },
         userAgent,
         lastActiveAt: new Date(),
@@ -121,6 +121,27 @@ const unsubscribePush = async (req, res) => {
   }
 };
 
+// ─── POST /api/notifications/test-push (Admin sends a test push alert) ───────
+const sendTestPush = async (req, res) => {
+  try {
+    const result = await sendPushToAllAdmins({
+      title: '✨ PrettyGlitz Push Test',
+      body: 'Web Push is active and working! You will receive live alerts for orders, stock, and reviews.',
+      icon: '/pretty-glitz-logo.png',
+      data: { url: '/orders' },
+    });
+
+    return res.status(200).json({
+      success: true,
+      message: 'Test push notification sent successfully.',
+      result,
+    });
+  } catch (err) {
+    console.error('[Notifications] sendTestPush error:', err);
+    return res.status(500).json({ message: 'Failed to send test push notification.' });
+  }
+};
+
 // ─── GET /api/notifications/vapid-public-key ──────────────────────────────────
 const getVapidKey = (req, res) => {
   const key = getVapidPublicKey();
@@ -133,6 +154,7 @@ module.exports = {
   markAllAsRead,
   subscribePush,
   unsubscribePush,
+  sendTestPush,
   getVapidKey,
 };
 

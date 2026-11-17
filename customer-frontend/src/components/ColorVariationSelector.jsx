@@ -37,6 +37,7 @@ const ColorVariationSelector = ({
     <div className="color-variation-selector" style={{ marginBottom: 20 }}>
       {/* Heading & Current Selection Header Row */}
       <div
+        className="color-variation-header"
         style={{
           display: 'flex',
           alignItems: 'center',
@@ -117,6 +118,7 @@ const ColorVariationSelector = ({
       {/* Colour Variant Thumbnail Cards Grid */}
       <motion.div
         layout
+        className="color-variation-grid"
         style={{
           display: 'grid',
           gridTemplateColumns: 'repeat(auto-fill, minmax(68px, 1fr))',
@@ -143,6 +145,7 @@ const ColorVariationSelector = ({
               <motion.button
                 key={cVar._id || cVar.colorName}
                 layout
+                className="color-variation-card"
                 initial={{ opacity: 0, scale: 0.9 }}
                 animate={{ opacity: 1, scale: 1 }}
                 exit={{ opacity: 0, scale: 0.9 }}
@@ -220,6 +223,7 @@ const ColorVariationSelector = ({
 
                 {/* Thumbnail Image Container - Clean single container without inner border */}
                 <div
+                  className="color-variation-thumb-box"
                   style={{
                     width: '100%',
                     aspectRatio: '1 / 1',
@@ -261,6 +265,7 @@ const ColorVariationSelector = ({
 
                 {/* Colour Name Label */}
                 <span
+                  className="color-variation-label"
                   style={{
                     fontSize: '0.72rem',
                     fontWeight: isSelected ? 700 : 500,

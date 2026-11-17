@@ -7,6 +7,7 @@ const {
   markAllAsRead,
   subscribePush,
   unsubscribePush,
+  sendTestPush,
   getVapidKey,
 } = require('../controllers/notificationController');
 
@@ -19,6 +20,7 @@ router.patch('/read-all', protectAdmin, markAllAsRead);
 router.patch('/:id/read', protectAdmin, markAsRead);
 router.post('/subscribe', protectAdmin, subscribePush);
 router.post('/unsubscribe', protectAdmin, unsubscribePush);
+router.post('/test-push', protectAdmin, sendTestPush);
 
 module.exports = router;
 

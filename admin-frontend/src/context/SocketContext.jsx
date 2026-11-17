@@ -174,12 +174,25 @@ export const SocketProvider = ({ children }) => {
       }
 
       // Send to server
-      await api.post('/notifications/subscribe', sub);
+      await api.post('/notifications/subscribe', { subscription: sub });
       toast.success('Push notifications successfully enabled!');
       return true;
     } catch (err) {
       console.error('[SocketContext] Push registration error:', err);
       toast.error(err.response?.data?.message || err.message || 'Failed to enable push notifications');
+      return false;
+    }
+  };
+
+  // Trigger test push notification
+  const sendTestPushNotification = async () => {
+    try {
+      await api.post('/notifications/test-push');
+      toast.success('Test push notification dispatched! Check your notifications.');
+      return true;
+    } catch (err) {
+      console.error('[SocketContext] Test push error:', err);
+      toast.error(err.response?.data?.message || 'Failed to send test push');
       return false;
     }
   };
@@ -381,6 +394,7 @@ export const SocketProvider = ({ children }) => {
         markAllNotificationsRead,
         pushStatus,
         requestPushSubscription,
+        sendTestPushNotification,
       }}
     >
       {children}

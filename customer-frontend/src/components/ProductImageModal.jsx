@@ -287,10 +287,11 @@ const ProductImageModal = ({
                 }}
               />
 
-              {/* Left Chevron Navigation Button */}
+              {/* Left Chevron Navigation Button (Desktop only) */}
               {images.length > 1 && (
                 <button
                   type="button"
+                  className="modal-gallery-nav-btn"
                   onClick={handlePrev}
                   aria-label="Previous image"
                   style={{
@@ -304,7 +305,6 @@ const ProductImageModal = ({
                     background: isDark ? 'rgba(28, 28, 40, 0.88)' : 'rgba(255, 255, 255, 0.94)',
                     border: '1px solid var(--border)',
                     color: 'var(--text)',
-                    display: 'flex',
                     alignItems: 'center',
                     justifyContent: 'center',
                     cursor: 'pointer',
@@ -331,10 +331,11 @@ const ProductImageModal = ({
                 </button>
               )}
 
-              {/* Right Chevron Navigation Button */}
+              {/* Right Chevron Navigation Button (Desktop only) */}
               {images.length > 1 && (
                 <button
                   type="button"
+                  className="modal-gallery-nav-btn"
                   onClick={handleNext}
                   aria-label="Next image"
                   style={{
@@ -348,7 +349,6 @@ const ProductImageModal = ({
                     background: isDark ? 'rgba(28, 28, 40, 0.88)' : 'rgba(255, 255, 255, 0.94)',
                     border: '1px solid var(--border)',
                     color: 'var(--text)',
-                    display: 'flex',
                     alignItems: 'center',
                     justifyContent: 'center',
                     cursor: 'pointer',
@@ -374,16 +374,47 @@ const ProductImageModal = ({
                   <ChevronRight size={24} />
                 </button>
               )}
+
+              {/* Mobile Dot Indicators (Shown on small devices) */}
+              {images.length > 1 && (
+                <div
+                  className="modal-gallery-dots"
+                  style={{
+                    position: 'absolute',
+                    bottom: 12,
+                    left: '50%',
+                    transform: 'translateX(-50%)',
+                    alignItems: 'center',
+                    gap: 6,
+                    zIndex: 3,
+                    pointerEvents: 'none',
+                  }}
+                >
+                  {images.map((_, dotIdx) => (
+                    <span
+                      key={dotIdx}
+                      style={{
+                        width: dotIdx === activeIndex ? 18 : 6,
+                        height: 6,
+                        borderRadius: 3,
+                        background: dotIdx === activeIndex ? 'var(--accent, #C4386C)' : 'rgba(255, 255, 255, 0.55)',
+                        boxShadow: '0 1px 4px rgba(0, 0, 0, 0.4)',
+                        transition: 'all 0.25s ease',
+                      }}
+                    />
+                  ))}
+                </div>
+              )}
             </div>
 
-            {/* Bottom Thumbnails & Link Row */}
+            {/* Bottom Thumbnails & Action Controls Row */}
             <div
               style={{
                 width: '100%',
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: images.length > 1 ? 'space-between' : 'flex-end',
-                paddingTop: 14,
+                paddingTop: 12,
                 gap: 12,
                 flexWrap: 'wrap',
               }}
@@ -418,7 +449,7 @@ const ProductImageModal = ({
                         boxShadow: activeIndex === idx
                           ? '0 4px 12px rgba(196, 56, 108, 0.35)'
                           : 'none',
-                        opacity: activeIndex === idx ? 1 : 0.65,
+                        opacity: 1, // Unshaded, crystal clear on all thumbnails
                         background: '#FFFFFF',
                         transition: 'all 0.2s ease',
                         flexShrink: 0,
@@ -434,41 +465,97 @@ const ProductImageModal = ({
                 </div>
               )}
 
-              {/* Quick Link to Product Details Page */}
-              {product._id && (
-                <Link
-                  to={`/product/${product._id}`}
+              {/* Action Column: View Full Details + Back Button */}
+              <div
+                style={{
+                  display: 'flex',
+                  flexDirection: 'column',
+                  alignItems: 'flex-end',
+                  gap: 4,
+                  marginLeft: 'auto',
+                }}
+              >
+                {product._id && (
+                  <Link
+                    to={`/product/${product._id}`}
+                    onClick={onClose}
+                    style={{
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      gap: 6,
+                      color: '#FFFFFF',
+                      fontSize: '0.82rem',
+                      fontWeight: 700,
+                      textDecoration: 'none',
+                      padding: '8px 18px',
+                      borderRadius: 999,
+                      background: 'var(--accent-gradient, linear-gradient(135deg, #C4386C, #8A2BE2))',
+                      boxShadow: '0 4px 16px rgba(196, 56, 108, 0.35)',
+                      border: 'none',
+                      transition: 'all 0.2s ease',
+                      whiteSpace: 'nowrap',
+                    }}
+                    onMouseEnter={(e) => {
+                      e.currentTarget.style.transform = 'translateY(-1px)';
+                      e.currentTarget.style.boxShadow = '0 6px 20px rgba(196, 56, 108, 0.45)';
+                    }}
+                    onMouseLeave={(e) => {
+                      e.currentTarget.style.transform = 'none';
+                      e.currentTarget.style.boxShadow = '0 4px 16px rgba(196, 56, 108, 0.35)';
+                    }}
+                  >
+                    <span>View Full Details</span>
+                    <ExternalLink size={13} />
+                  </Link>
+                )}
+
+                {/* Back button below View Full Details */}
+                <button
+                  type="button"
                   onClick={onClose}
                   style={{
                     display: 'inline-flex',
                     alignItems: 'center',
-                    gap: 6,
-                    color: '#FFFFFF',
-                    fontSize: '0.82rem',
-                    fontWeight: 700,
-                    textDecoration: 'none',
-                    padding: '8px 18px',
-                    borderRadius: 999,
-                    background: 'var(--accent-gradient, linear-gradient(135deg, #C4386C, #8A2BE2))',
-                    boxShadow: '0 4px 16px rgba(196, 56, 108, 0.35)',
+                    gap: 4,
+                    color: 'var(--text-secondary)',
+                    fontSize: '0.78rem',
+                    fontWeight: 600,
+                    padding: '3px 8px',
+                    background: 'transparent',
                     border: 'none',
-                    transition: 'all 0.2s ease',
-                    marginLeft: 'auto',
+                    cursor: 'pointer',
+                    transition: 'all 0.18s ease',
+                    textDecoration: 'underline',
+                    textUnderlineOffset: '3px',
                   }}
                   onMouseEnter={(e) => {
-                    e.currentTarget.style.transform = 'translateY(-1px)';
-                    e.currentTarget.style.boxShadow = '0 6px 20px rgba(196, 56, 108, 0.45)';
+                    e.currentTarget.style.color = 'var(--accent, #C4386C)';
                   }}
                   onMouseLeave={(e) => {
-                    e.currentTarget.style.transform = 'none';
-                    e.currentTarget.style.boxShadow = '0 4px 16px rgba(196, 56, 108, 0.35)';
+                    e.currentTarget.style.color = 'var(--text-secondary)';
                   }}
                 >
-                  <span>View Full Details</span>
-                  <ExternalLink size={13} />
-                </Link>
-              )}
+                  <span>← Back</span>
+                </button>
+              </div>
             </div>
+
+            <style>{`
+              .modal-gallery-nav-btn {
+                display: none !important;
+              }
+              .modal-gallery-dots {
+                display: flex !important;
+              }
+              @media (min-width: 769px) {
+                .modal-gallery-nav-btn {
+                  display: flex !important;
+                }
+                .modal-gallery-dots {
+                  display: none !important;
+                }
+              }
+            `}</style>
           </motion.div>
         </motion.div>
       )}

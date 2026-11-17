@@ -712,7 +712,7 @@ const CollectionProductDetailCard = ({ product, isLast = false }) => {
           {/* Collapsible Product Details Accordion */}
           <div
             style={{
-              marginBottom: 16,
+              marginBottom: 10,
               borderRadius: 14,
               background: isDark ? 'rgba(255,255,255,0.025)' : 'rgba(26,17,24,0.02)',
               border: '1px solid var(--border)',
@@ -724,7 +724,7 @@ const CollectionProductDetailCard = ({ product, isLast = false }) => {
               onClick={() => setDetailsOpen(!detailsOpen)}
               style={{
                 width: '100%',
-                padding: '12px 16px',
+                padding: '13px 16px',
                 background: 'none',
                 border: 'none',
                 display: 'flex',
@@ -739,8 +739,12 @@ const CollectionProductDetailCard = ({ product, isLast = false }) => {
               }}
             >
               <span>Product Details & Specs</span>
-              <motion.div animate={{ rotate: detailsOpen ? 180 : 0 }} transition={{ duration: 0.2 }}>
-                <ChevronDown size={16} />
+              <motion.div
+                animate={{ rotate: detailsOpen ? 180 : 0 }}
+                transition={{ duration: 0.2 }}
+                style={{ display: 'flex', alignItems: 'center', color: 'var(--text)' }}
+              >
+                <ChevronDown size={18} />
               </motion.div>
             </button>
 
@@ -786,9 +790,9 @@ const CollectionProductDetailCard = ({ product, isLast = false }) => {
             style={{
               borderRadius: 14,
               border: '1px solid var(--border)',
-              background: isDark ? 'rgba(255, 255, 255, 0.02)' : '#FAF8F5',
+              background: isDark ? 'rgba(255,255,255,0.025)' : 'rgba(26,17,24,0.02)',
               overflow: 'hidden',
-              marginTop: 12,
+              marginTop: 0,
             }}
           >
             <button
@@ -799,11 +803,11 @@ const CollectionProductDetailCard = ({ product, isLast = false }) => {
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'space-between',
-                padding: '14px 18px',
+                padding: '13px 16px',
                 background: 'transparent',
                 border: 'none',
                 color: 'var(--text)',
-                fontSize: '0.88rem',
+                fontSize: '0.86rem',
                 fontWeight: 600,
                 cursor: 'pointer',
                 textAlign: 'left',
@@ -812,8 +816,12 @@ const CollectionProductDetailCard = ({ product, isLast = false }) => {
               <span style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
                 <span>🚚</span> Shipping & Returns
               </span>
-              <motion.div animate={{ rotate: shippingOpen ? 180 : 0 }} transition={{ duration: 0.2 }}>
-                <ChevronDown size={17} style={{ color: 'var(--text-muted)' }} />
+              <motion.div
+                animate={{ rotate: shippingOpen ? 180 : 0 }}
+                transition={{ duration: 0.2 }}
+                style={{ display: 'flex', alignItems: 'center', color: 'var(--text)' }}
+              >
+                <ChevronDown size={18} />
               </motion.div>
             </button>
 

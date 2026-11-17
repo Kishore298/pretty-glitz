@@ -506,6 +506,15 @@ const checkAndUpdateOutOfStock = async (productId) => {
             data: { productId: product._id },
             read: false,
           });
+          sendPushToAllAdmins({
+            title: `⚠️ Out of Stock: ${product.name}`,
+            body: `Product "${product.name}" (${product.category || 'Jewellery'}) is now out of stock. Tap to review inventory.`,
+            icon: '/pretty-glitz-logo.png',
+            data: {
+              productId: product._id.toString(),
+              url: `/products`,
+            },
+          }).catch(() => {});
         } catch {
           // Non-critical
         }
@@ -590,6 +599,18 @@ const updateOrderStatus = async (req, res) => {
         courierPartner: order.courierPartner,
         updatedAt: order.updatedAt,
       });
+
+      if (status === 'CANCELLED') {
+        sendPushToAllAdmins({
+          title: `❌ Order Cancelled: #${order.orderId}`,
+          body: `Order #${order.orderId} was marked as CANCELLED.`,
+          icon: '/pretty-glitz-logo.png',
+          data: {
+            orderId: order.orderId,
+            url: `/orders?id=${order.orderId}`,
+          },
+        }).catch(() => {});
+      }
 
       if (order.userId) {
         emitToUser(order.userId.toString(), 'order_status_updated', {

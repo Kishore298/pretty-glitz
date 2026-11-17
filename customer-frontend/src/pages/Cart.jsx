@@ -80,72 +80,121 @@ const Cart = () => {
                       <motion.li 
                         key={uniqueKey}
                         layout initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, height: 0 }}
+                        className="cart-item-row"
                         style={{
-                          padding: '14px 20px', display: 'flex', gap: 16, flexWrap: 'wrap', alignItems: 'center',
+                          padding: '10px 14px', display: 'flex', gap: 12, alignItems: 'center',
                           borderBottom: isLast ? 'none' : `1px solid var(--border)`
                         }}
                       >
-                        <div style={{ width: 72, height: 88, borderRadius: 10, background: 'var(--bg-secondary)', overflow: 'hidden', flexShrink: 0, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                        {/* Compact Thumbnail */}
+                        <Link
+                          to={`/product/${item.product._id}`}
+                          className="cart-item-thumb-box"
+                          style={{
+                            width: 56,
+                            height: 64,
+                            borderRadius: 8,
+                            background: 'var(--bg-secondary)',
+                            overflow: 'hidden',
+                            flexShrink: 0,
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            textDecoration: 'none',
+                          }}
+                        >
                           <img
-                            src={item.product.images?.[0] ? optimizeImageUrl(item.product.images[0].url, 200) : logoImg}
+                            src={item.product.images?.[0] ? optimizeImageUrl(item.product.images[0].url, 160) : logoImg}
                             alt={item.product.name}
                             loading="lazy"
                             onError={(e) => {
                               e.currentTarget.onerror = null;
                               e.currentTarget.src = logoImg;
                               e.currentTarget.style.objectFit = 'contain';
-                              e.currentTarget.style.padding = '8px';
+                              e.currentTarget.style.padding = '6px';
                             }}
                             style={{
                               width: '100%',
                               height: '100%',
                               objectFit: item.product.images?.[0] ? 'cover' : 'contain',
-                              padding: item.product.images?.[0] ? 0 : '8px',
+                              padding: item.product.images?.[0] ? 0 : '6px',
                             }}
                           />
-                        </div>
+                        </Link>
 
-                        <div style={{ flex: '1 1 180px', minWidth: 160 }}>
-                          <Link to={`/product/${item.product._id}`} style={{ fontSize: '0.98rem', fontWeight: 600, color: 'var(--text)', textDecoration: 'none', display: 'block', marginBottom: 2 }}>
+                        {/* Middle Info: Name, Price, Variations */}
+                        <div style={{ flex: 1, minWidth: 0 }}>
+                          <Link
+                            to={`/product/${item.product._id}`}
+                            style={{
+                              fontSize: '0.88rem',
+                              fontWeight: 600,
+                              color: 'var(--text)',
+                              textDecoration: 'none',
+                              display: '-webkit-box',
+                              WebkitLineClamp: 1,
+                              WebkitBoxOrient: 'vertical',
+                              overflow: 'hidden',
+                              textOverflow: 'ellipsis',
+                              lineHeight: 1.25,
+                              marginBottom: 3,
+                            }}
+                          >
                             {item.product.name}
                           </Link>
-                          <p style={{ fontSize: '0.7rem', color: 'var(--text-secondary)', textTransform: 'uppercase', letterSpacing: '0.08em', margin: '0 0 6px' }}>
-                            {item.product.category}
-                          </p>
-                          
-                          <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap', marginBottom: 6 }}>
-                            {item.colorName && (
-                              <span style={{ fontSize: '0.76rem', color: 'var(--text-secondary)', background: 'var(--bg-secondary)', padding: '2px 7px', borderRadius: 6, fontWeight: 500 }}>
-                                Colour: <strong style={{ color: 'var(--text)' }}>{item.colorName}</strong>
-                              </span>
-                            )}
-                            {item.size && (
-                              <span style={{ fontSize: '0.76rem', color: 'var(--text-secondary)', background: 'var(--bg-secondary)', padding: '2px 7px', borderRadius: 6, fontWeight: 500 }}>
-                                Size: <strong style={{ color: 'var(--text)' }}>{item.size}</strong>
+
+                          <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}>
+                            <span style={{ fontSize: '0.94rem', fontWeight: 700, color: 'var(--text)', fontFamily: 'Outfit, sans-serif' }}>
+                              ₹{item.price || item.product.price}
+                            </span>
+                            {(item.colorName || item.size) && (
+                              <span style={{ fontSize: '0.7rem', color: 'var(--text-secondary)', background: 'var(--bg-secondary)', padding: '1px 6px', borderRadius: 4, whiteSpace: 'nowrap' }}>
+                                {[item.colorName, item.size ? `Size ${item.size}` : null].filter(Boolean).join(' • ')}
                               </span>
                             )}
                           </div>
-                          
-                          <p style={{ fontSize: '1.05rem', fontWeight: 700, color: 'var(--text)', margin: 0, fontFamily: 'Outfit, sans-serif' }}>
-                            ₹{item.price || item.product.price}
-                          </p>
                         </div>
 
-                        <div style={{ display: 'flex', alignItems: 'center', gap: 14, marginLeft: 'auto' }}>
-                          <div style={{ display: 'flex', alignItems: 'center', border: `1px solid var(--border)`, borderRadius: 8, height: 32, width: 94, background: 'var(--bg)' }}>
-                            <button onClick={() => updateQuantity(item.product._id, item.size, item.quantity - 1, item.pieceCount, item.colorVariantId)} style={{ flex: 1, height: '100%', background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-secondary)', fontSize: '0.9rem' }}>-</button>
-                            <span style={{ flex: 1, textAlign: 'center', fontSize: '0.84rem', fontWeight: 600, color: 'var(--text)' }}>{item.quantity}</span>
-                            <button onClick={() => updateQuantity(item.product._id, item.size, item.quantity + 1, item.pieceCount, item.colorVariantId)} style={{ flex: 1, height: '100%', background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-secondary)', fontSize: '0.9rem' }}>+</button>
+                        {/* Right: Quantity Stepper & Remove Trash Button (Inline Horizontal) */}
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexShrink: 0 }}>
+                          <div style={{ display: 'flex', alignItems: 'center', border: `1px solid var(--border)`, borderRadius: 6, height: 28, width: 80, background: 'var(--bg)' }}>
+                            <button
+                              onClick={() => updateQuantity(item.product._id, item.size, item.quantity - 1, item.pieceCount, item.colorVariantId)}
+                              style={{ flex: 1, height: '100%', background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-secondary)', fontSize: '0.85rem' }}
+                            >
+                              -
+                            </button>
+                            <span style={{ flex: 1, textAlign: 'center', fontSize: '0.82rem', fontWeight: 600, color: 'var(--text)' }}>
+                              {item.quantity}
+                            </span>
+                            <button
+                              onClick={() => updateQuantity(item.product._id, item.size, item.quantity + 1, item.pieceCount, item.colorVariantId)}
+                              style={{ flex: 1, height: '100%', background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-secondary)', fontSize: '0.85rem' }}
+                            >
+                              +
+                            </button>
                           </div>
-                          
+
                           <button 
                             onClick={() => removeFromCart(item.product._id, item.size, item.pieceCount, item.colorVariantId)}
-                            style={{ background: 'var(--bg-secondary)', border: 'none', borderRadius: 8, cursor: 'pointer', color: 'var(--text-muted)', transition: 'all 0.2s', display: 'flex', alignItems: 'center', justifyContent: 'center', width: 32, height: 32 }}
+                            style={{
+                              background: 'var(--bg-secondary)',
+                              border: 'none',
+                              borderRadius: 6,
+                              cursor: 'pointer',
+                              color: 'var(--text-muted)',
+                              transition: 'all 0.2s',
+                              display: 'flex',
+                              alignItems: 'center',
+                              justifyContent: 'center',
+                              width: 28,
+                              height: 28,
+                            }}
                             onMouseEnter={e => { e.currentTarget.style.color = '#ef4444'; e.currentTarget.style.background = 'rgba(239,68,68,0.1)'; }}
                             onMouseLeave={e => { e.currentTarget.style.color = 'var(--text-muted)'; e.currentTarget.style.background = 'var(--bg-secondary)'; }}
                             title="Remove item"
                           >
-                            <Trash2 size={15} />
+                            <Trash2 size={14} />
                           </button>
                         </div>
                       </motion.li>

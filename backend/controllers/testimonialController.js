@@ -1,4 +1,5 @@
 const Testimonial = require('../models/Testimonial');
+const { sendPushToAllAdmins } = require('../services/pushService');
 
 const getTestimonials = async (req, res) => {
   try {
@@ -23,6 +24,17 @@ const createTestimonial = async (req, res) => {
     const { customerName, location, review, rating, avatar, isActive, order } = req.body;
     const testimonial = new Testimonial({ customerName, location, review, rating, avatar, isActive, order });
     const saved = await testimonial.save();
+
+    // Dispatch background web push to admin devices
+    try {
+      sendPushToAllAdmins({
+        title: `⭐ New Review: ${saved.customerName}`,
+        body: `${saved.rating} Stars • "${(saved.review || '').substring(0, 80)}${(saved.review || '').length > 80 ? '...' : ''}"`,
+        icon: '/pretty-glitz-logo.png',
+        data: { url: '/testimonials' },
+      }).catch(() => {});
+    } catch {}
+
     res.status(201).json(saved);
   } catch (error) {
     res.status(500).json({ message: 'Server error' });

@@ -821,7 +821,7 @@ const ProductDetail = () => {
               )}
 
               {/* Collapsible Sections for Details and Shipping (Collapsed by default) */}
-              <div style={{ marginTop: 28, display: 'flex', flexDirection: 'column', gap: 12 }}>
+              <div className="product-accordions-group" style={{ marginTop: 28, display: 'flex', flexDirection: 'column', gap: 12 }}>
                 {/* Accordion 1: Product Details & Specifications */}
                 <div
                   style={{
@@ -833,6 +833,7 @@ const ProductDetail = () => {
                 >
                   <button
                     type="button"
+                    className="product-accordion-btn"
                     onClick={() => setDetailsOpen(!detailsOpen)}
                     style={{
                       width: '100%',
@@ -895,6 +896,7 @@ const ProductDetail = () => {
                 >
                   <button
                     type="button"
+                    className="product-accordion-btn"
                     onClick={() => setShippingOpen(!shippingOpen)}
                     style={{
                       width: '100%',

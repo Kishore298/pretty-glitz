@@ -33,6 +33,7 @@ const AdminLayout = ({ children }) => {
     markAllNotificationsRead,
     pushStatus,
     requestPushSubscription,
+    sendTestPushNotification,
   } = useSocket();
 
   // Close dropdown on outside click
@@ -394,6 +395,58 @@ const AdminLayout = ({ children }) => {
                           }}
                         >
                           Enable
+                        </button>
+                      </div>
+                    )}
+
+                    {/* Active Push Banner with Test Notification Action */}
+                    {pushStatus === 'granted' && (
+                      <div
+                        style={{
+                          padding: '8px 16px',
+                          background: 'rgba(16, 185, 129, 0.08)',
+                          borderBottom: '1px solid rgba(255, 255, 255, 0.06)',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'space-between',
+                          gap: 10,
+                        }}
+                      >
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                          <span
+                            style={{
+                              width: 7,
+                              height: 7,
+                              borderRadius: '50%',
+                              background: '#10B981',
+                              boxShadow: '0 0 6px rgba(16, 185, 129, 0.6)',
+                            }}
+                          />
+                          <span style={{ fontSize: '0.72rem', color: '#10B981', fontWeight: 600 }}>
+                            Web Push Active
+                          </span>
+                        </div>
+                        <button
+                          onClick={sendTestPushNotification}
+                          style={{
+                            background: 'rgba(255, 255, 255, 0.06)',
+                            border: '1px solid rgba(255, 255, 255, 0.12)',
+                            color: 'var(--accent-gold, #C9A84C)',
+                            fontSize: '0.7rem',
+                            fontWeight: 600,
+                            padding: '3px 9px',
+                            borderRadius: 6,
+                            cursor: 'pointer',
+                            transition: 'all 0.15s ease',
+                          }}
+                          onMouseEnter={(e) => {
+                            e.currentTarget.style.background = 'rgba(201, 168, 76, 0.15)';
+                          }}
+                          onMouseLeave={(e) => {
+                            e.currentTarget.style.background = 'rgba(255, 255, 255, 0.06)';
+                          }}
+                        >
+                          Send Test Alert
                         </button>
                       </div>
                     )}
