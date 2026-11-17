@@ -126,7 +126,6 @@ const CollectionProductDetailCard = ({ product, isLast = false }) => {
   const handleTouchStart = (e) => {
     setTouchEndX(null);
     setTouchStartX(e.targetTouches[0].clientX);
-    setDidSwipe(false);
   };
   const handleTouchMove = (e) => {
     setTouchEndX(e.targetTouches[0].clientX);
