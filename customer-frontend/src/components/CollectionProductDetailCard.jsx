@@ -14,7 +14,7 @@ import {
   Share2,
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { CartContext } from '../context/CartContext';
+import { CartContext, resolveStock } from '../context/CartContext';
 import { useWishlist } from '../context/WishlistContext';
 import { optimizeImageUrl } from '../utils/cloudinary';
 import ProductDescriptionDisplay from './ProductDescriptionDisplay';
@@ -86,6 +86,11 @@ const CollectionProductDetailCard = ({ product, isLast = false }) => {
   const cartVariantQty = getCartItemQuantity(product._id, selectedSize, selectedPieceCount?.count ?? null, selectedColor?._id);
   const variantInCart = isInCart(product._id, selectedSize, selectedPieceCount?.count ?? null, selectedColor?._id);
 
+  // Live stock evaluation for current variant (Scenario A & B)
+  const stockInfo = resolveStock(product, selectedSize, selectedColor);
+  const isOutOfStock = !product.inStock || !stockInfo.isAvailable;
+  const isMaxReached = stockInfo.isStockTracked && cartVariantQty >= stockInfo.availableStock;
+
   const handleSelectColor = (cVar) => {
     setSelectedColor(cVar);
     setActiveImg(0); // Reset gallery to index 0 on colour switch
@@ -123,7 +128,7 @@ const CollectionProductDetailCard = ({ product, isLast = false }) => {
 
   const handleAddToCart = (e) => {
     e.preventDefault();
-    if (!product.inStock) return;
+    if (isOutOfStock) return;
     addToCart(product, selectedSize, 1, selectedPieceCount?.count ?? null, resolvedPrice, selectedColor);
     setAddedFeedback(true);
     setTimeout(() => setAddedFeedback(false), 2000);
@@ -131,7 +136,8 @@ const CollectionProductDetailCard = ({ product, isLast = false }) => {
 
   const handleIncrease = (e) => {
     e.preventDefault();
-    updateQuantity(product._id, selectedSize, cartVariantQty + 1, selectedPieceCount?.count ?? null);
+    if (isMaxReached) return;
+    updateQuantity(product._id, selectedSize, cartVariantQty + 1, selectedPieceCount?.count ?? null, selectedColor?._id);
   };
 
   const handleDecrease = (e) => {
@@ -139,7 +145,7 @@ const CollectionProductDetailCard = ({ product, isLast = false }) => {
     if (cartVariantQty <= 1) {
       removeFromCart(product._id, selectedSize, selectedPieceCount?.count ?? null, selectedColor?._id);
     } else {
-      updateQuantity(product._id, selectedSize, cartVariantQty - 1, selectedPieceCount?.count ?? null);
+      updateQuantity(product._id, selectedSize, cartVariantQty - 1, selectedPieceCount?.count ?? null, selectedColor?._id);
     }
   };
 
@@ -428,20 +434,14 @@ const CollectionProductDetailCard = ({ product, isLast = false }) => {
               </motion.div>
             )}
 
-            {/* Clickable Product Title Link matching .product-detail-title with inline Actions */}
+            {/* Clickable Product Title Link with Glowing Golden Underline & Sparkle */}
             <div className="product-detail-title-row">
-              <h3 className="product-detail-title">
+              <h3 className="complete-look-title-container" style={{ margin: 0 }}>
                 <Link
                   to={`/product/${product._id}`}
-                  style={{
-                    color: 'inherit',
-                    textDecoration: 'inherit',
-                    transition: 'color 0.2s ease',
-                  }}
-                  onMouseEnter={(e) => (e.currentTarget.style.color = 'var(--accent, #C4386C)')}
-                  onMouseLeave={(e) => (e.currentTarget.style.color = 'inherit')}
+                  className="complete-look-title-link"
                 >
-                  {product.name}
+                  <span>{product.name}</span>
                 </Link>
               </h3>
 
@@ -643,8 +643,8 @@ const CollectionProductDetailCard = ({ product, isLast = false }) => {
               </div>
             )}
 
-            {/* Cart Controls */}
-            {product.inStock && (
+            {/* Cart Controls with Live Stock Validation */}
+            {!isOutOfStock ? (
               <div className="product-cart-section">
                 {variantInCart ? (
                   /* Quantity Stepper when variant is in cart */
@@ -656,7 +656,18 @@ const CollectionProductDetailCard = ({ product, isLast = false }) => {
                       <span className="product-cart-stepper-qty">
                         {cartVariantQty}
                       </span>
-                      <button type="button" onClick={handleIncrease} className="product-cart-stepper-btn" aria-label="Increase quantity">
+                      <button
+                        type="button"
+                        onClick={handleIncrease}
+                        disabled={isMaxReached}
+                        className="product-cart-stepper-btn"
+                        aria-label="Increase quantity"
+                        style={{
+                          opacity: isMaxReached ? 0.35 : 1,
+                          cursor: isMaxReached ? 'not-allowed' : 'pointer',
+                        }}
+                        title={isMaxReached ? `Only ${stockInfo.availableStock} available` : 'Add one more'}
+                      >
                         <Plus size={16} />
                       </button>
                     </div>
@@ -677,14 +688,19 @@ const CollectionProductDetailCard = ({ product, isLast = false }) => {
                   </button>
                 )}
               </div>
-            )}
-
-            {!product.inStock && (
+            ) : (
               <div className="product-cart-section">
-                <button disabled className="product-add-cart-btn" style={{
-                  background: 'var(--input-bg)', color: 'var(--text-muted)',
-                  cursor: 'not-allowed', boxShadow: 'none'
-                }}>
+                <button
+                  disabled
+                  className="product-add-cart-btn"
+                  style={{
+                    background: '#374151',
+                    color: '#9CA3AF',
+                    cursor: 'not-allowed',
+                    boxShadow: 'none',
+                    opacity: 0.8,
+                  }}
+                >
                   Out of Stock
                 </button>
               </div>

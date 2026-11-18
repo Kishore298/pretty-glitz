@@ -80,6 +80,10 @@ const ProductCard = ({ product, showVariants = false }) => {
   const inCart = isInCart(product._id);
   const cartQty = getCartItemQuantity(product._id);
 
+  // Authoritative out-of-stock check (Scenario A: tracked 0 stock; Scenario B: inStock false)
+  const isOutOfStock = !product.inStock || (typeof product.inStockCount === 'number' && product.inStockCount <= 0);
+  const isMaxReached = typeof product.inStockCount === 'number' && cartQty >= product.inStockCount;
+
   const discountPercent = product.originalPrice
     ? Math.round(((product.originalPrice - product.price) / product.originalPrice) * 100)
     : 0;
@@ -87,6 +91,7 @@ const ProductCard = ({ product, showVariants = false }) => {
   const handleCartClick = (e) => {
     e.preventDefault();
     e.stopPropagation();
+    if (isOutOfStock) return;
     if (needsDetailPage) {
       navigate(`/product/${product._id}`);
       return;
@@ -586,7 +591,7 @@ const ProductCard = ({ product, showVariants = false }) => {
             </div>
 
             <div style={{ flexShrink: 0 }}>
-              {product.inStock ? (
+              {!isOutOfStock ? (
                 inCart && !needsDetailPage ? (
                   /* Quantity stepper */
                   <div
@@ -604,7 +609,13 @@ const ProductCard = ({ product, showVariants = false }) => {
                     </span>
                     <button
                       onClick={handleIncrease}
+                      disabled={isMaxReached}
                       aria-label="Increase quantity"
+                      style={{
+                        opacity: isMaxReached ? 0.35 : 1,
+                        cursor: isMaxReached ? 'not-allowed' : 'pointer',
+                      }}
+                      title={isMaxReached ? `Only ${product.inStockCount} in stock` : 'Add one more'}
                     >
                       <Plus size={11} />
                     </button>

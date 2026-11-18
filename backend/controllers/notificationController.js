@@ -74,6 +74,45 @@ const markAllAsRead = async (req, res) => {
   }
 };
 
+// ─── DELETE /api/notifications/:id (Delete individual notification) ───────────
+const deleteNotification = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const notif = await Notification.findByIdAndDelete(id);
+
+    if (!notif) {
+      return res.status(404).json({ message: 'Notification not found.' });
+    }
+
+    const unreadCount = await Notification.countDocuments({ read: false });
+
+    return res.status(200).json({
+      success: true,
+      message: 'Notification deleted successfully.',
+      unreadCount,
+    });
+  } catch (err) {
+    console.error('[Notifications] deleteNotification error:', err);
+    return res.status(500).json({ message: 'Failed to delete notification.' });
+  }
+};
+
+// ─── DELETE /api/notifications (Delete all notifications) ──────────────────────
+const deleteAllNotifications = async (req, res) => {
+  try {
+    await Notification.deleteMany({});
+
+    return res.status(200).json({
+      success: true,
+      message: 'All notifications cleared.',
+      unreadCount: 0,
+    });
+  } catch (err) {
+    console.error('[Notifications] deleteAllNotifications error:', err);
+    return res.status(500).json({ message: 'Failed to clear notifications.' });
+  }
+};
+
 // ─── POST /api/notifications/fcm-token (Register Admin FCM Token) ──────────────
 const saveFcmToken = async (req, res) => {
   try {
@@ -371,6 +410,8 @@ module.exports = {
   getNotifications,
   markAsRead,
   markAllAsRead,
+  deleteNotification,
+  deleteAllNotifications,
   saveFcmToken,
   saveCustomerFcmToken,
   deleteCustomerFcmToken,

@@ -128,11 +128,39 @@ export const SocketProvider = ({ children }) => {
   // Mark all notifications read
   const markAllNotificationsRead = async () => {
     try {
-      await api.patch('/notifications/mark-all-read');
+      await api.patch('/notifications/read-all');
       setNotifications((prev) => prev.map((n) => ({ ...n, read: true })));
       setUnreadCount(0);
     } catch (err) {
       console.warn('[SocketContext] Error marking all notifications read:', err.message);
+    }
+  };
+
+  // Delete single notification
+  const deleteNotification = async (id) => {
+    try {
+      const deletedItem = notifications.find((n) => n._id === id);
+      await api.delete(`/notifications/${id}`);
+      setNotifications((prev) => prev.filter((n) => n._id !== id));
+      if (deletedItem && !deletedItem.read) {
+        setUnreadCount((prev) => Math.max(0, prev - 1));
+      }
+    } catch (err) {
+      console.warn('[SocketContext] Error deleting notification:', err.message);
+      toast.error('Failed to delete notification');
+    }
+  };
+
+  // Delete all notifications
+  const deleteAllNotifications = async () => {
+    try {
+      await api.delete('/notifications');
+      setNotifications([]);
+      setUnreadCount(0);
+      toast.success('All notifications cleared');
+    } catch (err) {
+      console.warn('[SocketContext] Error clearing notifications:', err.message);
+      toast.error('Failed to clear notifications');
     }
   };
 
@@ -461,6 +489,8 @@ export const SocketProvider = ({ children }) => {
         fetchNotifications,
         markNotificationRead,
         markAllNotificationsRead,
+        deleteNotification,
+        deleteAllNotifications,
         pushStatus,
         requestPushSubscription,
         sendTestPushNotification,

@@ -5,6 +5,8 @@ const {
   getNotifications,
   markAsRead,
   markAllAsRead,
+  deleteNotification,
+  deleteAllNotifications,
   saveFcmToken,
   saveCustomerFcmToken,
   deleteCustomerFcmToken,
@@ -27,7 +29,10 @@ router.post('/customer-fcm-token/delete', deleteCustomerFcmToken);
 // Protected Admin Notification endpoints
 router.get('/', protectAdmin, getNotifications);
 router.patch('/read-all', protectAdmin, markAllAsRead);
+router.patch('/mark-all-read', protectAdmin, markAllAsRead);
 router.patch('/:id/read', protectAdmin, markAsRead);
+router.delete('/:id', protectAdmin, deleteNotification);
+router.delete('/', protectAdmin, deleteAllNotifications);
 
 // Custom Push Broadcast routes (Admin only)
 router.post('/broadcast', protectAdmin, broadcastCustomPush);

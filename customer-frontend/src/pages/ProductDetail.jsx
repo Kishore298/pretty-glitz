@@ -2,7 +2,7 @@ import React, { useEffect, useState, useContext } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import api from '../utils/api';
 import { motion, AnimatePresence } from 'framer-motion';
-import { CartContext } from '../context/CartContext';
+import { CartContext, resolveStock } from '../context/CartContext';
 import { useWishlist } from '../context/WishlistContext';
 import { optimizeImageUrl } from '../utils/cloudinary';
 import {
@@ -213,6 +213,11 @@ const ProductDetail = () => {
   const cartVariantQty = product ? getCartItemQuantity(product._id, selectedSize, selectedPieceCount?.count ?? null, selectedColor?._id) : 0;
   const variantInCart = product ? isInCart(product._id, selectedSize, selectedPieceCount?.count ?? null, selectedColor?._id) : false;
 
+  // Authoritative stock evaluation for current variant (Scenario A & B)
+  const stockInfo = resolveStock(product, selectedSize, selectedColor);
+  const isOutOfStock = !product?.inStock || !stockInfo.isAvailable;
+  const isMaxReached = stockInfo.isStockTracked && cartVariantQty >= stockInfo.availableStock;
+
   const validate = () => {
     if (product?.colorVariants && product.colorVariants.length > 0 && !selectedColor) {
       setError('Please choose a colour to continue');
@@ -226,13 +231,13 @@ const ProductDetail = () => {
       setError('Please select a piece count to continue');
       return false;
     }
-    // Check if selected size in selected color is in stock
-    if (selectedColor && selectedSize) {
-      const match = selectedColor.sizes?.find(s => s.size === selectedSize);
-      if (match && match.inStock === false) {
-        setError(`Size ${selectedSize} in ${selectedColor.colorName} is out of stock.`);
-        return false;
-      }
+    if (isOutOfStock) {
+      setError(stockInfo.reason || 'This product/variant is currently out of stock.');
+      return false;
+    }
+    if (isMaxReached) {
+      setError(`Maximum stock of ${stockInfo.availableStock} reached for this item.`);
+      return false;
     }
     setError('');
     return true;
@@ -247,8 +252,12 @@ const ProductDetail = () => {
 
   const handleIncrease = () => {
     if (!validate()) return;
+    if (isMaxReached) {
+      setError(`Only ${stockInfo.availableStock} available in stock.`);
+      return;
+    }
     if (variantInCart) {
-      updateQuantity(product._id, selectedSize, cartVariantQty + 1, selectedPieceCount?.count ?? null);
+      updateQuantity(product._id, selectedSize, cartVariantQty + 1, selectedPieceCount?.count ?? null, selectedColor?._id);
     } else {
       addToCart(product, selectedSize, 1, selectedPieceCount?.count ?? null, resolvedPrice, selectedColor);
     }
@@ -258,7 +267,7 @@ const ProductDetail = () => {
     if (cartVariantQty <= 1) {
       removeFromCart(product._id, selectedSize, selectedPieceCount?.count ?? null, selectedColor?._id);
     } else {
-      updateQuantity(product._id, selectedSize, cartVariantQty - 1, selectedPieceCount?.count ?? null);
+      updateQuantity(product._id, selectedSize, cartVariantQty - 1, selectedPieceCount?.count ?? null, selectedColor?._id);
     }
   };
 
@@ -798,8 +807,8 @@ const ProductDetail = () => {
 
               {error && <motion.p initial={{ opacity: 0 }} animate={{ opacity: 1 }} style={{ color: '#ef4444', fontSize: '0.85rem', fontWeight: 500, marginBottom: 12 }}>{error}</motion.p>}
 
-              {/* Cart Controls */}
-              {product.inStock && (
+              {/* Cart Controls with Live Stock Validation */}
+              {!isOutOfStock ? (
                 <div className="product-cart-section">
                   {variantInCart ? (
                     /* Quantity Stepper when variant is in cart */
@@ -811,7 +820,16 @@ const ProductDetail = () => {
                         <span className="product-cart-stepper-qty">
                           {cartVariantQty}
                         </span>
-                        <button onClick={handleIncrease} className="product-cart-stepper-btn">
+                        <button
+                          onClick={handleIncrease}
+                          disabled={isMaxReached}
+                          className="product-cart-stepper-btn"
+                          style={{
+                            opacity: isMaxReached ? 0.35 : 1,
+                            cursor: isMaxReached ? 'not-allowed' : 'pointer',
+                          }}
+                          title={isMaxReached ? `Only ${stockInfo.availableStock} available` : 'Add one more'}
+                        >
                           <Plus size={16} />
                         </button>
                       </div>
@@ -831,14 +849,19 @@ const ProductDetail = () => {
                     </button>
                   )}
                 </div>
-              )}
-
-              {!product.inStock && (
+              ) : (
                 <div className="product-cart-section">
-                  <button disabled className="product-add-cart-btn" style={{
-                    background: 'var(--input-bg)', color: 'var(--text-muted)',
-                    cursor: 'not-allowed', boxShadow: 'none'
-                  }}>
+                  <button
+                    disabled
+                    className="product-add-cart-btn"
+                    style={{
+                      background: '#374151',
+                      color: '#9CA3AF',
+                      cursor: 'not-allowed',
+                      boxShadow: 'none',
+                      opacity: 0.8,
+                    }}
+                  >
                     Out of Stock
                   </button>
                 </div>

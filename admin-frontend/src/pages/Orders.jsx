@@ -951,6 +951,19 @@ const Orders = () => {
                               marginTop: 2,
                             }}
                           >
+                            {item.colorName && (
+                              <span
+                                style={{
+                                  padding: '1px 6px',
+                                  borderRadius: 4,
+                                  background: 'rgba(236, 22, 140, 0.12)',
+                                  color: '#EC168C',
+                                  fontWeight: 600,
+                                }}
+                              >
+                                {item.colorName}
+                              </span>
+                            )}
                             {item.size && (
                               <span
                                 style={{

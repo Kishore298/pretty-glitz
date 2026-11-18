@@ -99,91 +99,145 @@ const createOrder = async (req, res) => {
 
     const deductedItemsLog = [];
 
-    // 1. Transactional Inventory Reservation with Nested $elemMatch
+    // 1. Transactional Inventory Reservation & Dynamic Stock Validation (Scenario A & B)
     try {
       for (const item of cleanItems) {
-        if (item.product && item.colorVariantId && item.sizeVariantId) {
-          // Nested $elemMatch ensures that the exact color AND size match on the same variant
-          const stockQuery = {
-            _id: item.product,
-            colorVariants: {
-              $elemMatch: {
-                _id: item.colorVariantId,
-                inStock: true,
-                sizes: {
-                  $elemMatch: {
-                    _id: item.sizeVariantId,
-                    inStock: true,
-                    stockCount: { $gte: item.quantity },
+        if (!item.product) {
+          throw new Error(`Invalid item in cart: missing product reference.`);
+        }
+
+        const prodDoc = await Product.findById(item.product).session(useTransaction && session ? session : null);
+        if (!prodDoc || prodDoc.isActive === false) {
+          throw new Error(`"${item.name}" is no longer available.`);
+        }
+        if (prodDoc.inStock === false) {
+          throw new Error(`"${item.name}" is currently out of stock.`);
+        }
+
+        if (item.colorVariantId && item.sizeVariantId) {
+          // Color + Size variant
+          const colorVar = prodDoc.colorVariants?.id?.(item.colorVariantId) ||
+            prodDoc.colorVariants?.find((c) => c._id?.toString() === item.colorVariantId.toString());
+          if (!colorVar) {
+            throw new Error(`Colour variant is no longer available for ${item.name}.`);
+          }
+          if (colorVar.inStock === false) {
+            throw new Error(`Colour "${colorVar.colorName}" for ${item.name} is currently out of stock.`);
+          }
+
+          const sizeVar = colorVar.sizes?.id?.(item.sizeVariantId) ||
+            colorVar.sizes?.find((s) => s._id?.toString() === item.sizeVariantId.toString() || s.size === item.size);
+          if (!sizeVar) {
+            throw new Error(`Size "${item.size || 'N/A'}" is no longer available for ${item.name}.`);
+          }
+          if (sizeVar.inStock === false) {
+            throw new Error(`Size "${sizeVar.size}" (${colorVar.colorName}) is currently out of stock.`);
+          }
+
+          // Scenario A: Tracked numeric stock
+          if (typeof sizeVar.stockCount === 'number') {
+            if (sizeVar.stockCount < item.quantity) {
+              throw new Error(
+                `Insufficient stock for ${item.name} (${colorVar.colorName} - Size ${sizeVar.size}). Only ${sizeVar.stockCount} available.`
+              );
+            }
+
+            // Atomic decrement with nested $elemMatch guard
+            const stockQuery = {
+              _id: item.product,
+              colorVariants: {
+                $elemMatch: {
+                  _id: item.colorVariantId,
+                  inStock: true,
+                  sizes: {
+                    $elemMatch: {
+                      _id: item.sizeVariantId,
+                      inStock: true,
+                      stockCount: { $gte: item.quantity },
+                    },
                   },
                 },
               },
-            },
-          };
+            };
 
-          const stockUpdate = {
-            $inc: {
-              'colorVariants.$[c].sizes.$[s].stockCount': -item.quantity,
-              stockVersion: 1,
-            },
-          };
+            const stockUpdate = {
+              $inc: {
+                'colorVariants.$[c].sizes.$[s].stockCount': -item.quantity,
+                stockVersion: 1,
+              },
+            };
 
-          const options = {
-            arrayFilters: [
-              { 'c._id': item.colorVariantId },
-              { 's._id': item.sizeVariantId },
-            ],
-          };
-          if (useTransaction && session) options.session = session;
+            const options = {
+              arrayFilters: [
+                { 'c._id': item.colorVariantId },
+                { 's._id': item.sizeVariantId },
+              ],
+            };
+            if (useTransaction && session) options.session = session;
 
-          const updateRes = await Product.updateOne(stockQuery, stockUpdate, options);
-          if (updateRes.modifiedCount === 0) {
-            throw new Error(
-              `Unable to reserve stock for ${item.name} (${item.colorName || 'Variant'} - Size ${item.size || 'N/A'}). Item is either out of stock or sold out.`
-            );
-          }
+            const updateRes = await Product.updateOne(stockQuery, stockUpdate, options);
+            if (updateRes.modifiedCount === 0) {
+              throw new Error(
+                `Unable to reserve stock for ${item.name} (${item.colorName || colorVar.colorName} - Size ${item.size || sizeVar.size}). Item has just sold out.`
+              );
+            }
 
-          // Create audit trail entry
-          try {
-            const auditLog = new InventoryLog({
+            try {
+              const auditLog = new InventoryLog({
+                productId: item.product,
+                productName: item.name,
+                category: 'Designer Glass Bangles',
+                variantType: 'COLOR_SIZE',
+                colorVariantId: item.colorVariantId,
+                sizeVariantId: item.sizeVariantId,
+                colorName: item.colorName || colorVar.colorName,
+                size: item.size || sizeVar.size,
+                previousStock: sizeVar.stockCount,
+                updatedStock: sizeVar.stockCount - item.quantity,
+                quantityChanged: -item.quantity,
+                operation: 'ORDER_DEDUCTION',
+                source: 'ORDER_DEDUCTION',
+                reason: `Order #${orderId} purchase`,
+                referenceId: orderId,
+                adminUsername: 'System',
+              });
+              await auditLog.save(useTransaction && session ? { session } : {});
+            } catch (logErr) {
+              console.warn('[Orders] Audit log error during deduction:', logErr.message);
+            }
+
+            deductedItemsLog.push({
+              type: 'colorVariant',
               productId: item.product,
-              productName: item.name,
-              category: 'Designer Glass Bangles',
-              variantType: 'COLOR_SIZE',
               colorVariantId: item.colorVariantId,
               sizeVariantId: item.sizeVariantId,
-              colorName: item.colorName || '',
-              size: item.size || '',
-              previousStock: 0,
-              updatedStock: 0,
-              quantityChanged: -item.quantity,
-              operation: 'ORDER_DEDUCTION',
-              source: 'ORDER_DEDUCTION',
-              reason: `Order #${orderId} purchase`,
-              referenceId: orderId,
-              adminUsername: 'System',
+              quantity: item.quantity,
             });
-            await auditLog.save(useTransaction && session ? { session } : {});
-          } catch (logErr) {
-            console.warn('[Orders] Audit log error during deduction:', logErr.message);
+          }
+          // Scenario B: Untracked stock on variant - allowed freely since inStock is true
+        } else if (item.size && Array.isArray(prodDoc.sizes) && prodDoc.sizes.length > 0) {
+          // Top-level Bangles size (Wedding Bangles, Antique Bangles, Valaikaappu Bangles)
+          const matchedSize = prodDoc.sizes.find((s) => s.size === item.size || s._id?.toString() === item.sizeVariantId?.toString());
+          if (!matchedSize) {
+            throw new Error(`Size "${item.size}" is no longer available for ${item.name}.`);
+          }
+          if (matchedSize.inStock === false) {
+            throw new Error(`Size "${item.size}" of ${item.name} is currently out of stock.`);
           }
 
-          deductedItemsLog.push({
-            type: 'colorVariant',
-            productId: item.product,
-            colorVariantId: item.colorVariantId,
-            sizeVariantId: item.sizeVariantId,
-            quantity: item.quantity,
-          });
-        } else if (item.product && item.size) {
-          // Size-wise stock deduction for top-level bangles (Wedding Bangles, Antique Bangles, Valaikaappu Bangles)
-          const prodDoc = await Product.findById(item.product).session(useTransaction && session ? session : null);
-          if (prodDoc && Array.isArray(prodDoc.sizes) && prodDoc.sizes.length > 0) {
+          // Scenario A: Tracked numeric stock
+          if (typeof matchedSize.stockCount === 'number') {
+            if (matchedSize.stockCount < item.quantity) {
+              throw new Error(
+                `Insufficient stock for ${item.name} (Size ${item.size}). Only ${matchedSize.stockCount} available.`
+              );
+            }
+
             const stockQuery = {
               _id: item.product,
               sizes: {
                 $elemMatch: {
-                  size: item.size,
+                  size: matchedSize.size,
                   inStock: true,
                   stockCount: { $gte: item.quantity },
                 },
@@ -196,14 +250,14 @@ const createOrder = async (req, res) => {
               },
             };
             const options = {
-              arrayFilters: [{ 's.size': item.size }],
+              arrayFilters: [{ 's.size': matchedSize.size }],
             };
             if (useTransaction && session) options.session = session;
 
             const updateRes = await Product.updateOne(stockQuery, stockUpdate, options);
             if (updateRes.modifiedCount === 0) {
               throw new Error(
-                `Unable to reserve stock for ${item.name} (Size ${item.size}). Item is either out of stock or sold out.`
+                `Unable to reserve stock for ${item.name} (Size ${item.size}). Item has just sold out.`
               );
             }
 
@@ -213,9 +267,9 @@ const createOrder = async (req, res) => {
                 productName: item.name,
                 category: prodDoc.category || 'Bangles',
                 variantType: 'SIZE',
-                size: item.size || '',
-                previousStock: 0,
-                updatedStock: 0,
+                size: item.size,
+                previousStock: matchedSize.stockCount,
+                updatedStock: matchedSize.stockCount - item.quantity,
                 quantityChanged: -item.quantity,
                 operation: 'ORDER_DEDUCTION',
                 source: 'ORDER_DEDUCTION',
@@ -231,15 +285,19 @@ const createOrder = async (req, res) => {
             deductedItemsLog.push({
               type: 'sizeStock',
               productId: item.product,
-              size: item.size,
+              size: matchedSize.size,
               quantity: item.quantity,
             });
-            continue;
           }
-        } else if (item.product) {
-          // Standard / legacy product stock deduction if inStockCount is tracked
-          const prodDoc = await Product.findById(item.product).session(useTransaction && session ? session : null);
-          if (prodDoc && typeof prodDoc.inStockCount === 'number') {
+          // Scenario B: Untracked stock on size - allowed freely since inStock is true
+        } else {
+          // Standard / legacy product
+          if (typeof prodDoc.inStockCount === 'number') {
+            // Scenario A: Tracked numeric stock
+            if (prodDoc.inStockCount < item.quantity) {
+              throw new Error(`Insufficient stock for ${item.name}. Only ${prodDoc.inStockCount} available.`);
+            }
+
             const stockQuery = {
               _id: item.product,
               inStock: true,
@@ -254,7 +312,7 @@ const createOrder = async (req, res) => {
             const options = useTransaction && session ? { session } : {};
             const updateRes = await Product.updateOne(stockQuery, stockUpdate, options);
             if (updateRes.modifiedCount === 0) {
-              throw new Error(`Insufficient stock for ${item.name}.`);
+              throw new Error(`Insufficient stock for ${item.name}. Item has just sold out.`);
             }
 
             try {
@@ -283,6 +341,7 @@ const createOrder = async (req, res) => {
               quantity: item.quantity,
             });
           }
+          // Scenario B: Untracked stock - allowed freely since inStock is true
         }
       }
 

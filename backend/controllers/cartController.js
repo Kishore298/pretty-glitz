@@ -449,4 +449,88 @@ const clearCart = async (req, res) => {
   }
 };
 
-module.exports = { getCart, addItem, updateItem, removeItem, mergeCart, clearCart };
+// ─── POST /api/cart/validate (Public cart stock check for guests & auth users) ─
+const validateCartStock = async (req, res) => {
+  try {
+    const { items } = req.body;
+    if (!Array.isArray(items)) {
+      return res.status(400).json({ message: 'items array is required' });
+    }
+
+    const results = [];
+    let allValid = true;
+
+    for (const item of items) {
+      const productId = item.productId || item.product?._id || item.product;
+      if (!productId) continue;
+
+      const product = await Product.findById(productId);
+
+      if (!product || product.isActive === false) {
+        results.push({
+          variantKey: item.variantKey,
+          productId,
+          isAvailable: false,
+          isStockTracked: false,
+          availableStock: 0,
+          allowedQty: 0,
+          currentPrice: 0,
+          reason: 'This product is no longer available.',
+        });
+        allValid = false;
+        continue;
+      }
+
+      const check = validateStock(
+        product,
+        item.quantity || 1,
+        item.colorVariantId,
+        item.sizeVariantId,
+        item.size
+      );
+
+      if (!check.ok) {
+        results.push({
+          variantKey: item.variantKey,
+          productId,
+          isAvailable: false,
+          isStockTracked: check.availableStock != null,
+          availableStock: check.availableStock || 0,
+          allowedQty: 0,
+          currentPrice: check.price || product.price,
+          reason: check.reason,
+        });
+        allValid = false;
+      } else {
+        const isTracked = typeof check.availableStock === 'number';
+        const allowedQty = isTracked ? Math.min(item.quantity || 1, check.availableStock) : (item.quantity || 1);
+        const exceedsStock = isTracked && (item.quantity || 1) > check.availableStock;
+
+        if (exceedsStock) {
+          allValid = false;
+        }
+
+        results.push({
+          variantKey: item.variantKey,
+          productId,
+          isAvailable: true,
+          isStockTracked: isTracked,
+          availableStock: isTracked ? check.availableStock : null,
+          allowedQty,
+          currentPrice: check.price || product.price,
+          reason: exceedsStock ? `Only ${check.availableStock} available` : '',
+        });
+      }
+    }
+
+    return res.status(200).json({
+      isValid: allValid,
+      items: results,
+    });
+  } catch (err) {
+    console.error('[cart] validateCartStock error:', err);
+    return res.status(500).json({ message: 'Failed to validate cart stock.' });
+  }
+};
+
+module.exports = { getCart, addItem, updateItem, removeItem, mergeCart, clearCart, validateCartStock };

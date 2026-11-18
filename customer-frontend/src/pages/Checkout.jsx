@@ -1,16 +1,16 @@
-import React, { useContext, useState, useRef } from 'react';
+import React, { useContext, useState, useRef, useEffect } from 'react';
 import { useNavigate, Navigate, Link } from 'react-router-dom';
 import { CartContext } from '../context/CartContext';
 import { motion } from 'framer-motion';
 import { optimizeImageUrl } from '../utils/cloudinary';
 import logoImg from '../assets/pretty-glitz-logo.png';
-import { ChevronRight, ShieldCheck, CheckCircle2, BellRing, Truck } from 'lucide-react';
+import { ChevronRight, ShieldCheck, CheckCircle2, BellRing, Truck, AlertCircle } from 'lucide-react';
 import { getWhatsAppUrl, IS_WHATSAPP_CONFIGURED } from '../config/constants';
 import api from '../utils/api';
 import { linkOrderToCustomerFcm, requestCustomerNotificationPermission } from '../firebase';
 
 const Checkout = () => {
-  const { cartItems, getCartTotal, clearCart } = useContext(CartContext);
+  const { cartItems, getCartTotal, clearCart, validateCartStock } = useContext(CartContext);
   const navigate = useNavigate();
 
   const [formData, setFormData] = useState({
@@ -24,6 +24,7 @@ const Checkout = () => {
 
   const [redirecting, setRedirecting] = useState(false);
   const [submitting, setSubmitting] = useState(false);
+  const [errorMessage, setErrorMessage] = useState('');
   const [createdOrderId, setCreatedOrderId] = useState(null);
   const [pushStatus, setPushStatus] = useState(
     typeof window !== 'undefined' && 'Notification' in window ? Notification.permission : 'unsupported'
@@ -31,24 +32,71 @@ const Checkout = () => {
   const [pushEnabling, setPushEnabling] = useState(false);
   const idempotencyKeyRef = useRef('pg_ord_' + Date.now() + '_' + Math.random().toString(36).slice(2, 8));
 
+  // Validate cart stock on mount; redirect if any item is out of stock
+  useEffect(() => {
+    if (validateCartStock && cartItems.length > 0) {
+      validateCartStock().then((res) => {
+        if (res && res.isValid === false) {
+          navigate('/cart');
+        }
+      });
+    }
+  }, [validateCartStock, cartItems.length, navigate]);
+
   if (cartItems.length === 0 && !redirecting) return <Navigate to="/cart" />;
 
   const handleChange = (e) => setFormData({ ...formData, [e.target.name]: e.target.value });
 
   const constructWhatsAppMessage = (orderId) => {
-    let msg = `*New Order Request*\n*Order ID:* ${orderId || 'PENDING'}\n\n*Customer:* ${formData.name}\n*Mobile:* +91 ${formData.mobile}\n\n*Products:*\n`;
-    cartItems.forEach((item, index) => {
-      msg += `\n${index + 1}. ${item.product.name}\n`;
-      if (item.colorName) msg += `   Colour: ${item.colorName}\n`;
-      if (item.size) msg += `   Size: ${item.size}\n`;
-      if (item.pieceCount) msg += `   Pieces: ${item.pieceCount}\n`;
-      msg += `   Quantity: ${item.quantity}\n   Price: ₹${item.price || item.product.price}\n`;
-      if (item.product.inStock === false) {
-        msg += `   Status: OUT OF STOCK\n`;
-      }
+    const formattedDate = new Date().toLocaleDateString('en-IN', {
+      day: 'numeric',
+      month: 'short',
+      year: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit',
     });
-    msg += `\n*Total:* ₹${getCartTotal()}\n\n*Delivery Details:*\nAddress: ${formData.address}\nCity: ${formData.city}\nPincode: ${formData.pincode}\n`;
-    if (formData.notes) msg += `\nNotes: ${formData.notes}\n`;
+
+    let msg = `✨ *PRETTYGLITZ — NEW ORDER REQUEST* ✨\n`;
+    msg += `━━━━━━━━━━━━━━━━━━━━━━━\n`;
+    msg += `🛍️ *Order ID:* #${orderId || 'PG-ORDER'}\n`;
+    msg += `📅 *Date:* ${formattedDate}\n\n`;
+
+    msg += `👤 *CUSTOMER DETAILS*\n`;
+    msg += `• *Name:* ${formData.name.trim()}\n`;
+    msg += `• *Phone:* +91 ${formData.mobile.trim()}\n`;
+    msg += `• *Delivery Address:* ${formData.address.trim()}\n`;
+    if (formData.city) msg += `• *City:* ${formData.city.trim()}\n`;
+    if (formData.pincode) msg += `• *Pincode:* ${formData.pincode.trim()}\n\n`;
+
+    msg += `📦 *ORDER ITEMS*\n`;
+    cartItems.forEach((item, index) => {
+      const packaging = item.packagingType || item.product?.packagingType
+        ? `${item.packagingQuantity || item.product?.packagingQuantity || 1} ${item.packagingType || item.product?.packagingType}`
+        : (item.pieceCount ? `${item.pieceCount} Pieces` : null);
+      const itemPrice = item.price || item.product?.price || 0;
+      const lineTotal = itemPrice * item.quantity;
+
+      msg += `${index + 1}. *${item.product?.name || item.name}*\n`;
+      if (item.colorName) msg += `   • Colour: ${item.colorName}\n`;
+      if (item.size) msg += `   • Size: ${item.size}\n`;
+      if (packaging) msg += `   • Packaging: ${packaging}\n`;
+      msg += `   • Qty: ${item.quantity} × ₹${itemPrice} = *₹${lineTotal}*\n`;
+    });
+
+    msg += `\n━━━━━━━━━━━━━━━━━━━━━━━\n`;
+    msg += `💰 *BILLING SUMMARY*\n`;
+    msg += `• *Subtotal:* ₹${getCartTotal()}\n`;
+    msg += `• *Delivery Charges:* To be confirmed on WhatsApp\n`;
+    msg += `• *Total Order Amount:* *₹${getCartTotal()}*\n`;
+
+    if (formData.notes && formData.notes.trim()) {
+      msg += `\n📝 *Special Instructions:*\n${formData.notes.trim()}\n`;
+    }
+
+    msg += `━━━━━━━━━━━━━━━━━━━━━━━\n`;
+    msg += `🙏 *Thank you for shopping with PrettyGlitz!*\n`;
+    msg += `_Please press Send above to submit this order directly to our team._`;
+
     return encodeURIComponent(msg);
   };
 
@@ -62,9 +110,10 @@ const Checkout = () => {
 
     if (submitting) return;
     setSubmitting(true);
+    setErrorMessage('');
 
     try {
-      // 1. Save authoritative Order in MongoDB before redirect
+      // 1. Authoritative Backend Stock Validation & Persistence before opening WhatsApp
       const payload = {
         customer: formData,
         items: cartItems.map((item) => ({
@@ -102,19 +151,13 @@ const Checkout = () => {
         window.open(whatsappUrl, '_blank');
       }
 
-      // 3. Set redirecting screen (WITHOUT wiping cart immediately)
+      // 3. Set redirecting confirmation screen
       setRedirecting(true);
     } catch (err) {
       console.error('[Checkout] Order submission error:', err);
-      // Fallback: still allow WhatsApp checkout even if server had a momentary network error
-      const fallbackOrderId = 'PG-' + Date.now().toString().slice(-6);
-      setCreatedOrderId(fallbackOrderId);
-      const message = constructWhatsAppMessage(fallbackOrderId);
-      const whatsappUrl = getWhatsAppUrl(decodeURIComponent(message));
-      if (whatsappUrl) {
-        window.open(whatsappUrl, '_blank');
-      }
-      setRedirecting(true);
+      const msg = err.response?.data?.message || err.message || 'Unable to create order. Please try again.';
+      setErrorMessage(msg);
+      window.scrollTo({ top: 0, behavior: 'smooth' });
     } finally {
       setSubmitting(false);
     }
@@ -344,6 +387,35 @@ const Checkout = () => {
         <div style={{ display: 'flex', flexWrap: 'wrap', gap: 48 }}>
 
           <div style={{ flex: '1 1 600px' }}>
+            {errorMessage && (
+              <div
+                style={{
+                  background: 'rgba(239, 68, 68, 0.1)',
+                  border: '1px solid rgba(239, 68, 68, 0.35)',
+                  borderRadius: 14,
+                  padding: '16px 20px',
+                  marginBottom: 24,
+                  color: '#EF4444',
+                  fontSize: '0.85rem',
+                  lineHeight: 1.5,
+                  display: 'flex',
+                  alignItems: 'flex-start',
+                  gap: 12,
+                }}
+              >
+                <AlertCircle size={20} style={{ flexShrink: 0, marginTop: 2 }} />
+                <div style={{ flex: 1 }}>
+                  <div style={{ fontWeight: 700, marginBottom: 2 }}>Order Notice</div>
+                  <div>{errorMessage}</div>
+                  <div style={{ marginTop: 8 }}>
+                    <Link to="/cart" style={{ color: '#EF4444', fontWeight: 700, textDecoration: 'underline' }}>
+                      ← Return to bag to review and update items
+                    </Link>
+                  </div>
+                </div>
+              </div>
+            )}
+
             <form id="checkout-form" onSubmit={handlePlaceOrder} style={{ display: 'flex', flexDirection: 'column', gap: 32 }}>
 
               <div style={{ background: 'var(--bg-card)', borderRadius: 20, border: `1px solid var(--border)`, padding: 32 }}>

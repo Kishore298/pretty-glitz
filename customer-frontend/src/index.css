@@ -1062,14 +1062,74 @@ section,
 .product-detail-title {
   font-family: "Cormorant Garamond", Georgia, serif;
   font-size: clamp(1.6rem, 3.5vw, 2.8rem);
-  font-weight: 600;
+  font-weight: 800;
   color: var(--accent, #C4386C);
   margin: 0;
   line-height: 1.15;
-  text-decoration: underline;
-  text-underline-offset: 4px;
-  text-decoration-thickness: 1.5px;
-  text-decoration-color: rgba(196, 56, 108, 0.45);
+  text-decoration: none !important;
+  cursor: default;
+  user-select: text;
+}
+
+/* ── Complete Your Look Product Title with Glowing Gold Underline & Shimmer ── */
+.complete-look-title-container {
+  display: inline-block;
+  margin: 0;
+  padding: 0;
+}
+
+.complete-look-title-link {
+  display: inline-flex;
+  align-items: center;
+  position: relative;
+  text-decoration: none !important;
+  font-family: "Cormorant Garamond", Georgia, serif;
+  font-weight: 800;
+  font-size: clamp(1.35rem, 3vw, 1.85rem);
+  line-height: 1.05;
+  color: var(--accent, #C4386C);
+  padding-bottom: 2px;
+  cursor: pointer;
+  transition: all 0.25s ease;
+}
+
+/* Mild elegant shining gold underline (slightly brighter, subtle shine, uniform gold tone) */
+.complete-look-title-link::after {
+  content: '';
+  position: absolute;
+  left: 0;
+  bottom: 0;
+  width: 100%;
+  height: 2px;
+  border-radius: 999px;
+  background: #DFB847;
+  box-shadow: 0 2px 8px rgba(223, 184, 71, 0.55), 0 0 4px rgba(223, 184, 71, 0.5);
+  transition: all 0.25s ease;
+}
+
+.complete-look-title-link:hover {
+  color: var(--accent, #C4386C);
+}
+
+.complete-look-title-link:hover::after {
+  height: 2.2px;
+  background: #E5C35A;
+  box-shadow: 0 3px 10px rgba(229, 195, 90, 0.72), 0 0 6px rgba(229, 195, 90, 0.65);
+}
+
+@media (max-width: 768px) {
+  .complete-look-title-link {
+    font-size: 1.25rem;
+    line-height: 1.05;
+    padding-bottom: 2px;
+  }
+  
+  .complete-look-title-link::after {
+    height: 1.8px;
+    bottom: 0;
+    background: #DFB847;
+    box-shadow: 0 2px 6px rgba(223, 184, 71, 0.52), 0 0 4px rgba(223, 184, 71, 0.48);
+  }
 }
 
 .product-detail-price-row {
@@ -1410,14 +1470,14 @@ section,
   }
 
   .product-detail-title {
-    font-size: 1.25rem;
+    font-size: 1.32rem;
+    font-weight: 800;
     margin: 0;
     line-height: 1.2;
     color: var(--accent, #C4386C);
-    text-decoration: underline;
-    text-underline-offset: 3px;
-    text-decoration-thickness: 1.2px;
-    text-decoration-color: rgba(196, 56, 108, 0.45);
+    text-decoration: none !important;
+    cursor: default;
+    user-select: text;
   }
 
   .product-detail-price-row {

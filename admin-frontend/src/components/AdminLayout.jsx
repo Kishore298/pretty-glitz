@@ -13,6 +13,7 @@ import {
   ShoppingBag,
   Clock,
   Sparkles,
+  Trash2,
 } from 'lucide-react';
 import Sidebar from './Sidebar';
 import { useSocket } from '../context/SocketContext';
@@ -31,6 +32,8 @@ const AdminLayout = ({ children }) => {
     setSoundEnabled,
     markNotificationRead,
     markAllNotificationsRead,
+    deleteNotification,
+    deleteAllNotifications,
     pushStatus,
     requestPushSubscription,
     sendTestPushNotification,
@@ -340,27 +343,55 @@ const AdminLayout = ({ children }) => {
                         )}
                       </div>
 
-                      {unreadCount > 0 && (
-                        <button
-                          onClick={markAllNotificationsRead}
-                          style={{
-                            background: 'transparent',
-                            border: 'none',
-                            color: 'var(--accent-gold, #C9A84C)',
-                            fontSize: '0.75rem',
-                            fontWeight: 600,
-                            cursor: 'pointer',
-                            display: 'flex',
-                            alignItems: 'center',
-                            gap: 4,
-                            padding: '4px 6px',
-                            borderRadius: 6,
-                          }}
-                        >
-                          <CheckCheck size={14} />
-                          Mark all read
-                        </button>
-                      )}
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                        {unreadCount > 0 && (
+                          <button
+                            onClick={markAllNotificationsRead}
+                            title="Mark all notifications as read"
+                            style={{
+                              background: 'transparent',
+                              border: 'none',
+                              color: 'var(--accent-gold, #C9A84C)',
+                              fontSize: '0.74rem',
+                              fontWeight: 600,
+                              cursor: 'pointer',
+                              display: 'flex',
+                              alignItems: 'center',
+                              gap: 4,
+                              padding: '4px 6px',
+                              borderRadius: 6,
+                            }}
+                          >
+                            <CheckCheck size={13} />
+                            Mark read
+                          </button>
+                        )}
+                        {notifications.length > 0 && (
+                          <button
+                            onClick={deleteAllNotifications}
+                            title="Clear all notifications"
+                            style={{
+                              background: 'transparent',
+                              border: 'none',
+                              color: '#ACA6B8',
+                              fontSize: '0.74rem',
+                              fontWeight: 600,
+                              cursor: 'pointer',
+                              display: 'flex',
+                              alignItems: 'center',
+                              gap: 4,
+                              padding: '4px 6px',
+                              borderRadius: 6,
+                              transition: 'color 0.15s ease',
+                            }}
+                            onMouseEnter={(e) => { e.currentTarget.style.color = '#EF4444'; }}
+                            onMouseLeave={(e) => { e.currentTarget.style.color = '#ACA6B8'; }}
+                          >
+                            <Trash2 size={13} />
+                            Clear
+                          </button>
+                        )}
+                      </div>
                     </div>
 
                     {/* Background Web Push Notification Opt-in Prompt */}
@@ -532,6 +563,7 @@ const AdminLayout = ({ children }) => {
                                   alignItems: 'center',
                                   justifyContent: 'space-between',
                                   marginBottom: 2,
+                                  gap: 8,
                                 }}
                               >
                                 <span
@@ -542,21 +574,47 @@ const AdminLayout = ({ children }) => {
                                     whiteSpace: 'nowrap',
                                     overflow: 'hidden',
                                     textOverflow: 'ellipsis',
+                                    flex: 1,
                                   }}
                                 >
                                   {notif.title}
                                 </span>
-                                {!notif.read && (
-                                  <span
-                                    style={{
-                                      width: 6,
-                                      height: 6,
-                                      borderRadius: '50%',
-                                      background: '#EC168C',
-                                      flexShrink: 0,
+                                <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexShrink: 0 }}>
+                                  {!notif.read && (
+                                    <span
+                                      style={{
+                                        width: 6,
+                                        height: 6,
+                                        borderRadius: '50%',
+                                        background: '#EC168C',
+                                        flexShrink: 0,
+                                      }}
+                                    />
+                                  )}
+                                  <button
+                                    onClick={(e) => {
+                                      e.stopPropagation();
+                                      deleteNotification(notif._id);
                                     }}
-                                  />
-                                )}
+                                    title="Delete notification"
+                                    style={{
+                                      background: 'transparent',
+                                      border: 'none',
+                                      color: '#6E687A',
+                                      cursor: 'pointer',
+                                      padding: '2px',
+                                      borderRadius: 4,
+                                      display: 'flex',
+                                      alignItems: 'center',
+                                      justifyContent: 'center',
+                                      transition: 'color 0.15s ease',
+                                    }}
+                                    onMouseEnter={(e) => { e.currentTarget.style.color = '#EF4444'; }}
+                                    onMouseLeave={(e) => { e.currentTarget.style.color = '#6E687A'; }}
+                                  >
+                                    <Trash2 size={13} />
+                                  </button>
+                                </div>
                               </div>
                               <p
                                 style={{

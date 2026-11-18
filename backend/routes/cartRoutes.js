@@ -8,7 +8,11 @@ const {
   removeItem,
   mergeCart,
   clearCart,
+  validateCartStock,
 } = require('../controllers/cartController');
+
+// Public validation endpoint for both guest and authenticated carts
+router.post('/validate', validateCartStock);
 
 router.get('/', protectCustomer, getCart);
 router.post('/items', protectCustomer, addItem);

@@ -2,7 +2,9 @@ import React, { createContext, useState, useEffect, useCallback, useRef, useCont
 import api from '../utils/api';
 import { LS_CART_KEY } from '../config/constants';
 import { trackProductEvent, syncGuestState } from '../utils/analytics';
+import { resolveStock } from '../utils/stockValidator';
 
+export { resolveStock };
 export const CartContext = createContext();
 
 /**
@@ -51,6 +53,11 @@ export const CartProvider = ({ children }) => {
   // ── addToCart ─────────────────────────────────────────────────────────────────
 
   const addToCart = useCallback(async (product, size, quantity = 1, pieceCount = null, priceOverride = null, colorVariant = null) => {
+    const stockInfo = resolveStock(product, size, colorVariant);
+    if (!stockInfo.isAvailable) {
+      return { success: false, reason: stockInfo.reason || 'This product is currently out of stock.' };
+    }
+
     const productId = toProductId(product);
     const colorVariantId = typeof colorVariant === 'object' ? colorVariant?._id : colorVariant;
     const colorName = typeof colorVariant === 'object' ? colorVariant?.colorName : null;
@@ -60,14 +67,30 @@ export const CartProvider = ({ children }) => {
     const variantKey = buildVariantKey(productId, sizeValue, pieceCount, colorVariantId);
     const price = priceOverride ?? product.price;
 
-    // Optimistic local update
+    let targetQty = quantity;
+    let limitReached = false;
+
+    // Optimistic local update with stock limit enforcement
     setCartItems(prev => {
       const idx = prev.findIndex(i => i.variantKey === variantKey);
       if (idx >= 0) {
+        const existingQty = prev[idx].quantity;
+        let newQty = existingQty + quantity;
+        if (stockInfo.isStockTracked && newQty > stockInfo.availableStock) {
+          newQty = stockInfo.availableStock;
+          limitReached = true;
+        }
+        targetQty = newQty;
         const updated = [...prev];
-        updated[idx] = { ...updated[idx], quantity: updated[idx].quantity + quantity };
+        updated[idx] = { ...updated[idx], quantity: newQty };
         return updated;
       }
+
+      if (stockInfo.isStockTracked && targetQty > stockInfo.availableStock) {
+        targetQty = stockInfo.availableStock;
+        limitReached = true;
+      }
+
       return [...prev, {
         product,
         variantKey,
@@ -75,14 +98,16 @@ export const CartProvider = ({ children }) => {
         colorName: colorName || null,
         sizeVariantId: sizeVariantId || null,
         size: sizeValue,
-        quantity,
+        quantity: targetQty,
         pieceCount,
         price,
+        packagingType: product.packagingType || '',
+        packagingQuantity: product.packagingQuantity || 1,
       }];
     });
 
     // Track analytics event (fire-and-forget, deduplicated on backend)
-    trackProductEvent(productId, 'CART_ADD', quantity, { size: sizeValue, pieceCount, price, colorName });
+    trackProductEvent(productId, 'CART_ADD', targetQty, { size: sizeValue, pieceCount, price, colorName });
 
     const token = localStorage.getItem('customerToken');
     if (token) {
@@ -91,7 +116,7 @@ export const CartProvider = ({ children }) => {
           productId,
           size: sizeValue,
           pieceCount,
-          quantity,
+          quantity: targetQty,
           colorVariantId: colorVariantId || null,
           colorName: colorName || null,
           sizeVariantId: sizeVariantId || null,
@@ -102,6 +127,8 @@ export const CartProvider = ({ children }) => {
         console.error('[cart] addToCart server error:', err);
       }
     }
+
+    return { success: true, limitReached, quantity: targetQty };
   }, []);
 
   // ── removeFromCart ────────────────────────────────────────────────────────────
@@ -128,21 +155,38 @@ export const CartProvider = ({ children }) => {
 
   // ── updateQuantity ────────────────────────────────────────────────────────────
 
-  const updateQuantity = useCallback(async (productId, size, quantity, pieceCount = null) => {
-    const variantKey = buildVariantKey(productId, size, pieceCount);
+  const updateQuantity = useCallback(async (productIdOrKey, size, quantity, pieceCount = null, colorVariantId = null) => {
+    let targetKey = typeof productIdOrKey === 'string' && productIdOrKey.includes('::')
+      ? productIdOrKey
+      : buildVariantKey(toProductId(productIdOrKey), size, pieceCount, colorVariantId);
 
     if (quantity <= 0) {
-      return removeFromCart(productId, size, pieceCount);
+      return removeFromCart(targetKey, size, pieceCount, colorVariantId);
     }
 
-    setCartItems(prev =>
-      prev.map(i => i.variantKey === variantKey ? { ...i, quantity } : i)
-    );
+    setCartItems(prev => {
+      const item = prev.find(i => i.variantKey === targetKey);
+      if (!item) return prev;
+
+      const stockInfo = resolveStock(item.product, item.size, item.colorVariantId);
+      let safeQty = quantity;
+
+      if (!stockInfo.isAvailable) {
+        // Product or variant is completely out of stock
+        return prev.filter(i => i.variantKey !== targetKey);
+      }
+
+      if (stockInfo.isStockTracked && safeQty > stockInfo.availableStock) {
+        safeQty = stockInfo.availableStock;
+      }
+
+      return prev.map(i => i.variantKey === targetKey ? { ...i, quantity: safeQty } : i);
+    });
 
     const token = localStorage.getItem('customerToken');
     if (token) {
       try {
-        const { data } = await api.put(`/cart/items/${encodeURIComponent(variantKey)}`, { quantity });
+        const { data } = await api.put(`/cart/items/${encodeURIComponent(targetKey)}`, { quantity });
         setCartItems(_mapServerItems(data.cart?.items || []));
       } catch (err) {
         console.error('[cart] updateQuantity server error:', err);
@@ -252,6 +296,63 @@ export const CartProvider = ({ children }) => {
     syncedRef.current = false;
   }, []);
 
+  // ── Dynamic live stock validation against server database ──────────────────
+  const validateCartStock = useCallback(async () => {
+    if (!cartItems || cartItems.length === 0) {
+      return { isValid: true, items: [] };
+    }
+
+    try {
+      const payload = cartItems.map((item) => ({
+        variantKey: item.variantKey,
+        productId: toProductId(item.product),
+        size: item.size,
+        colorVariantId: item.colorVariantId,
+        sizeVariantId: item.sizeVariantId,
+        quantity: item.quantity,
+      }));
+
+      const { data } = await api.post('/cart/validate', { items: payload });
+      if (data && Array.isArray(data.items)) {
+        setCartItems((prev) => {
+          return prev.map((localItem) => {
+            const serverCheck = data.items.find((si) => si.variantKey === localItem.variantKey);
+            if (!serverCheck) return localItem;
+
+            let updatedQty = localItem.quantity;
+            if (serverCheck.isStockTracked && typeof serverCheck.availableStock === 'number') {
+              if (localItem.quantity > serverCheck.availableStock) {
+                updatedQty = Math.max(0, serverCheck.availableStock);
+              }
+            }
+
+            return {
+              ...localItem,
+              quantity: updatedQty,
+              stockStatus: {
+                isAvailable: serverCheck.isAvailable,
+                isStockTracked: serverCheck.isStockTracked,
+                availableStock: serverCheck.availableStock,
+                reason: serverCheck.reason,
+              },
+            };
+          });
+        });
+      }
+      return data;
+    } catch (err) {
+      console.warn('[cart] validateCartStock error:', err.message);
+      return { isValid: true, items: [] };
+    }
+  }, [cartItems]);
+
+  // Initial cart stock validation on mount
+  useEffect(() => {
+    if (cartItems.length > 0) {
+      validateCartStock();
+    }
+  }, []); // Run on mount
+
   return (
     <CartContext.Provider
       value={{
@@ -260,6 +361,7 @@ export const CartProvider = ({ children }) => {
         isInCart, getCartItemQuantity,
         getCartTotal, getCartCount,
         syncWithServer, loadServerCart, clearLocalSync,
+        validateCartStock, resolveStock,
       }}
     >
       {children}
