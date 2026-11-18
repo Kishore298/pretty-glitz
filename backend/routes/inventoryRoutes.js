@@ -5,6 +5,7 @@ const { protectAdmin } = require('../middleware/authMiddleware');
 const {
   getInventory,
   updateSingleStock,
+  updateVariants,
   bulkUpdate,
   getInventoryLogs,
   exportInventory,
@@ -20,6 +21,7 @@ const upload = multer({
 
 router.get('/', protectAdmin, getInventory);
 router.post('/update-stock', protectAdmin, updateSingleStock);
+router.post('/update-variants', protectAdmin, updateVariants);
 router.post('/bulk-update', protectAdmin, bulkUpdate);
 router.get('/logs', protectAdmin, getInventoryLogs);
 router.get('/export', protectAdmin, exportInventory);

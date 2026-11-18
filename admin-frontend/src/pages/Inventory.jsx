@@ -10,19 +10,14 @@ import {
   AlertCircle,
   AlertTriangle,
   Package,
-  Layers,
   History,
   Download,
   Upload,
   Save,
-  Check,
   ChevronRight,
-  ExternalLink,
   Pencil,
-  ArrowUpDown,
-  Tag,
-  Boxes,
   Sparkles,
+  EyeOff,
 } from 'lucide-react';
 import PageWrapper from '../components/PageWrapper';
 import PageHeader from '../components/PageHeader';
@@ -180,56 +175,29 @@ const Inventory = () => {
   const handleDrawerSave = async (product, updatedVariants) => {
     try {
       setSavingDrawer(true);
-      const updates = [];
 
-      if (updatedVariants.tier === 'TIER_1_COLOR_SIZE') {
-        updatedVariants.colorVariants.forEach((cVar) => {
-          cVar.sizes.forEach((s) => {
-            updates.push({
-              productId: product._id,
-              operation: 'SET_STOCK',
-              value: s.stockCount,
-              expectedVersion: product.stockVersion || 1,
-              target: {
-                variantType: 'COLOR_SIZE',
-                colorVariantId: cVar._id,
-                sizeVariantId: s._id,
-                colorName: cVar.colorName,
-                size: s.size,
-              },
-            });
-          });
-        });
-      } else if (updatedVariants.tier === 'TIER_2_SIZE') {
-        updatedVariants.sizes.forEach((s) => {
-          updates.push({
-            productId: product._id,
-            operation: 'SET_STOCK',
-            value: s.stockCount,
-            expectedVersion: product.stockVersion || 1,
-            target: {
-              variantType: 'SIZE',
-              sizeVariantId: s._id,
-              size: s.size,
-            },
-          });
-        });
-      }
+      await api.post('/inventory/update-variants', {
+        productId: product._id,
+        expectedVersion: product.stockVersion,
+        tier: updatedVariants.tier,
+        colorVariants: updatedVariants.colorVariants,
+        sizes: updatedVariants.sizes,
+      });
 
-      const res = await api.post('/inventory/bulk-update', { updates });
-
-      if (res.data.conflictCount > 0) {
-        toast.error('Some variant stock had version conflicts. Reloading latest stock.');
-      } else {
-        toast.success(`Stock saved for ${product.name}!`);
-      }
-
+      toast.success(`Stock levels saved for ${product.name}!`);
       setIsDrawerOpen(false);
       setActiveDrawerProduct(null);
       fetchInventory();
     } catch (err) {
       console.error('Failed to save variant stock:', err);
-      toast.error('Failed to update variant stock.');
+      if (err.response?.status === 409) {
+        toast.error('Stock version conflict: Product was modified by another session. Reloading latest stock.', {
+          duration: 5000,
+        });
+        fetchInventory();
+      } else {
+        toast.error(err.response?.data?.message || 'Failed to update variant stock.');
+      }
     } finally {
       setSavingDrawer(false);
     }
@@ -379,21 +347,31 @@ const Inventory = () => {
       <div
         style={{
           display: 'grid',
-          gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))',
+          gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))',
           gap: 16,
           marginBottom: 24,
         }}
       >
         {/* Total Products */}
         <div
+          onClick={() => {
+            setSelectedStatus('ALL');
+            setPage(1);
+          }}
+          title="Click to view all products"
           style={{
             background: 'var(--surface-primary, #14131E)',
-            border: '1px solid var(--card-border, rgba(201, 168, 76, 0.12))',
+            border: selectedStatus === 'ALL'
+              ? '1px solid var(--accent-gold, #C9A84C)'
+              : '1px solid var(--card-border, rgba(201, 168, 76, 0.12))',
+            boxShadow: selectedStatus === 'ALL' ? '0 0 16px rgba(201, 168, 76, 0.15)' : 'none',
             borderRadius: 16,
             padding: '18px 20px',
             display: 'flex',
             alignItems: 'center',
             gap: 14,
+            cursor: 'pointer',
+            transition: 'all 0.2s ease',
           }}
         >
           <div
@@ -405,31 +383,44 @@ const Inventory = () => {
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
-              color: '#FFFFFF',
+              color: 'var(--accent-gold, #C9A84C)',
             }}
           >
             <Package size={22} />
           </div>
           <div>
-            <div style={{ fontSize: '0.78rem', color: 'var(--text-muted)', fontWeight: 600, textTransform: 'uppercase' }}>
+            <div style={{ fontSize: '0.76rem', color: 'var(--text-muted)', fontWeight: 600, textTransform: 'uppercase' }}>
               Total Products
             </div>
             <div style={{ fontSize: '1.45rem', fontWeight: 800, color: '#FFFFFF', marginTop: 2 }}>
               {kpis.totalProducts}
             </div>
+            <div style={{ fontSize: '0.72rem', color: 'var(--text-secondary)' }}>
+              All catalog items
+            </div>
           </div>
         </div>
 
-        {/* Total Tracked Stock */}
+        {/* In-Stock & Available */}
         <div
+          onClick={() => {
+            setSelectedStatus('IN_STOCK');
+            setPage(1);
+          }}
+          title="Click to view in-stock products"
           style={{
             background: 'var(--surface-primary, #14131E)',
-            border: '1px solid var(--card-border, rgba(201, 168, 76, 0.12))',
+            border: selectedStatus === 'IN_STOCK'
+              ? '1px solid #10B981'
+              : '1px solid rgba(16, 185, 129, 0.2)',
+            boxShadow: selectedStatus === 'IN_STOCK' ? '0 0 16px rgba(16, 185, 129, 0.2)' : 'none',
             borderRadius: 16,
             padding: '18px 20px',
             display: 'flex',
             alignItems: 'center',
             gap: 14,
+            cursor: 'pointer',
+            transition: 'all 0.2s ease',
           }}
         >
           <div
@@ -444,33 +435,41 @@ const Inventory = () => {
               color: '#10B981',
             }}
           >
-            <Boxes size={22} />
+            <CheckCircle2 size={22} />
           </div>
           <div>
-            <div style={{ fontSize: '0.78rem', color: 'var(--text-muted)', fontWeight: 600, textTransform: 'uppercase' }}>
-              Tracked Stock Units
+            <div style={{ fontSize: '0.76rem', color: '#6EE7B7', fontWeight: 600, textTransform: 'uppercase' }}>
+              In Stock & Ready
             </div>
-            <div style={{ fontSize: '1.45rem', fontWeight: 800, color: '#FFFFFF', marginTop: 2 }}>
-              {kpis.totalTrackedUnits.toLocaleString()}
+            <div style={{ fontSize: '1.45rem', fontWeight: 800, color: '#10B981', marginTop: 2 }}>
+              {kpis.inStockCount}
             </div>
-            {kpis.untrackedCount > 0 && (
-              <div style={{ fontSize: '0.72rem', color: 'var(--accent-gold)' }}>
-                +{kpis.untrackedCount} legacy untracked
-              </div>
-            )}
+            <div style={{ fontSize: '0.72rem', color: 'var(--text-secondary)' }}>
+              {kpis.inStockRate || (kpis.totalProducts > 0 ? Math.round(((kpis.inStockCount + (kpis.untrackedCount || 0)) / kpis.totalProducts) * 100) : 0)}% healthy availability
+            </div>
           </div>
         </div>
 
         {/* Low Stock Alerts */}
         <div
+          onClick={() => {
+            setSelectedStatus('LOW_STOCK');
+            setPage(1);
+          }}
+          title="Click to view low-stock products"
           style={{
             background: 'var(--surface-primary, #14131E)',
-            border: '1px solid rgba(245, 158, 11, 0.25)',
+            border: selectedStatus === 'LOW_STOCK'
+              ? '1px solid #F59E0B'
+              : '1px solid rgba(245, 158, 11, 0.25)',
+            boxShadow: selectedStatus === 'LOW_STOCK' ? '0 0 16px rgba(245, 158, 11, 0.2)' : 'none',
             borderRadius: 16,
             padding: '18px 20px',
             display: 'flex',
             alignItems: 'center',
             gap: 14,
+            cursor: 'pointer',
+            transition: 'all 0.2s ease',
           }}
         >
           <div
@@ -488,25 +487,38 @@ const Inventory = () => {
             <AlertTriangle size={22} />
           </div>
           <div>
-            <div style={{ fontSize: '0.78rem', color: '#FCD34D', fontWeight: 600, textTransform: 'uppercase' }}>
+            <div style={{ fontSize: '0.76rem', color: '#FCD34D', fontWeight: 600, textTransform: 'uppercase' }}>
               Low Stock (≤{threshold})
             </div>
             <div style={{ fontSize: '1.45rem', fontWeight: 800, color: '#F59E0B', marginTop: 2 }}>
               {kpis.lowStockCount}
+            </div>
+            <div style={{ fontSize: '0.72rem', color: 'var(--text-secondary)' }}>
+              Requires replenishment
             </div>
           </div>
         </div>
 
         {/* Out of Stock */}
         <div
+          onClick={() => {
+            setSelectedStatus('OUT_OF_STOCK');
+            setPage(1);
+          }}
+          title="Click to view out-of-stock products"
           style={{
             background: 'var(--surface-primary, #14131E)',
-            border: '1px solid rgba(239, 68, 68, 0.25)',
+            border: selectedStatus === 'OUT_OF_STOCK'
+              ? '1px solid #EF4444'
+              : '1px solid rgba(239, 68, 68, 0.25)',
+            boxShadow: selectedStatus === 'OUT_OF_STOCK' ? '0 0 16px rgba(239, 68, 68, 0.2)' : 'none',
             borderRadius: 16,
             padding: '18px 20px',
             display: 'flex',
             alignItems: 'center',
             gap: 14,
+            cursor: 'pointer',
+            transition: 'all 0.2s ease',
           }}
         >
           <div
@@ -524,11 +536,63 @@ const Inventory = () => {
             <AlertCircle size={22} />
           </div>
           <div>
-            <div style={{ fontSize: '0.78rem', color: '#FCA5A5', fontWeight: 600, textTransform: 'uppercase' }}>
+            <div style={{ fontSize: '0.76rem', color: '#FCA5A5', fontWeight: 600, textTransform: 'uppercase' }}>
               Out of Stock
             </div>
             <div style={{ fontSize: '1.45rem', fontWeight: 800, color: '#EF4444', marginTop: 2 }}>
               {kpis.outOfStockCount}
+            </div>
+            <div style={{ fontSize: '0.72rem', color: 'var(--text-secondary)' }}>
+              Zero units available
+            </div>
+          </div>
+        </div>
+
+        {/* Inactive / Hidden */}
+        <div
+          onClick={() => {
+            setSelectedStatus('INACTIVE');
+            setPage(1);
+          }}
+          title="Click to view inactive/hidden products"
+          style={{
+            background: 'var(--surface-primary, #14131E)',
+            border: selectedStatus === 'INACTIVE'
+              ? '1px solid #8B5CF6'
+              : '1px solid rgba(139, 92, 246, 0.25)',
+            boxShadow: selectedStatus === 'INACTIVE' ? '0 0 16px rgba(139, 92, 246, 0.2)' : 'none',
+            borderRadius: 16,
+            padding: '18px 20px',
+            display: 'flex',
+            alignItems: 'center',
+            gap: 14,
+            cursor: 'pointer',
+            transition: 'all 0.2s ease',
+          }}
+        >
+          <div
+            style={{
+              width: 44,
+              height: 44,
+              borderRadius: 12,
+              background: 'rgba(139, 92, 246, 0.15)',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              color: '#A78BFA',
+            }}
+          >
+            <EyeOff size={22} />
+          </div>
+          <div>
+            <div style={{ fontSize: '0.76rem', color: '#DDD6FE', fontWeight: 600, textTransform: 'uppercase' }}>
+              Inactive / Drafts
+            </div>
+            <div style={{ fontSize: '1.45rem', fontWeight: 800, color: '#A78BFA', marginTop: 2 }}>
+              {kpis.inactiveCount}
+            </div>
+            <div style={{ fontSize: '0.72rem', color: 'var(--text-secondary)' }}>
+              Hidden from storefront
             </div>
           </div>
         </div>

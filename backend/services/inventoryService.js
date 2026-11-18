@@ -479,55 +479,329 @@ const adjustStock = async ({
 };
 
 /**
+ * ATOMICALLY UPDATE PRODUCT VARIANTS (TIER 1 / TIER 2):
+ * Safely updates stock for all sizes across colors or direct sizes on a single product.
+ * Guarantees a single version bump, recalculates rollups once, logs audit changes for each modified size,
+ * and eliminates intra-batch 409 version conflicts.
+ */
+const updateProductVariants = async ({
+  productId,
+  expectedVersion,
+  tier,
+  colorVariants,
+  sizes,
+  admin = {},
+  reason = 'Admin variant drawer stock update',
+}) => {
+  if (!productId) throw new Error('Product ID is required.');
+
+  return await withTransactionOrFallback(async (session) => {
+    const product = await Product.findById(productId).session(session || null);
+    if (!product) {
+      const notFoundErr = new Error('Product not found.');
+      notFoundErr.status = 404;
+      throw notFoundErr;
+    }
+
+    // Optimistic Concurrency Control Check
+    if (typeof expectedVersion === 'number' && product.stockVersion !== expectedVersion) {
+      const err = new Error('Stock version conflict: Product was modified by another session. Please reload to see the latest stock.');
+      err.status = 409;
+      err.conflict = {
+        productId: product._id,
+        currentVersion: product.stockVersion,
+        expectedVersion,
+      };
+      throw err;
+    }
+
+    const determinedTier = tier || getProductTier(product);
+    const logsToCreate = [];
+
+    if (determinedTier === 'TIER_1_COLOR_SIZE' && Array.isArray(colorVariants)) {
+      colorVariants.forEach((inputColor) => {
+        const cVar = product.colorVariants.find(
+          (c) =>
+            (inputColor._id && c._id?.toString() === inputColor._id.toString()) ||
+            c.colorName.trim().toLowerCase() === (inputColor.colorName || '').trim().toLowerCase()
+        );
+        if (!cVar) return;
+
+        if (Array.isArray(inputColor.sizes)) {
+          inputColor.sizes.forEach((inputSize) => {
+            const sObj = cVar.sizes.find(
+              (s) =>
+                (inputSize._id && s._id?.toString() === inputSize._id.toString()) ||
+                s.size.trim() === (inputSize.size || '').trim()
+            );
+            if (!sObj) return;
+
+            const newStock = Math.max(0, parseInt(inputSize.stockCount, 10) || 0);
+            const prevStock = typeof sObj.stockCount === 'number' ? sObj.stockCount : null;
+
+            if (sObj.stockCount !== newStock) {
+              const prevNumeric = typeof prevStock === 'number' ? prevStock : 0;
+              logsToCreate.push({
+                productId: product._id,
+                productName: product.name,
+                category: product.category,
+                subcategoryId: product.subcategoryId || null,
+                variantType: 'COLOR_SIZE',
+                colorVariantId: cVar._id,
+                sizeVariantId: sObj._id,
+                colorName: cVar.colorName,
+                size: sObj.size,
+                previousStock: prevStock,
+                updatedStock: newStock,
+                quantityChanged: newStock - prevNumeric,
+                operation: 'SET_STOCK',
+                source: admin.source || 'DRAWER_ADMIN',
+                reason,
+                adminId: admin.id || null,
+                adminUsername: admin.username || 'Admin',
+              });
+
+              sObj.stockCount = newStock;
+              sObj.inStock = newStock > 0;
+            }
+          });
+        }
+
+        cVar.inStock = Array.isArray(cVar.sizes) && cVar.sizes.some((s) => s.inStock);
+      });
+    } else if (determinedTier === 'TIER_2_SIZE' && Array.isArray(sizes)) {
+      sizes.forEach((inputSize) => {
+        const sObj = product.sizes.find(
+          (s) =>
+            (inputSize._id && s._id?.toString() === inputSize._id.toString()) ||
+            s.size.trim() === (inputSize.size || '').trim()
+        );
+        if (!sObj) return;
+
+        const newStock = Math.max(0, parseInt(inputSize.stockCount, 10) || 0);
+        const prevStock = typeof sObj.stockCount === 'number' ? sObj.stockCount : null;
+
+        if (sObj.stockCount !== newStock) {
+          const prevNumeric = typeof prevStock === 'number' ? prevStock : 0;
+          logsToCreate.push({
+            productId: product._id,
+            productName: product.name,
+            category: product.category,
+            subcategoryId: product.subcategoryId || null,
+            variantType: 'SIZE',
+            sizeVariantId: sObj._id,
+            size: sObj.size,
+            previousStock: prevStock,
+            updatedStock: newStock,
+            quantityChanged: newStock - prevNumeric,
+            operation: 'SET_STOCK',
+            source: admin.source || 'DRAWER_ADMIN',
+            reason,
+            adminId: admin.id || null,
+            adminUsername: admin.username || 'Admin',
+          });
+
+          sObj.stockCount = newStock;
+          sObj.inStock = newStock > 0;
+        }
+      });
+    }
+
+    // Rollup inStock flags across variants and increment stockVersion once
+    recalculateRollups(product);
+    product.stockVersion = (product.stockVersion || 0) + 1;
+
+    await product.save({ session: session || null });
+
+    if (logsToCreate.length > 0) {
+      await InventoryLog.insertMany(logsToCreate, { session: session || null });
+    }
+
+    return {
+      success: true,
+      productId: product._id,
+      stockVersion: product.stockVersion,
+      changedCount: logsToCreate.length,
+      product,
+    };
+  });
+};
+
+/**
  * BATCH / BULK INVENTORY SAVE:
  * Applies multiple updates, detecting any optimistic version conflicts cleanly.
+ * Groups by productId to prevent intra-batch self-conflicts.
  */
 const bulkSaveInventory = async ({ updates = [], admin = {} }) => {
   if (!Array.isArray(updates) || updates.length === 0) {
-    return { applied: [], conflicts: [], total: 0 };
+    return { applied: [], conflicts: [], total: 0, appliedCount: 0, conflictCount: 0 };
   }
 
   const applied = [];
   const conflicts = [];
 
-  for (const item of updates) {
+  // Group updates by productId to avoid intra-batch version conflicts
+  const grouped = new Map();
+  updates.forEach((u) => {
+    const pId = u.productId?.toString();
+    if (!pId) return;
+    if (!grouped.has(pId)) grouped.set(pId, []);
+    grouped.get(pId).push(u);
+  });
+
+  for (const [productId, items] of grouped.entries()) {
     try {
-      if (item.operation === 'ADJUST_STOCK') {
-        const res = await adjustStock({
-          productId: item.productId,
-          target: item.target,
-          delta: item.delta,
-          admin: { ...admin, source: 'BULK_ADMIN' },
-          reason: item.reason || 'Bulk inventory adjustment',
-        });
-        applied.push({ productId: item.productId, target: item.target, newStock: res.newStock, version: res.stockVersion });
-      } else {
-        // Default to SET_STOCK
-        const res = await setStock({
-          productId: item.productId,
-          target: item.target,
-          value: item.value,
-          expectedVersion: item.expectedVersion,
-          admin: { ...admin, source: 'BULK_ADMIN' },
-          reason: item.reason || 'Bulk inventory set',
-        });
-        applied.push({ productId: item.productId, target: item.target, newStock: res.newStock, version: res.stockVersion });
-      }
+      await withTransactionOrFallback(async (session) => {
+        const product = await Product.findById(productId).session(session || null);
+        if (!product) {
+          throw new Error('Product not found.');
+        }
+
+        // Check if any item specifies expectedVersion that conflicts with current stockVersion
+        const versionItem = items.find((it) => typeof it.expectedVersion === 'number');
+        if (versionItem && product.stockVersion !== versionItem.expectedVersion) {
+          const err = new Error('Stock version conflict: Product was modified by another session. Please reload to see the latest stock.');
+          err.status = 409;
+          err.conflict = {
+            productId: product._id,
+            currentVersion: product.stockVersion,
+            expectedVersion: versionItem.expectedVersion,
+          };
+          throw err;
+        }
+
+        const tier = getProductTier(product);
+        const logsToInsert = [];
+
+        for (const item of items) {
+          const target = item.target || {};
+          let previousStock = null;
+          let newStock = null;
+          let variantType = 'SIMPLE';
+          let colorName = '';
+          let size = '';
+          let colorVariantId = null;
+          let sizeVariantId = null;
+
+          if (tier === 'TIER_1_COLOR_SIZE') {
+            variantType = 'COLOR_SIZE';
+            colorVariantId = target.colorVariantId;
+            sizeVariantId = target.sizeVariantId;
+
+            const cVar = product.colorVariants.find(
+              (c) =>
+                (colorVariantId && c._id?.toString() === colorVariantId.toString()) ||
+                (target.colorName && c.colorName?.trim().toLowerCase() === target.colorName.trim().toLowerCase())
+            );
+            if (!cVar) throw new Error('Color variant not found on product.');
+            colorName = cVar.colorName;
+
+            const sObj = cVar.sizes.find(
+              (s) =>
+                (sizeVariantId && s._id?.toString() === sizeVariantId.toString()) ||
+                (target.size && s.size?.trim() === target.size.trim())
+            );
+            if (!sObj) throw new Error(`Size variant "${target.size || ''}" not found on color "${colorName}".`);
+
+            size = sObj.size;
+            sizeVariantId = sObj._id;
+            previousStock = sObj.stockCount;
+
+            if (item.operation === 'ADJUST_STOCK') {
+              const delta = parseInt(item.delta, 10) || 0;
+              newStock = Math.max(0, (typeof sObj.stockCount === 'number' ? sObj.stockCount : 0) + delta);
+            } else {
+              newStock = Math.max(0, parseInt(item.value, 10) || 0);
+            }
+
+            sObj.stockCount = newStock;
+            sObj.inStock = newStock > 0;
+          } else if (tier === 'TIER_2_SIZE') {
+            variantType = 'SIZE';
+            const sObj = product.sizes.find(
+              (s) =>
+                (target.sizeVariantId && s._id?.toString() === target.sizeVariantId.toString()) ||
+                (target.size && s.size?.trim() === target.size.trim())
+            );
+            if (!sObj) throw new Error(`Size variant "${target.size || ''}" not found.`);
+
+            size = sObj.size;
+            sizeVariantId = sObj._id;
+            previousStock = sObj.stockCount;
+
+            if (item.operation === 'ADJUST_STOCK') {
+              const delta = parseInt(item.delta, 10) || 0;
+              newStock = Math.max(0, (typeof sObj.stockCount === 'number' ? sObj.stockCount : 0) + delta);
+            } else {
+              newStock = Math.max(0, parseInt(item.value, 10) || 0);
+            }
+
+            sObj.stockCount = newStock;
+            sObj.inStock = newStock > 0;
+          } else {
+            // TIER_3_SIMPLE
+            variantType = 'SIMPLE';
+            previousStock = product.inStockCount;
+
+            if (item.operation === 'ADJUST_STOCK') {
+              const delta = parseInt(item.delta, 10) || 0;
+              newStock = Math.max(0, (typeof product.inStockCount === 'number' ? product.inStockCount : 0) + delta);
+            } else {
+              newStock = Math.max(0, parseInt(item.value, 10) || 0);
+            }
+
+            product.inStockCount = newStock;
+            product.inStock = newStock > 0;
+          }
+
+          const prevNumeric = typeof previousStock === 'number' ? previousStock : 0;
+          const quantityChanged = newStock - prevNumeric;
+
+          logsToInsert.push({
+            productId: product._id,
+            productName: product.name,
+            category: product.category,
+            subcategoryId: product.subcategoryId || null,
+            variantType,
+            colorVariantId,
+            sizeVariantId,
+            colorName,
+            size,
+            previousStock,
+            updatedStock: newStock,
+            quantityChanged,
+            operation: item.operation === 'ADJUST_STOCK' ? 'ADJUST_STOCK' : 'SET_STOCK',
+            source: admin.source || 'BULK_ADMIN',
+            reason: item.reason || (item.operation === 'ADJUST_STOCK' ? 'Bulk inventory adjustment' : 'Bulk inventory set'),
+            adminId: admin.id || null,
+            adminUsername: admin.username || 'Admin',
+          });
+
+          applied.push({
+            productId: product._id,
+            target: item.target,
+            newStock,
+            version: (product.stockVersion || 0) + 1,
+          });
+        }
+
+        recalculateRollups(product);
+        product.stockVersion = (product.stockVersion || 0) + 1;
+        await product.save({ session: session || null });
+
+        if (logsToInsert.length > 0) {
+          await InventoryLog.insertMany(logsToInsert, { session: session || null });
+        }
+      });
     } catch (err) {
-      if (err.status === 409 || err.conflict) {
+      items.forEach((item) => {
         conflicts.push({
-          productId: item.productId,
-          target: item.target,
-          message: err.message,
-          conflict: err.conflict,
-        });
-      } else {
-        conflicts.push({
-          productId: item.productId,
+          productId,
           target: item.target,
           message: err.message || 'Failed to update stock',
+          conflict: err.conflict || null,
         });
-      }
+      });
     }
   }
 
@@ -834,9 +1108,15 @@ const getInventoryCatalog = async ({
   let outOfStockCount = 0;
   let inStockCount = 0;
   let inactiveCount = 0;
+  let variantProductsCount = 0;
 
   const catalogWithHealth = allMatching.map((prod) => {
     totalProducts++;
+    const tier = getProductTier(prod);
+    if (tier === 'TIER_1_COLOR_SIZE' || tier === 'TIER_2_SIZE') {
+      variantProductsCount++;
+    }
+
     const health = calculateProductHealth(prod, globalThreshold);
 
     if (health.status === 'INACTIVE') {
@@ -857,7 +1137,7 @@ const getInventoryCatalog = async ({
 
     return {
       ...prod,
-      tier: getProductTier(prod),
+      tier,
       health,
     };
   });
@@ -902,6 +1182,8 @@ const getInventoryCatalog = async ({
       outOfStockCount,
       inStockCount,
       inactiveCount,
+      variantProductsCount,
+      inStockRate: totalProducts > 0 ? Math.round(((inStockCount + untrackedCount) / totalProducts) * 100) : 0,
     },
   };
 };
@@ -1045,6 +1327,7 @@ module.exports = {
   recalculateRollups,
   setStock,
   adjustStock,
+  updateProductVariants,
   bulkSaveInventory,
   processOrderDeduction,
   processOrderRestoration,

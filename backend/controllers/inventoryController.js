@@ -115,6 +115,49 @@ const updateSingleStock = async (req, res) => {
 };
 
 /**
+ * POST /api/inventory/update-variants
+ * Batch update variant tree for a single product from Drawer.
+ */
+const updateVariants = async (req, res) => {
+  try {
+    const {
+      productId,
+      expectedVersion,
+      tier,
+      colorVariants,
+      sizes,
+      reason,
+    } = req.body;
+
+    if (!productId || !mongoose.Types.ObjectId.isValid(productId)) {
+      return res.status(400).json({ message: 'Valid productId is required.' });
+    }
+
+    const admin = await getAdminInfo(req);
+    const result = await inventoryService.updateProductVariants({
+      productId,
+      expectedVersion,
+      tier,
+      colorVariants,
+      sizes,
+      admin: { ...admin, source: 'DRAWER_ADMIN' },
+      reason: reason || 'Drawer variant stock update',
+    });
+
+    return res.json(result);
+  } catch (error) {
+    console.error('[inventoryController] updateVariants error:', error);
+    if (error.status === 409 || error.conflict) {
+      return res.status(409).json({
+        message: error.message,
+        conflict: error.conflict,
+      });
+    }
+    return res.status(400).json({ message: error.message || 'Failed to update variant stock.' });
+  }
+};
+
+/**
  * POST /api/inventory/bulk-update
  * Batch update staged changes across multiple products and variants.
  */
@@ -369,6 +412,7 @@ const confirmImport = async (req, res) => {
 module.exports = {
   getInventory,
   updateSingleStock,
+  updateVariants,
   bulkUpdate,
   getInventoryLogs,
   exportInventory,
