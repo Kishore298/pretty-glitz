@@ -4,9 +4,10 @@ import { CartContext } from '../context/CartContext';
 import { motion } from 'framer-motion';
 import { optimizeImageUrl } from '../utils/cloudinary';
 import logoImg from '../assets/pretty-glitz-logo.png';
-import { ChevronRight, ShieldCheck, CheckCircle2 } from 'lucide-react';
+import { ChevronRight, ShieldCheck, CheckCircle2, BellRing, Truck } from 'lucide-react';
 import { getWhatsAppUrl, IS_WHATSAPP_CONFIGURED } from '../config/constants';
 import api from '../utils/api';
+import { linkOrderToCustomerFcm, requestCustomerNotificationPermission } from '../firebase';
 
 const Checkout = () => {
   const { cartItems, getCartTotal, clearCart } = useContext(CartContext);
@@ -24,11 +25,15 @@ const Checkout = () => {
   const [redirecting, setRedirecting] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [createdOrderId, setCreatedOrderId] = useState(null);
+  const [pushStatus, setPushStatus] = useState(
+    typeof window !== 'undefined' && 'Notification' in window ? Notification.permission : 'unsupported'
+  );
+  const [pushEnabling, setPushEnabling] = useState(false);
   const idempotencyKeyRef = useRef('pg_ord_' + Date.now() + '_' + Math.random().toString(36).slice(2, 8));
 
   if (cartItems.length === 0 && !redirecting) return <Navigate to="/cart" />;
 
-  const handleChange = (e) => setFormData({...formData, [e.target.name]: e.target.value});
+  const handleChange = (e) => setFormData({ ...formData, [e.target.name]: e.target.value });
 
   const constructWhatsAppMessage = (orderId) => {
     let msg = `*New Order Request*\n*Order ID:* ${orderId || 'PENDING'}\n\n*Customer:* ${formData.name}\n*Mobile:* +91 ${formData.mobile}\n\n*Products:*\n`;
@@ -83,6 +88,13 @@ const Checkout = () => {
       const orderId = data.orderId || 'PG-ORDER';
       setCreatedOrderId(orderId);
 
+      // Link order to customer FCM token for push notifications on status & tracking updates
+      try {
+        linkOrderToCustomerFcm(orderId, formData.mobile);
+      } catch {
+        // Non-critical
+      }
+
       // 2. Format WhatsApp message containing the exact Order ID
       const message = constructWhatsAppMessage(orderId);
       const whatsappUrl = getWhatsAppUrl(decodeURIComponent(message));
@@ -130,10 +142,86 @@ const Checkout = () => {
             Almost Done!
           </h2>
 
-          <p style={{ color: 'var(--text-secondary)', fontSize: '0.96rem', lineHeight: 1.6, marginBottom: 28 }}>
-            Your order details are pre-filled in WhatsApp.<br/>
+          <p style={{ color: 'var(--text-secondary)', fontSize: '0.96rem', lineHeight: 1.6, marginBottom: 24 }}>
+            Your order details are pre-filled in WhatsApp.<br />
             <strong style={{ color: 'var(--text)' }}>Please press &quot;Send&quot; in WhatsApp to submit your order request.</strong>
           </p>
+
+          {/* Push Notification Opt-In for Live Order Tracking */}
+          <div
+            style={{
+              background: 'rgba(236, 22, 140, 0.08)',
+              border: '1px solid rgba(236, 22, 140, 0.22)',
+              borderRadius: 16,
+              padding: '16px',
+              marginBottom: 22,
+              textAlign: 'left',
+              display: 'flex',
+              alignItems: 'center',
+              gap: 14,
+            }}
+          >
+            <div
+              style={{
+                width: 40,
+                height: 40,
+                borderRadius: 10,
+                background: 'rgba(236, 22, 140, 0.15)',
+                color: 'var(--accent-pink, #EC168C)',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                flexShrink: 0,
+              }}
+            >
+              <BellRing size={20} />
+            </div>
+            <div style={{ flex: 1 }}>
+              <div style={{ fontSize: '0.88rem', fontWeight: 700, color: 'var(--text)', marginBottom: 2 }}>
+                {pushStatus === 'granted' ? '🔔 Live Order Push Alerts Enabled' : '🔔 Get Live Shipment & Dispatch Alerts'}
+              </div>
+              <div style={{ fontSize: '0.78rem', color: 'var(--text-secondary)' }}>
+                {pushStatus === 'granted'
+                  ? `You will receive live push notifications on this device when order #${createdOrderId} is dispatched!`
+                  : 'Receive real-time push alerts when tracking details are added or status changes.'}
+              </div>
+            </div>
+            {pushStatus !== 'granted' && (
+              <button
+                type="button"
+                onClick={async () => {
+                  setPushEnabling(true);
+                  try {
+                    const res = await requestCustomerNotificationPermission({
+                      mobile: formData.mobile,
+                      orderId: createdOrderId,
+                    });
+                    if (res.success) {
+                      setPushStatus('granted');
+                    }
+                  } catch (e) {
+                    console.error(e);
+                  } finally {
+                    setPushEnabling(false);
+                  }
+                }}
+                disabled={pushEnabling}
+                style={{
+                  padding: '8px 14px',
+                  borderRadius: 10,
+                  background: 'linear-gradient(135deg, #EC168C, #8A2BE2)',
+                  color: '#FFFFFF',
+                  fontWeight: 700,
+                  fontSize: '0.8rem',
+                  border: 'none',
+                  cursor: pushEnabling ? 'not-allowed' : 'pointer',
+                  whiteSpace: 'nowrap',
+                }}
+              >
+                {pushEnabling ? 'Enabling...' : 'Enable Alerts'}
+              </button>
+            )}
+          </div>
 
           <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
             <button
@@ -156,6 +244,29 @@ const Checkout = () => {
             >
               ✓ I have sent the message (Complete Order)
             </button>
+
+            <Link
+              to={`/track-order?id=${createdOrderId}`}
+              onClick={() => clearCart()}
+              style={{
+                width: '100%',
+                padding: '12px',
+                borderRadius: 12,
+                background: 'rgba(201, 168, 76, 0.1)',
+                border: '1px solid rgba(201, 168, 76, 0.25)',
+                color: '#C9A84C',
+                fontWeight: 700,
+                fontSize: '0.86rem',
+                textDecoration: 'none',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                gap: 8,
+              }}
+            >
+              <Truck size={16} />
+              Track Shipment Status Live
+            </Link>
 
             <button
               onClick={() => {
@@ -183,8 +294,8 @@ const Checkout = () => {
 
   return (
     <div style={{ minHeight: '100vh', paddingTop: 'calc(var(--nav-height, 76px) + 16px)', paddingBottom: 100 }}>
-      <div style={{ maxWidth: 1280, margin: '0 auto', padding: '0 24px' }}>
-        
+      <div className="app-page-container" style={{ maxWidth: 1280, margin: '0 auto' }}>
+
         {/* Breadcrumb */}
         <div className="breadcrumb">
           <Link to="/">Home</Link>
@@ -205,8 +316,8 @@ const Checkout = () => {
         </div>
 
         {/* Visual Step Indicator for WhatsApp flow */}
-        <div style={{ 
-          display: 'flex', alignItems: 'center', justifyContent: 'space-between', 
+        <div style={{
+          display: 'flex', alignItems: 'center', justifyContent: 'space-between',
           maxWidth: 600, margin: '0 auto 48px', position: 'relative',
           background: 'var(--bg-secondary)', padding: '24px 32px', borderRadius: 16
         }}>
@@ -214,16 +325,16 @@ const Checkout = () => {
             <div style={{ width: 32, height: 32, borderRadius: '50%', background: 'var(--accent)', color: 'white', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 700, fontSize: '0.9rem' }}>1</div>
             <span style={{ fontSize: '0.75rem', fontWeight: 600, color: 'var(--text)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Details</span>
           </div>
-          
+
           <div style={{ flex: 1, height: 2, background: 'var(--border-strong)', margin: '0 16px', alignSelf: 'flex-start', marginTop: 15 }} />
-          
+
           <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 8, zIndex: 1, flex: 1 }}>
             <div style={{ width: 32, height: 32, borderRadius: '50%', background: 'var(--bg-card)', border: '2px solid var(--border-strong)', color: 'var(--text-muted)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 700, fontSize: '0.9rem' }}>2</div>
             <span style={{ fontSize: '0.75rem', fontWeight: 600, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>WhatsApp</span>
           </div>
-          
+
           <div style={{ flex: 1, height: 2, background: 'var(--border-strong)', margin: '0 16px', alignSelf: 'flex-start', marginTop: 15 }} />
-          
+
           <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 8, zIndex: 1, flex: 1 }}>
             <div style={{ width: 32, height: 32, borderRadius: '50%', background: 'var(--bg-card)', border: '2px solid var(--border-strong)', color: 'var(--text-muted)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 700, fontSize: '0.9rem' }}>3</div>
             <span style={{ fontSize: '0.75rem', fontWeight: 600, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Confirm</span>
@@ -231,10 +342,10 @@ const Checkout = () => {
         </div>
 
         <div style={{ display: 'flex', flexWrap: 'wrap', gap: 48 }}>
-          
+
           <div style={{ flex: '1 1 600px' }}>
             <form id="checkout-form" onSubmit={handlePlaceOrder} style={{ display: 'flex', flexDirection: 'column', gap: 32 }}>
-              
+
               <div style={{ background: 'var(--bg-card)', borderRadius: 20, border: `1px solid var(--border)`, padding: 32 }}>
                 <h2 style={{ fontSize: '1.1rem', fontWeight: 700, color: 'var(--text)', textTransform: 'uppercase', letterSpacing: '0.1em', margin: '0 0 24px', borderBottom: `1px solid var(--border)`, paddingBottom: 16 }}>Customer Details</h2>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -279,7 +390,7 @@ const Checkout = () => {
           <div style={{ flex: '1 1 320px', maxWidth: 420 }}>
             <div style={{ background: 'var(--bg-card)', borderRadius: 16, border: '1px solid var(--border)', padding: '20px 22px', position: 'sticky', top: 100 }}>
               <h2 style={{ fontSize: '0.92rem', fontWeight: 700, color: 'var(--text)', textTransform: 'uppercase', letterSpacing: '0.08em', margin: '0 0 14px', borderBottom: '1px solid var(--border)', paddingBottom: 10 }}>In Your Bag</h2>
-              
+
               <ul style={{ listStyle: 'none', padding: 0, margin: '0 0 14px', maxHeight: '35vh', overflowY: 'auto' }} className="no-scrollbar">
                 {cartItems.map((item, idx) => (
                   <li key={idx} style={{ display: 'flex', gap: 12, padding: '10px 0', alignItems: 'center', borderBottom: idx === cartItems.length - 1 ? 'none' : '1px solid var(--border)' }}>
@@ -323,7 +434,7 @@ const Checkout = () => {
                 <span style={{ fontSize: '0.74rem', fontWeight: 600, color: '#10B981' }}>Calculated on WhatsApp</span>
               </div>
 
-              <button 
+              <button
                 type="submit" form="checkout-form"
                 style={{
                   width: '100%', padding: '12px 18px', background: '#25D366', color: 'white', border: 'none', borderRadius: 10,
@@ -336,7 +447,7 @@ const Checkout = () => {
               >
                 Place Order on WhatsApp
               </button>
-              
+
               <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6, marginTop: 12, fontSize: '0.72rem', color: 'var(--text-muted)' }}>
                 <CheckCircle2 size={12} />
                 No payment required until confirmation

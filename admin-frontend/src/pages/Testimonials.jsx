@@ -286,15 +286,15 @@ const Testimonials = () => {
         flexWrap: 'wrap',
         gap: 16
       }}>
-        <div style={{ position: 'relative', flex: 1, minWidth: 260, maxWidth: 440 }}>
-          <Search size={18} style={{ position: 'absolute', left: 14, top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)' }} />
+        <div className="admin-search-wrapper" style={{ position: 'relative', flex: 1, minWidth: 260, maxWidth: 440 }}>
+          <Search size={18} style={{ position: 'absolute', left: 14, top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)', pointerEvents: 'none' }} />
           <input
             type="text"
             placeholder="Search by customer, city, or review..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            className="admin-input"
-            style={{ paddingLeft: 42 }}
+            className="admin-input admin-search-input"
+            style={{ paddingLeft: 44 }}
           />
         </div>
 

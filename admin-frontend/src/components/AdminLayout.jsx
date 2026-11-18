@@ -168,6 +168,7 @@ const AdminLayout = ({ children }) => {
                   }}
                 />
                 <span
+                  className="admin-brand-text"
                   style={{
                     fontFamily: 'Outfit, sans-serif',
                     fontWeight: 800,
@@ -187,9 +188,10 @@ const AdminLayout = ({ children }) => {
             </div>
 
             {/* Right: Controls & Navigation */}
-            <div style={{ display: 'flex', alignItems: 'center', gap: 12, flexShrink: 0 }}>
+            <div className="admin-topbar-controls" style={{ display: 'flex', alignItems: 'center', gap: 12, flexShrink: 0 }}>
               {/* Real-time Socket Live Status Pill */}
               <div
+                className="admin-live-pill"
                 title={isConnected ? 'Live Socket connected' : 'Connecting to live events...'}
                 style={{
                   display: 'flex',
@@ -214,7 +216,7 @@ const AdminLayout = ({ children }) => {
                     animation: isConnected ? 'pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite' : 'none',
                   }}
                 />
-                <span>{isConnected ? 'LIVE' : 'OFFLINE'}</span>
+                <span className="admin-live-text">{isConnected ? 'LIVE' : 'OFFLINE'}</span>
               </div>
 
               {/* Sound Toggle Button */}
@@ -658,8 +660,8 @@ const AdminLayout = ({ children }) => {
                 }}
               >
                 <Store size={14} color="var(--accent-gold)" />
-                <span>Visit Store</span>
-                <ExternalLink size={13} style={{ opacity: 0.7 }} />
+                <span className="admin-shop-text">Visit Store</span>
+                <ExternalLink size={13} className="admin-shop-ext" style={{ opacity: 0.7 }} />
               </a>
             </div>
           </div>

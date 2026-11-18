@@ -68,15 +68,16 @@ const Account = () => {
   }
 
   return (
-    <div style={{
-      minHeight: '80vh',
-      paddingTop: 'calc(var(--nav-height, 76px) + 16px)',
-      paddingBottom: 'calc(var(--bottom-nav-total-height, 60px) + 40px)',
-      maxWidth: 800,
-      margin: '0 auto',
-      paddingLeft: 20,
-      paddingRight: 20,
-    }}>
+    <div
+      className="account-page-container"
+      style={{
+        minHeight: '80vh',
+        paddingTop: 'calc(var(--nav-height, 76px) + 16px)',
+        paddingBottom: 'calc(var(--bottom-nav-total-height, 60px) + 40px)',
+        maxWidth: 800,
+        margin: '0 auto',
+      }}
+    >
       {/* Profile Card */}
       <motion.div
         initial={{ opacity: 0, y: 16 }}

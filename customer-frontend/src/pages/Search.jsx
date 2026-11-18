@@ -55,7 +55,7 @@ const Search = () => {
 
   return (
     <div style={{ minHeight: '100vh', paddingTop: 'calc(var(--nav-height, 76px) + 20px)', paddingBottom: 100 }}>
-      <div style={{ maxWidth: 1280, margin: '0 auto', padding: '0 24px' }}>
+      <div className="app-page-container" style={{ maxWidth: 1280, margin: '0 auto' }}>
         
         <div style={{ textAlign: 'center', marginBottom: 48 }}>
           <div style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', width: 64, height: 64, borderRadius: '50%', background: 'var(--bg-secondary)', marginBottom: 20, color: 'var(--accent)' }}>

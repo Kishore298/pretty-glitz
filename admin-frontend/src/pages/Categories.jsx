@@ -235,6 +235,7 @@ const Categories = () => {
                             initial={{ opacity: 0, y: 12 }}
                             animate={{ opacity: 1, y: 0 }}
                             transition={{ delay: index * 0.03, duration: 0.2 }}
+                            className="admin-reorder-category-card"
                             style={{
                               cursor: snapshot.isDragging ? 'grabbing' : 'grab',
                               borderRadius: 14,
@@ -269,9 +270,10 @@ const Categories = () => {
                             }}
                           >
                             {/* Left Group: Drag handle & Rank, Image Thumbnail, Title */}
-                            <div style={{ display: 'flex', alignItems: 'center', gap: 16, minWidth: 0, flex: 1 }}>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: 14, minWidth: 0, flex: 1 }}>
                               {/* Drag Handle & Order Rank */}
                               <div
+                                className="admin-reorder-drag-handle"
                                 style={{
                                   display: 'flex',
                                   alignItems: 'center',
@@ -293,6 +295,7 @@ const Categories = () => {
 
                               {/* Banner / Category Thumbnail */}
                               <div
+                                className="admin-reorder-thumb"
                                 style={{
                                   width: 72,
                                   height: 52,
@@ -327,6 +330,7 @@ const Categories = () => {
                               {/* Category Info */}
                               <div style={{ minWidth: 0, flex: 1 }}>
                                 <h3
+                                  className="admin-reorder-title"
                                   style={{
                                     fontFamily: 'Outfit, sans-serif',
                                     fontWeight: 700,
@@ -340,7 +344,7 @@ const Categories = () => {
                                 >
                                   {col.name}
                                 </h3>
-                                <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginTop: 4, flexWrap: 'wrap' }}>
+                                <div className="admin-reorder-subtitles" style={{ display: 'flex', alignItems: 'center', gap: 10, marginTop: 4, flexWrap: 'wrap' }}>
                                   <span style={{ fontSize: '0.74rem', color: 'var(--accent-gold-light)', fontWeight: 500 }}>
                                     Storefront Rank: #{index + 1}
                                   </span>
@@ -352,7 +356,7 @@ const Categories = () => {
                             </div>
 
                             {/* Right Group: Direct Actions (Edit & Delete) */}
-                            <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexShrink: 0 }}>
+                            <div className="admin-reorder-actions" style={{ display: 'flex', alignItems: 'center', gap: 8, flexShrink: 0 }}>
                               <button
                                 type="button"
                                 onClick={(e) => {
@@ -384,7 +388,7 @@ const Categories = () => {
                                 }}
                               >
                                 <Pencil size={14} />
-                                <span>Edit</span>
+                                <span className="admin-reorder-btn-text">Edit</span>
                               </button>
 
                               <button
@@ -418,7 +422,7 @@ const Categories = () => {
                                 }}
                               >
                                 <Trash2 size={14} />
-                                <span>Delete</span>
+                                <span className="admin-reorder-btn-text">Delete</span>
                               </button>
                             </div>
                           </motion.div>

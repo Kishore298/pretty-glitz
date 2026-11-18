@@ -18,6 +18,9 @@ import {
   Pencil,
   Sparkles,
   EyeOff,
+  Layers,
+  HelpCircle,
+  ShieldCheck,
 } from 'lucide-react';
 import PageWrapper from '../components/PageWrapper';
 import PageHeader from '../components/PageHeader';
@@ -290,7 +293,7 @@ const Inventory = () => {
         subtitle="Centralized stock ledger with variant matrices, optimistic concurrency, and audit trails"
         badge="Stock Control"
         actions={
-          <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
+          <div className="inventory-header-actions" style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
             <button
               type="button"
               onClick={() => handleExport('xlsx')}
@@ -343,263 +346,209 @@ const Inventory = () => {
         }
       />
 
-      {/* KPI Metric Cards */}
+      {/* Symmetrical Responsive KPI Metric Cards Grid (All 8 Metrics) */}
       <div
+        className="admin-inventory-kpi-grid"
         style={{
           display: 'grid',
-          gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))',
-          gap: 16,
-          marginBottom: 24,
+          gridTemplateColumns: 'repeat(4, 1fr)',
+          gap: 12,
+          marginBottom: 20,
         }}
       >
-        {/* Total Products */}
-        <div
-          onClick={() => {
-            setSelectedStatus('ALL');
-            setPage(1);
-          }}
-          title="Click to view all products"
-          style={{
-            background: 'var(--surface-primary, #14131E)',
-            border: selectedStatus === 'ALL'
-              ? '1px solid var(--accent-gold, #C9A84C)'
-              : '1px solid var(--card-border, rgba(201, 168, 76, 0.12))',
-            boxShadow: selectedStatus === 'ALL' ? '0 0 16px rgba(201, 168, 76, 0.15)' : 'none',
-            borderRadius: 16,
-            padding: '18px 20px',
-            display: 'flex',
-            alignItems: 'center',
-            gap: 14,
-            cursor: 'pointer',
-            transition: 'all 0.2s ease',
-          }}
-        >
-          <div
-            style={{
-              width: 44,
-              height: 44,
-              borderRadius: 12,
-              background: 'rgba(255, 255, 255, 0.06)',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              color: 'var(--accent-gold, #C9A84C)',
-            }}
-          >
-            <Package size={22} />
-          </div>
-          <div>
-            <div style={{ fontSize: '0.76rem', color: 'var(--text-muted)', fontWeight: 600, textTransform: 'uppercase' }}>
-              Total Products
-            </div>
-            <div style={{ fontSize: '1.45rem', fontWeight: 800, color: '#FFFFFF', marginTop: 2 }}>
-              {kpis.totalProducts}
-            </div>
-            <div style={{ fontSize: '0.72rem', color: 'var(--text-secondary)' }}>
-              All catalog items
-            </div>
-          </div>
-        </div>
+        {[
+          {
+            id: 'ALL',
+            status: 'ALL',
+            label: 'All Products',
+            value: kpis.totalProducts,
+            icon: Package,
+            iconColor: 'var(--accent-gold, #C9A84C)',
+            iconBg: 'rgba(201, 168, 76, 0.12)',
+            activeBorder: 'var(--accent-gold, #C9A84C)',
+            activeBg: 'rgba(201, 168, 76, 0.14)',
+            glow: 'rgba(201, 168, 76, 0.25)',
+            valColor: '#FAF9FC',
+          },
+          {
+            id: 'TRACKED',
+            status: 'ALL',
+            label: 'Tracked Units',
+            value: typeof kpis.totalTrackedUnits === 'number' ? kpis.totalTrackedUnits.toLocaleString() : (kpis.totalTrackedUnits || 0),
+            icon: Layers,
+            iconColor: '#38BDF8',
+            iconBg: 'rgba(56, 189, 248, 0.12)',
+            activeBorder: '#38BDF8',
+            activeBg: 'rgba(56, 189, 248, 0.14)',
+            glow: 'rgba(56, 189, 248, 0.25)',
+            valColor: '#38BDF8',
+          },
+          {
+            id: 'IN_STOCK',
+            status: 'IN_STOCK',
+            label: 'In Stock & Ready',
+            value: kpis.inStockCount,
+            icon: CheckCircle2,
+            iconColor: '#10B981',
+            iconBg: 'rgba(16, 185, 129, 0.12)',
+            activeBorder: '#10B981',
+            activeBg: 'rgba(16, 185, 129, 0.14)',
+            glow: 'rgba(16, 185, 129, 0.25)',
+            valColor: '#34D399',
+          },
+          {
+            id: 'LOW_STOCK',
+            status: 'LOW_STOCK',
+            label: `Low Stock (≤${threshold})`,
+            value: kpis.lowStockCount,
+            icon: AlertTriangle,
+            iconColor: '#F59E0B',
+            iconBg: 'rgba(245, 158, 11, 0.12)',
+            activeBorder: '#F59E0B',
+            activeBg: 'rgba(245, 158, 11, 0.14)',
+            glow: 'rgba(245, 158, 11, 0.25)',
+            valColor: '#FBBF24',
+          },
+          {
+            id: 'OUT_OF_STOCK',
+            status: 'OUT_OF_STOCK',
+            label: 'Out of Stock',
+            value: kpis.outOfStockCount,
+            icon: AlertCircle,
+            iconColor: '#EF4444',
+            iconBg: 'rgba(239, 68, 68, 0.12)',
+            activeBorder: '#EF4444',
+            activeBg: 'rgba(239, 68, 68, 0.14)',
+            glow: 'rgba(239, 68, 68, 0.25)',
+            valColor: '#F87171',
+          },
+          {
+            id: 'UNTRACKED',
+            status: 'UNTRACKED',
+            label: 'Untracked Stock',
+            value: kpis.untrackedCount || 0,
+            icon: HelpCircle,
+            iconColor: '#A855F7',
+            iconBg: 'rgba(168, 85, 247, 0.12)',
+            activeBorder: '#A855F7',
+            activeBg: 'rgba(168, 85, 247, 0.14)',
+            glow: 'rgba(168, 85, 247, 0.25)',
+            valColor: '#C084FC',
+          },
+          {
+            id: 'INACTIVE',
+            status: 'INACTIVE',
+            label: 'Inactive / Hidden',
+            value: kpis.inactiveCount || 0,
+            icon: EyeOff,
+            iconColor: '#94A3B8',
+            iconBg: 'rgba(148, 163, 184, 0.12)',
+            activeBorder: '#94A3B8',
+            activeBg: 'rgba(148, 163, 184, 0.14)',
+            glow: 'rgba(148, 163, 184, 0.25)',
+            valColor: '#CBD5E1',
+          },
+          {
+            id: 'HEALTH',
+            status: 'ALL',
+            label: 'Healthy Stock',
+            value: `${kpis.inStockRate || (kpis.totalProducts > 0 ? Math.round(((kpis.inStockCount + (kpis.untrackedCount || 0)) / kpis.totalProducts) * 100) : 0)}%`,
+            icon: ShieldCheck,
+            iconColor: '#F43F5E',
+            iconBg: 'rgba(244, 63, 94, 0.12)',
+            activeBorder: '#F43F5E',
+            activeBg: 'rgba(244, 63, 94, 0.14)',
+            glow: 'rgba(244, 63, 94, 0.25)',
+            valColor: '#FB7185',
+          },
+        ].map((card) => {
+          const isActive = selectedStatus === card.status && (card.id === selectedStatus || (card.id === 'ALL' && selectedStatus === 'ALL'));
 
-        {/* In-Stock & Available */}
-        <div
-          onClick={() => {
-            setSelectedStatus('IN_STOCK');
-            setPage(1);
-          }}
-          title="Click to view in-stock products"
-          style={{
-            background: 'var(--surface-primary, #14131E)',
-            border: selectedStatus === 'IN_STOCK'
-              ? '1px solid #10B981'
-              : '1px solid rgba(16, 185, 129, 0.2)',
-            boxShadow: selectedStatus === 'IN_STOCK' ? '0 0 16px rgba(16, 185, 129, 0.2)' : 'none',
-            borderRadius: 16,
-            padding: '18px 20px',
-            display: 'flex',
-            alignItems: 'center',
-            gap: 14,
-            cursor: 'pointer',
-            transition: 'all 0.2s ease',
-          }}
-        >
-          <div
-            style={{
-              width: 44,
-              height: 44,
-              borderRadius: 12,
-              background: 'rgba(16, 185, 129, 0.15)',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              color: '#10B981',
-            }}
-          >
-            <CheckCircle2 size={22} />
-          </div>
-          <div>
-            <div style={{ fontSize: '0.76rem', color: '#6EE7B7', fontWeight: 600, textTransform: 'uppercase' }}>
-              In Stock & Ready
-            </div>
-            <div style={{ fontSize: '1.45rem', fontWeight: 800, color: '#10B981', marginTop: 2 }}>
-              {kpis.inStockCount}
-            </div>
-            <div style={{ fontSize: '0.72rem', color: 'var(--text-secondary)' }}>
-              {kpis.inStockRate || (kpis.totalProducts > 0 ? Math.round(((kpis.inStockCount + (kpis.untrackedCount || 0)) / kpis.totalProducts) * 100) : 0)}% healthy availability
-            </div>
-          </div>
-        </div>
+          return (
+            <button
+              key={card.id}
+              type="button"
+              onClick={() => {
+                if (card.status) {
+                  setSelectedStatus(card.status);
+                  setPage(1);
+                }
+              }}
+              className="admin-kpi-card-item"
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: 10,
+                padding: '10px 14px',
+                borderRadius: 14,
+                background: isActive
+                  ? card.activeBg
+                  : 'var(--surface-primary, #14131E)',
+                border: isActive
+                  ? `1px solid ${card.activeBorder}`
+                  : '1px solid var(--card-border, rgba(201, 168, 76, 0.12))',
+                boxShadow: isActive ? `0 0 14px ${card.glow}` : 'none',
+                cursor: 'pointer',
+                textAlign: 'left',
+                width: '100%',
+                boxSizing: 'border-box',
+                transition: 'all 0.18s cubic-bezier(0.16, 1, 0.3, 1)',
+              }}
+            >
+              <div
+                className="admin-kpi-card-icon"
+                style={{
+                  width: 34,
+                  height: 34,
+                  borderRadius: 10,
+                  background: card.iconBg,
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  color: card.iconColor,
+                  flexShrink: 0,
+                }}
+              >
+                <card.icon size={16} />
+              </div>
 
-        {/* Low Stock Alerts */}
-        <div
-          onClick={() => {
-            setSelectedStatus('LOW_STOCK');
-            setPage(1);
-          }}
-          title="Click to view low-stock products"
-          style={{
-            background: 'var(--surface-primary, #14131E)',
-            border: selectedStatus === 'LOW_STOCK'
-              ? '1px solid #F59E0B'
-              : '1px solid rgba(245, 158, 11, 0.25)',
-            boxShadow: selectedStatus === 'LOW_STOCK' ? '0 0 16px rgba(245, 158, 11, 0.2)' : 'none',
-            borderRadius: 16,
-            padding: '18px 20px',
-            display: 'flex',
-            alignItems: 'center',
-            gap: 14,
-            cursor: 'pointer',
-            transition: 'all 0.2s ease',
-          }}
-        >
-          <div
-            style={{
-              width: 44,
-              height: 44,
-              borderRadius: 12,
-              background: 'rgba(245, 158, 11, 0.15)',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              color: '#F59E0B',
-            }}
-          >
-            <AlertTriangle size={22} />
-          </div>
-          <div>
-            <div style={{ fontSize: '0.76rem', color: '#FCD34D', fontWeight: 600, textTransform: 'uppercase' }}>
-              Low Stock (≤{threshold})
-            </div>
-            <div style={{ fontSize: '1.45rem', fontWeight: 800, color: '#F59E0B', marginTop: 2 }}>
-              {kpis.lowStockCount}
-            </div>
-            <div style={{ fontSize: '0.72rem', color: 'var(--text-secondary)' }}>
-              Requires replenishment
-            </div>
-          </div>
-        </div>
-
-        {/* Out of Stock */}
-        <div
-          onClick={() => {
-            setSelectedStatus('OUT_OF_STOCK');
-            setPage(1);
-          }}
-          title="Click to view out-of-stock products"
-          style={{
-            background: 'var(--surface-primary, #14131E)',
-            border: selectedStatus === 'OUT_OF_STOCK'
-              ? '1px solid #EF4444'
-              : '1px solid rgba(239, 68, 68, 0.25)',
-            boxShadow: selectedStatus === 'OUT_OF_STOCK' ? '0 0 16px rgba(239, 68, 68, 0.2)' : 'none',
-            borderRadius: 16,
-            padding: '18px 20px',
-            display: 'flex',
-            alignItems: 'center',
-            gap: 14,
-            cursor: 'pointer',
-            transition: 'all 0.2s ease',
-          }}
-        >
-          <div
-            style={{
-              width: 44,
-              height: 44,
-              borderRadius: 12,
-              background: 'rgba(239, 68, 68, 0.15)',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              color: '#EF4444',
-            }}
-          >
-            <AlertCircle size={22} />
-          </div>
-          <div>
-            <div style={{ fontSize: '0.76rem', color: '#FCA5A5', fontWeight: 600, textTransform: 'uppercase' }}>
-              Out of Stock
-            </div>
-            <div style={{ fontSize: '1.45rem', fontWeight: 800, color: '#EF4444', marginTop: 2 }}>
-              {kpis.outOfStockCount}
-            </div>
-            <div style={{ fontSize: '0.72rem', color: 'var(--text-secondary)' }}>
-              Zero units available
-            </div>
-          </div>
-        </div>
-
-        {/* Inactive / Hidden */}
-        <div
-          onClick={() => {
-            setSelectedStatus('INACTIVE');
-            setPage(1);
-          }}
-          title="Click to view inactive/hidden products"
-          style={{
-            background: 'var(--surface-primary, #14131E)',
-            border: selectedStatus === 'INACTIVE'
-              ? '1px solid #8B5CF6'
-              : '1px solid rgba(139, 92, 246, 0.25)',
-            boxShadow: selectedStatus === 'INACTIVE' ? '0 0 16px rgba(139, 92, 246, 0.2)' : 'none',
-            borderRadius: 16,
-            padding: '18px 20px',
-            display: 'flex',
-            alignItems: 'center',
-            gap: 14,
-            cursor: 'pointer',
-            transition: 'all 0.2s ease',
-          }}
-        >
-          <div
-            style={{
-              width: 44,
-              height: 44,
-              borderRadius: 12,
-              background: 'rgba(139, 92, 246, 0.15)',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              color: '#A78BFA',
-            }}
-          >
-            <EyeOff size={22} />
-          </div>
-          <div>
-            <div style={{ fontSize: '0.76rem', color: '#DDD6FE', fontWeight: 600, textTransform: 'uppercase' }}>
-              Inactive / Drafts
-            </div>
-            <div style={{ fontSize: '1.45rem', fontWeight: 800, color: '#A78BFA', marginTop: 2 }}>
-              {kpis.inactiveCount}
-            </div>
-            <div style={{ fontSize: '0.72rem', color: 'var(--text-secondary)' }}>
-              Hidden from storefront
-            </div>
-          </div>
-        </div>
+              <div style={{ minWidth: 0, flex: 1 }}>
+                <div
+                  className="admin-kpi-card-val"
+                  style={{
+                    fontSize: '1.15rem',
+                    fontWeight: 800,
+                    fontFamily: 'Outfit, sans-serif',
+                    color: card.valColor || '#FFFFFF',
+                    lineHeight: 1.1,
+                  }}
+                >
+                  {card.value}
+                </div>
+                <div
+                  className="admin-kpi-card-label"
+                  style={{
+                    fontSize: '0.68rem',
+                    fontWeight: 600,
+                    color: isActive ? '#FFFFFF' : 'var(--text-secondary, #ACA6B8)',
+                    marginTop: 3,
+                    whiteSpace: 'nowrap',
+                    overflow: 'hidden',
+                    textOverflow: 'ellipsis',
+                    letterSpacing: '0.02em',
+                  }}
+                >
+                  {card.label}
+                </div>
+              </div>
+            </button>
+          );
+        })}
       </div>
 
       {/* Control & Filter Center */}
       <div
+        className="inventory-filter-panel"
         style={{
           background: 'var(--surface-primary, #14131E)',
           border: '1px solid var(--card-border, rgba(201, 168, 76, 0.12))',
@@ -621,7 +570,7 @@ const Inventory = () => {
           }}
         >
           {/* Search Box */}
-          <div style={{ position: 'relative', flex: 1, minWidth: 260, maxWidth: 420 }}>
+          <div className="inventory-search-wrapper" style={{ position: 'relative', flex: '1 1 280px', minWidth: 240, maxWidth: 440, width: '100%' }}>
             <Search
               size={16}
               style={{
@@ -630,6 +579,7 @@ const Inventory = () => {
                 top: '50%',
                 transform: 'translateY(-50%)',
                 color: 'var(--accent-gold)',
+                pointerEvents: 'none',
               }}
             />
             <input
@@ -640,9 +590,9 @@ const Inventory = () => {
                 setPage(1);
               }}
               placeholder="Search by piece name, category, color, size..."
-              className="admin-input"
+              className="admin-input admin-search-input"
               style={{
-                paddingLeft: 40,
+                paddingLeft: 44,
                 paddingRight: searchQuery ? 36 : 14,
                 height: 40,
                 fontSize: '0.86rem',
@@ -670,123 +620,105 @@ const Inventory = () => {
             )}
           </div>
 
-          {/* Category Dropdown */}
-          <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-            <Filter size={15} color="var(--accent-gold)" />
-            <select
-              value={selectedCategory}
-              onChange={(e) => {
-                setSelectedCategory(e.target.value);
-                setSelectedSubcategory('');
-                setPage(1);
-              }}
-              className="admin-input"
-              style={{
-                height: 40,
-                padding: '0 36px 0 14px',
-                fontSize: '0.84rem',
-                borderRadius: 12,
-                minWidth: 160,
-                cursor: 'pointer',
-              }}
-            >
-              <option value="all">All Categories</option>
-              {categories.map((c) => (
-                <option key={c._id} value={c.name}>
-                  {c.name}
-                </option>
-              ))}
-            </select>
-          </div>
-
-          {/* Subcategory Dropdown (if active category has subcategories) */}
-          {subcategories.filter((s) => s.category?.toLowerCase() === selectedCategory.toLowerCase()).length > 0 && (
-            <select
-              value={selectedSubcategory}
-              onChange={(e) => {
-                setSelectedSubcategory(e.target.value);
-                setPage(1);
-              }}
-              className="admin-input"
-              style={{
-                height: 40,
-                padding: '0 36px 0 14px',
-                fontSize: '0.84rem',
-                borderRadius: 12,
-                minWidth: 160,
-                cursor: 'pointer',
-              }}
-            >
-              <option value="">All Subcategories</option>
-              {subcategories
-                .filter((s) => s.category?.toLowerCase() === selectedCategory.toLowerCase())
-                .map((s) => (
-                  <option key={s._id} value={s._id}>
-                    {s.name}
-                  </option>
-                ))}
-            </select>
-          )}
-
-          {/* Threshold Selector */}
-          <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginLeft: 'auto' }}>
-            <span style={{ fontSize: '0.78rem', color: 'var(--text-muted)' }}>Low Stock Alert:</span>
-            <select
-              value={threshold}
-              onChange={(e) => setThreshold(parseInt(e.target.value, 10))}
-              className="admin-input"
-              style={{
-                height: 40,
-                padding: '0 28px 0 10px',
-                fontSize: '0.82rem',
-                borderRadius: 10,
-                cursor: 'pointer',
-              }}
-            >
-              <option value={3}>≤ 3 units</option>
-              <option value={5}>≤ 5 units (Default)</option>
-              <option value={10}>≤ 10 units</option>
-              <option value={15}>≤ 15 units</option>
-              <option value={20}>≤ 20 units</option>
-            </select>
-          </div>
-        </div>
-
-        {/* Status Filter Pills */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap', paddingTop: 6, borderTop: '1px solid rgba(255, 255, 255, 0.05)' }}>
-          {[
-            { id: 'ALL', label: `All (${kpis.totalProducts})` },
-            { id: 'IN_STOCK', label: `In Stock (${kpis.inStockCount})`, color: '#34D399' },
-            { id: 'LOW_STOCK', label: `Low Stock (${kpis.lowStockCount})`, color: '#FBBF24' },
-            { id: 'OUT_OF_STOCK', label: `Out of Stock (${kpis.outOfStockCount})`, color: '#F87171' },
-            { id: 'UNTRACKED', label: `Untracked (${kpis.untrackedCount})`, color: '#C084FC' },
-            { id: 'INACTIVE', label: `Inactive (${kpis.inactiveCount})`, color: '#9CA3AF' },
-          ].map((pill) => {
-            const isActive = selectedStatus === pill.id;
-            return (
-              <button
-                key={pill.id}
-                type="button"
-                onClick={() => {
-                  setSelectedStatus(pill.id);
+          {/* Categories and Stock Alert Filter - Aligned on the exact same line */}
+          <div
+            className="inventory-filter-selectors-row"
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: 10,
+              flex: '1 1 auto',
+              justifyContent: 'space-between',
+              minWidth: 0,
+            }}
+          >
+            {/* Category Dropdown */}
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8, flex: 1, minWidth: 0 }}>
+              <Filter size={15} color="var(--accent-gold)" style={{ flexShrink: 0 }} />
+              <select
+                value={selectedCategory}
+                onChange={(e) => {
+                  setSelectedCategory(e.target.value);
+                  setSelectedSubcategory('');
                   setPage(1);
                 }}
+                className="admin-input"
                 style={{
-                  padding: '5px 14px',
-                  borderRadius: 999,
-                  fontSize: '0.76rem',
-                  fontWeight: 600,
+                  height: 40,
+                  padding: '0 32px 0 12px',
+                  fontSize: '0.84rem',
+                  borderRadius: 12,
+                  width: '100%',
+                  minWidth: 0,
                   cursor: 'pointer',
-                  background: isActive ? 'rgba(255, 255, 255, 0.14)' : 'rgba(255, 255, 255, 0.04)',
-                  border: isActive ? '1px solid rgba(255, 255, 255, 0.3)' : '1px solid var(--card-border)',
-                  color: isActive ? '#FFFFFF' : pill.color || 'var(--text-secondary)',
-                  transition: 'all 0.15s ease',
                 }}
               >
-                {pill.label}
-              </button>
-            );
-          })}
+                <option value="all">All Categories</option>
+                {categories.map((c) => (
+                  <option key={c._id} value={c.name}>
+                    {c.name}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            {/* Subcategory Dropdown (if active category has subcategories) */}
+            {subcategories.filter((s) => s.category?.toLowerCase() === selectedCategory.toLowerCase()).length > 0 && (
+              <div style={{ display: 'flex', alignItems: 'center', flex: 1, minWidth: 0 }}>
+                <select
+                  value={selectedSubcategory}
+                  onChange={(e) => {
+                    setSelectedSubcategory(e.target.value);
+                    setPage(1);
+                  }}
+                  className="admin-input"
+                  style={{
+                    height: 40,
+                    padding: '0 32px 0 12px',
+                    fontSize: '0.84rem',
+                    borderRadius: 12,
+                    width: '100%',
+                    minWidth: 0,
+                    cursor: 'pointer',
+                  }}
+                >
+                  <option value="">All Subcategories</option>
+                  {subcategories
+                    .filter((s) => s.category?.toLowerCase() === selectedCategory.toLowerCase())
+                    .map((s) => (
+                      <option key={s._id} value={s._id}>
+                        {s.name}
+                      </option>
+                    ))}
+                </select>
+              </div>
+            )}
+
+            {/* Threshold / Stock Alert Selector */}
+            <div style={{ display: 'flex', alignItems: 'center', gap: 6, flex: 1, minWidth: 0 }}>
+              <select
+                value={threshold}
+                onChange={(e) => setThreshold(parseInt(e.target.value, 10))}
+                className="admin-input"
+                title="Low Stock Alert Threshold"
+                style={{
+                  height: 40,
+                  padding: '0 28px 0 10px',
+                  fontSize: '0.82rem',
+                  borderRadius: 12,
+                  width: '100%',
+                  minWidth: 0,
+                  cursor: 'pointer',
+                }}
+              >
+                <option value={3}>Alert: ≤ 3 units</option>
+                <option value={5}>Alert: ≤ 5 (Default)</option>
+                <option value={10}>Alert: ≤ 10 units</option>
+                <option value={15}>Alert: ≤ 15 units</option>
+                <option value={20}>Alert: ≤ 20 units</option>
+              </select>
+            </div>
+          </div>
         </div>
       </div>
 
@@ -815,7 +747,7 @@ const Inventory = () => {
           }}
         >
           <div style={{ overflowX: 'auto' }}>
-            <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left', fontSize: '0.86rem' }}>
+            <table style={{ width: '100%', minWidth: 760, borderCollapse: 'collapse', textAlign: 'left', fontSize: '0.86rem' }}>
               <thead>
                 <tr
                   style={{
@@ -827,10 +759,10 @@ const Inventory = () => {
                     letterSpacing: '0.04em',
                   }}
                 >
-                  <th style={{ padding: '14px 18px', width: '38%' }}>Product Details</th>
-                  <th style={{ padding: '14px 18px', width: '22%' }}>Stock Health</th>
-                  <th style={{ padding: '14px 18px', width: '28%' }}>Stock Level / Variants</th>
-                  <th style={{ padding: '14px 18px', width: '12%', textAlign: 'right' }}>Actions</th>
+                  <th style={{ padding: '14px 18px', width: '32%', minWidth: 220 }}>Product Details</th>
+                  <th style={{ padding: '14px 18px', width: '28%', minWidth: 200, whiteSpace: 'nowrap' }}>Stock Health</th>
+                  <th style={{ padding: '14px 18px', width: '28%', minWidth: 210 }}>Stock Level / Variants</th>
+                  <th style={{ padding: '14px 18px', width: '12%', minWidth: 100, textAlign: 'right' }}>Actions</th>
                 </tr>
               </thead>
               <tbody>
@@ -849,7 +781,7 @@ const Inventory = () => {
                       }}
                     >
                       {/* Product Details */}
-                      <td style={{ padding: '14px 18px' }}>
+                      <td style={{ padding: '14px 18px', minWidth: 220 }}>
                         <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
                           {prod.images?.[0]?.url ? (
                             <img
@@ -873,7 +805,7 @@ const Inventory = () => {
                                 background: 'rgba(255, 255, 255, 0.05)',
                                 display: 'flex',
                                 alignItems: 'center',
-                                justifyContent: 'center',
+                                justifyCenter: 'center',
                                 color: 'var(--text-muted)',
                               }}
                             >
@@ -888,7 +820,11 @@ const Inventory = () => {
                               <span>{prod.category}</span>
                               {prod.subcategoryId?.name && <span>• {prod.subcategoryId.name}</span>}
                               {prod.packagingType && (
-                                <span style={{ color: 'var(--accent-gold)' }}>({prod.packagingType})</span>
+                                <span style={{ color: 'var(--accent-gold)' }}>
+                                  ({prod.packagingQuantity && Number(prod.packagingQuantity) > 1
+                                    ? `${prod.packagingQuantity} ${prod.packagingType}${prod.packagingType.toLowerCase() === 'set' ? 's' : ''}`
+                                    : `${prod.packagingQuantity ? `${prod.packagingQuantity} ` : ''}${prod.packagingType}`})
+                                </span>
                               )}
                             </div>
                           </div>
@@ -896,16 +832,20 @@ const Inventory = () => {
                       </td>
 
                       {/* Stock Health */}
-                      <td style={{ padding: '14px 18px' }}>
+                      <td style={{ padding: '14px 18px', minWidth: 200, whiteSpace: 'nowrap' }}>
                         {health.status === 'INACTIVE' ? (
                           <span
                             style={{
-                              fontSize: '0.74rem',
+                              fontSize: '0.76rem',
                               fontWeight: 700,
-                              padding: '4px 10px',
+                              padding: '5px 12px',
                               borderRadius: 999,
                               background: 'rgba(255, 255, 255, 0.08)',
                               color: 'var(--text-muted)',
+                              display: 'inline-flex',
+                              alignItems: 'center',
+                              gap: 6,
+                              whiteSpace: 'nowrap',
                             }}
                           >
                             Inactive
@@ -913,13 +853,17 @@ const Inventory = () => {
                         ) : health.status === 'OUT_OF_STOCK' ? (
                           <span
                             style={{
-                              fontSize: '0.74rem',
+                              fontSize: '0.76rem',
                               fontWeight: 700,
-                              padding: '4px 10px',
+                              padding: '5px 12px',
                               borderRadius: 999,
                               background: 'rgba(239, 68, 68, 0.15)',
                               color: '#F87171',
                               border: '1px solid rgba(239, 68, 68, 0.25)',
+                              display: 'inline-flex',
+                              alignItems: 'center',
+                              gap: 6,
+                              whiteSpace: 'nowrap',
                             }}
                           >
                             ● Out of Stock (0)
@@ -927,13 +871,17 @@ const Inventory = () => {
                         ) : health.status === 'LOW_STOCK' ? (
                           <span
                             style={{
-                              fontSize: '0.74rem',
+                              fontSize: '0.76rem',
                               fontWeight: 700,
-                              padding: '4px 10px',
+                              padding: '5px 12px',
                               borderRadius: 999,
                               background: 'rgba(245, 158, 11, 0.15)',
                               color: '#FBBF24',
                               border: '1px solid rgba(245, 158, 11, 0.25)',
+                              display: 'inline-flex',
+                              alignItems: 'center',
+                              gap: 6,
+                              whiteSpace: 'nowrap',
                             }}
                           >
                             ▲ Low Stock ({health.totalTrackedStock} units)
@@ -941,13 +889,17 @@ const Inventory = () => {
                         ) : health.status === 'UNTRACKED' ? (
                           <span
                             style={{
-                              fontSize: '0.74rem',
+                              fontSize: '0.76rem',
                               fontWeight: 700,
-                              padding: '4px 10px',
+                              padding: '5px 12px',
                               borderRadius: 999,
                               background: 'rgba(192, 132, 252, 0.15)',
                               color: '#C084FC',
                               border: '1px solid rgba(192, 132, 252, 0.25)',
+                              display: 'inline-flex',
+                              alignItems: 'center',
+                              gap: 6,
+                              whiteSpace: 'nowrap',
                             }}
                           >
                             ⚪ Untracked (Available)
@@ -955,13 +907,17 @@ const Inventory = () => {
                         ) : (
                           <span
                             style={{
-                              fontSize: '0.74rem',
+                              fontSize: '0.76rem',
                               fontWeight: 700,
-                              padding: '4px 10px',
+                              padding: '5px 12px',
                               borderRadius: 999,
                               background: 'rgba(16, 185, 129, 0.15)',
                               color: '#34D399',
                               border: '1px solid rgba(16, 185, 129, 0.25)',
+                              display: 'inline-flex',
+                              alignItems: 'center',
+                              gap: 6,
+                              whiteSpace: 'nowrap',
                             }}
                           >
                             ✓ In Stock ({health.totalTrackedStock} units)
@@ -970,7 +926,7 @@ const Inventory = () => {
                       </td>
 
                       {/* Stock Level & Inline Controls */}
-                      <td style={{ padding: '14px 18px' }}>
+                      <td style={{ padding: '14px 18px', minWidth: 210 }}>
                         {prod.tier === 'TIER_1_COLOR_SIZE' ? (
                           <button
                             type="button"

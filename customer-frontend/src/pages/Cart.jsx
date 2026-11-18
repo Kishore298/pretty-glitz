@@ -49,7 +49,7 @@ const Cart = () => {
 
   return (
     <div style={{ minHeight: '100vh', paddingTop: 'calc(var(--nav-height, 76px) + 16px)', paddingBottom: 100 }}>
-      <div style={{ maxWidth: 1280, margin: '0 auto', padding: '0 24px' }}>
+      <div className="app-page-container" style={{ maxWidth: 1280, margin: '0 auto' }}>
         
         {/* Breadcrumb */}
         <div className="breadcrumb">

@@ -1,11 +1,14 @@
 const Notification = require('../models/Notification');
 const PushSubscription = require('../models/PushSubscription');
 const FcmToken = require('../models/FcmToken');
+const BroadcastNotification = require('../models/BroadcastNotification');
 const { getVapidPublicKey, sendPushToAllAdmins } = require('../services/pushService');
 const {
   isFirebaseConfigured,
   getFirebasePublicConfig,
   sendFcmToAllAdmins,
+  sendFcmCustomBroadcast,
+  sendFcmToCustomer,
 } = require('../services/firebaseService');
 
 // ─── GET /api/notifications (Admin list notifications) ───────────────────────
@@ -71,7 +74,7 @@ const markAllAsRead = async (req, res) => {
   }
 };
 
-// ─── POST /api/notifications/fcm-token (Register Firebase Cloud Messaging Token)
+// ─── POST /api/notifications/fcm-token (Register Admin FCM Token) ──────────────
 const saveFcmToken = async (req, res) => {
   try {
     const { token, deviceInfo } = req.body;
@@ -86,6 +89,7 @@ const saveFcmToken = async (req, res) => {
       { token },
       {
         token,
+        role: 'ADMIN',
         adminId,
         deviceInfo: agent,
         lastUsedAt: new Date(),
@@ -95,7 +99,7 @@ const saveFcmToken = async (req, res) => {
 
     return res.status(201).json({
       success: true,
-      message: 'Firebase FCM token registered successfully.',
+      message: 'Admin Firebase FCM token registered successfully.',
       tokenId: saved._id,
     });
   } catch (err) {
@@ -104,7 +108,153 @@ const saveFcmToken = async (req, res) => {
   }
 };
 
-// ─── POST /api/notifications/fcm-token/delete (Revoke FCM Token) ─────────────
+// ─── POST /api/notifications/customer-fcm-token (Register Customer FCM Token) ──
+const saveCustomerFcmToken = async (req, res) => {
+  try {
+    const { token, mobile, orderId, deviceInfo } = req.body;
+    if (!token) {
+      return res.status(400).json({ message: 'FCM registration token is required.' });
+    }
+
+    const agent = deviceInfo || req.headers['user-agent'] || '';
+    const userId = req.user?.id || req.user?.userId || null;
+
+    const updateDoc = {
+      token,
+      role: 'CUSTOMER',
+      deviceInfo: agent,
+      lastUsedAt: new Date(),
+    };
+
+    if (userId) {
+      updateDoc.userId = userId;
+    }
+
+    if (mobile) {
+      const cleanMobile = String(mobile).replace(/\D/g, '');
+      if (cleanMobile.length >= 10) {
+        updateDoc.mobile = cleanMobile;
+      }
+    }
+
+    const pushUpdates = {};
+    if (orderId) {
+      pushUpdates.$addToSet = { orderIds: String(orderId).trim().toUpperCase() };
+    }
+
+    const saved = await FcmToken.findOneAndUpdate(
+      { token },
+      {
+        $set: updateDoc,
+        ...pushUpdates,
+      },
+      { upsert: true, new: true }
+    );
+
+    return res.status(201).json({
+      success: true,
+      message: 'Customer FCM token registered successfully.',
+      tokenId: saved._id,
+    });
+  } catch (err) {
+    console.error('[Notifications] saveCustomerFcmToken error:', err);
+    return res.status(500).json({ message: 'Failed to register customer FCM token.' });
+  }
+};
+
+// ─── POST /api/notifications/broadcast (Admin sends custom push notification) ──
+const broadcastCustomPush = async (req, res) => {
+  try {
+    const { targetAudience, title, body, url, imageUrl } = req.body;
+
+    if (!title || !title.trim()) {
+      return res.status(400).json({ message: 'Notification title is required.' });
+    }
+    if (!body || !body.trim()) {
+      return res.status(400).json({ message: 'Notification message body is required.' });
+    }
+
+    const audience = ['ALL', 'CUSTOMERS', 'ADMINS'].includes(targetAudience) ? targetAudience : 'CUSTOMERS';
+
+    const result = await sendFcmCustomBroadcast({
+      targetAudience: audience,
+      title: title.trim(),
+      body: body.trim(),
+      url: url ? url.trim() : '/',
+      imageUrl: imageUrl ? imageUrl.trim() : '',
+    });
+
+    const adminName = req.user?.username || req.user?.email || 'Admin';
+
+    const broadcastLog = await BroadcastNotification.create({
+      title: title.trim(),
+      body: body.trim(),
+      targetAudience: audience,
+      url: url ? url.trim() : '/',
+      imageUrl: imageUrl ? imageUrl.trim() : '',
+      sentCount: result.sent || 0,
+      failedCount: result.failed || 0,
+      totalRecipients: result.totalRecipients || 0,
+      sentBy: adminName,
+    });
+
+    return res.status(200).json({
+      success: true,
+      message: `Push notification sent to ${result.sent} recipient device(s).`,
+      result,
+      broadcast: broadcastLog,
+    });
+  } catch (err) {
+    console.error('[Notifications] broadcastCustomPush error:', err);
+    return res.status(500).json({ message: err.message || 'Failed to send broadcast notification.' });
+  }
+};
+
+// ─── GET /api/notifications/broadcast-stats (Audience count & recent history) ──
+const getBroadcastStats = async (req, res) => {
+  try {
+    const [customerCount, adminCount, recentBroadcasts] = await Promise.all([
+      FcmToken.countDocuments({ role: 'CUSTOMER' }),
+      FcmToken.countDocuments({ role: { $in: ['ADMIN', null] } }),
+      BroadcastNotification.find({}).sort({ createdAt: -1 }).limit(15).lean(),
+    ]);
+
+    return res.status(200).json({
+      success: true,
+      stats: {
+        customerDevicesCount: customerCount,
+        adminDevicesCount: adminCount,
+        totalDevicesCount: customerCount + adminCount,
+      },
+      recentBroadcasts,
+    });
+  } catch (err) {
+    console.error('[Notifications] getBroadcastStats error:', err);
+    return res.status(500).json({ message: 'Failed to fetch broadcast stats.' });
+  }
+};
+
+// ─── POST /api/notifications/customer-fcm-token/delete (Revoke Customer FCM) ─
+const deleteCustomerFcmToken = async (req, res) => {
+  try {
+    const { token } = req.body;
+    if (!token) {
+      return res.status(400).json({ message: 'FCM token is required to delete.' });
+    }
+
+    await FcmToken.deleteMany({ token, role: 'CUSTOMER' });
+
+    return res.status(200).json({
+      success: true,
+      message: 'Customer FCM token removed successfully.',
+    });
+  } catch (err) {
+    console.error('[Notifications] deleteCustomerFcmToken error:', err);
+    return res.status(500).json({ message: 'Failed to delete customer FCM token.' });
+  }
+};
+
+// ─── POST /api/notifications/fcm-token/delete (Revoke Admin FCM Token) ─────────
 const deleteFcmToken = async (req, res) => {
   try {
     const { token } = req.body;
@@ -222,7 +372,11 @@ module.exports = {
   markAsRead,
   markAllAsRead,
   saveFcmToken,
+  saveCustomerFcmToken,
+  deleteCustomerFcmToken,
   deleteFcmToken,
+  broadcastCustomPush,
+  getBroadcastStats,
   getFirebaseConfig,
   subscribePush,
   unsubscribePush,

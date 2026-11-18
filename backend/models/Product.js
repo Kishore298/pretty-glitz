@@ -74,8 +74,9 @@ const productSchema = new mongoose.Schema(
     // Subcategory association (Artificial Flowers & Designer Glass Bangles)
     subcategoryId: { type: mongoose.Schema.Types.ObjectId, ref: 'Subcategory' },
 
-    // Packaging / Quantity Unit (e.g., 'Pieces', 'Dozen', 'Set')
+    // Packaging / Quantity Unit (e.g., 'Pieces', 'Dozen', 'Set') and Count
     packagingType: { type: String, trim: true, default: '' },
+    packagingQuantity: { type: Number, default: 1, min: 1 },
 
     isOffer: { type: Boolean, default: false },
     isBestseller: { type: Boolean, default: false },

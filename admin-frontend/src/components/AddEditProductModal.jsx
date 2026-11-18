@@ -45,6 +45,7 @@ const AddEditProductModal = ({ isOpen, onClose, productId, onSuccess, isOfferPre
     images: [],
     giftBoxDetails: '',
     packagingType: '',
+    packagingQuantity: 1,
   });
   const [categories, setCategories] = useState([]);
   const [subcategories, setSubcategories] = useState([]);
@@ -75,6 +76,7 @@ const AddEditProductModal = ({ isOpen, onClose, productId, onSuccess, isOfferPre
           images: [],
           giftBoxDetails: '',
           packagingType: '',
+          packagingQuantity: 1,
         });
       }
     }
@@ -116,6 +118,8 @@ const AddEditProductModal = ({ isOpen, onClose, productId, onSuccess, isOfferPre
             }))
           : [],
         isBestseller: Boolean(data.isBestseller || data.isFlagship),
+        packagingType: data.packagingType || '',
+        packagingQuantity: data.packagingQuantity !== undefined && data.packagingQuantity !== null ? data.packagingQuantity : 1,
       });
     } catch (err) {
       console.error(err);
@@ -536,17 +540,46 @@ const AddEditProductModal = ({ isOpen, onClose, productId, onSuccess, isOfferPre
                     )}
                     {field(
                       'Quantity / Packaging Unit',
-                      <select
-                        name="packagingType"
-                        value={formData.packagingType || ''}
-                        onChange={handleChange}
-                        className="admin-input"
-                      >
-                        <option value="">-- Standard / Unspecified --</option>
-                        <option value="Pieces">Pieces</option>
-                        <option value="Dozen">Dozen</option>
-                        <option value="Set">Set</option>
-                      </select>
+                      <div style={{ display: 'grid', gridTemplateColumns: '90px 1fr', gap: 8 }}>
+                        <input
+                          type="number"
+                          min="1"
+                          name="packagingQuantity"
+                          value={formData.packagingQuantity !== undefined ? formData.packagingQuantity : 1}
+                          onChange={handleChange}
+                          placeholder="Qty (e.g. 1)"
+                          className="admin-input"
+                          title="Quantity / Count (e.g. 1, 2, 4, 12)"
+                        />
+                        <select
+                          name="packagingType"
+                          value={formData.packagingType || ''}
+                          onChange={handleChange}
+                          className="admin-input"
+                        >
+                          <option value="">-- Unit --</option>
+                          <option value="Set">Set</option>
+                          <option value="Dozen">Dozen</option>
+                          <option value="Pieces">Pieces</option>
+                          <option value="Pair">Pair</option>
+                          <option value="Pack">Pack</option>
+                          <option value="Box">Box</option>
+                        </select>
+                      </div>,
+                      formData.packagingType
+                        ? `Display preview: ₹${formData.price || '380'}${formData.originalPrice ? ` ₹${formData.originalPrice}` : ''} (${(() => {
+                            const qty = formData.packagingQuantity && Number(formData.packagingQuantity) > 0 ? Number(formData.packagingQuantity) : 1;
+                            const unit = (formData.packagingType || '').trim();
+                            const lower = unit.toLowerCase();
+                            if (lower === 'set') return `${qty} ${qty > 1 ? 'Sets' : 'Set'}`;
+                            if (lower === 'dozen') return `${qty} Dozen`;
+                            if (lower === 'pieces' || lower === 'piece') return `${qty} ${qty === 1 ? 'Piece' : 'Pieces'}`;
+                            if (lower === 'pair' || lower === 'pairs') return `${qty} ${qty === 1 ? 'Pair' : 'Pairs'}`;
+                            if (lower === 'pack' || lower === 'packs') return `${qty} ${qty === 1 ? 'Pack' : 'Packs'}`;
+                            if (lower === 'box' || lower === 'boxes') return `${qty} ${qty === 1 ? 'Box' : 'Boxes'}`;
+                            return `${qty} ${unit}`;
+                          })()})`
+                        : 'Define the number and unit (e.g. 1 Set, 2 Dozen, 6 Pieces)'
                     )}
                   </div>
                 </div>

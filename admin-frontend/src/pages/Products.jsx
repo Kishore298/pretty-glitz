@@ -101,7 +101,7 @@ const Products = () => {
   // Filter products by search, status, and category
   const filteredProducts = products.filter((p) => {
     const matchesSearch = !searchQuery.trim() || p.name.toLowerCase().includes(searchQuery.toLowerCase());
-    
+
     let matchesCategory = true;
     if (selectedCategory !== 'all') {
       const isBanglesFilter = /^(designer\s+)?glass\s+bangles$|^bangles$/i.test(selectedCategory);
@@ -257,9 +257,9 @@ const Products = () => {
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               placeholder="Search jewels by name, bangles, florals..."
-              className="admin-input"
+              className="admin-input admin-search-input"
               style={{
-                paddingLeft: 42,
+                paddingLeft: 44,
                 paddingRight: searchQuery ? 40 : 16,
                 height: 42,
                 fontSize: '0.88rem',
@@ -517,6 +517,7 @@ const Products = () => {
                     </div>
 
                     <div
+                      className="products-table-container"
                       style={{
                         background: 'var(--surface-primary, #14131E)',
                         border: '1px solid var(--card-border, rgba(201, 168, 76, 0.12))',
@@ -525,11 +526,12 @@ const Products = () => {
                         boxShadow: '0 4px 16px rgba(0, 0, 0, 0.2)',
                       }}
                     >
-                      <div style={{ minWidth: 840 }}>
+                      <div className="products-table-scroll" style={{ minWidth: 840 }}>
                         <div
+                          className="products-table-grid"
                           style={{
                             display: 'grid',
-                            gridTemplateColumns: '40px 64px 1fr 180px 110px 130px 140px',
+                            gridTemplateColumns: '36px 64px 1fr 150px 100px 120px 130px',
                             gap: 16,
                             padding: '16px 24px',
                             borderBottom: '1px solid var(--card-border)',
@@ -538,10 +540,11 @@ const Products = () => {
                             fontWeight: 700,
                             letterSpacing: '0.06em',
                             textTransform: 'uppercase',
+                            alignItems: 'center',
                           }}
                         >
-                          <span></span>
-                          <span>Image</span>
+                          <span style={{ display: 'flex', justifyContent: 'center' }}></span>
+                          <span style={{ display: 'flex', justifyContent: 'center' }}>Image</span>
                           <span>Product Piece</span>
                           <span>Category</span>
                           <span>Price</span>
@@ -559,10 +562,10 @@ const Products = () => {
                                       <div
                                         ref={provided.innerRef}
                                         {...provided.draggableProps}
-                                        className="admin-table-row"
+                                        className="admin-table-row products-table-grid"
                                         style={{
                                           display: 'grid',
-                                          gridTemplateColumns: '40px 64px 1fr 180px 110px 130px 140px',
+                                          gridTemplateColumns: '36px 64px 1fr 150px 100px 120px 130px',
                                           gap: 16,
                                           padding: '14px 24px',
                                           alignItems: 'center',
@@ -822,6 +825,7 @@ const Products = () => {
                 </div>
 
                 <div
+                  className="products-table-container"
                   style={{
                     background: 'var(--surface-primary, #14131E)',
                     border: '1px solid var(--card-border, rgba(201, 168, 76, 0.12))',
@@ -830,11 +834,12 @@ const Products = () => {
                     boxShadow: '0 4px 16px rgba(0, 0, 0, 0.2)',
                   }}
                 >
-                  <div style={{ minWidth: 840 }}>
+                  <div className="products-table-scroll" style={{ minWidth: 840 }}>
                     <div
+                      className="products-table-grid"
                       style={{
                         display: 'grid',
-                        gridTemplateColumns: '40px 64px 1fr 180px 110px 130px 140px',
+                        gridTemplateColumns: '36px 64px 1fr 150px 100px 120px 130px',
                         gap: 16,
                         padding: '16px 24px',
                         borderBottom: '1px solid var(--card-border)',
@@ -843,10 +848,11 @@ const Products = () => {
                         fontWeight: 700,
                         letterSpacing: '0.06em',
                         textTransform: 'uppercase',
+                        alignItems: 'center',
                       }}
                     >
-                      <span></span>
-                      <span>Image</span>
+                      <span style={{ display: 'flex', justifyContent: 'center' }}></span>
+                      <span style={{ display: 'flex', justifyContent: 'center' }}>Image</span>
                       <span>Product Piece</span>
                       <span>Category</span>
                       <span>Price</span>
@@ -864,10 +870,10 @@ const Products = () => {
                                   <div
                                     ref={provided.innerRef}
                                     {...provided.draggableProps}
-                                    className="admin-table-row"
+                                    className="admin-table-row products-table-grid"
                                     style={{
                                       display: 'grid',
-                                      gridTemplateColumns: '40px 64px 1fr 180px 110px 130px 140px',
+                                      gridTemplateColumns: '36px 64px 1fr 150px 100px 120px 130px',
                                       gap: 16,
                                       padding: '14px 24px',
                                       alignItems: 'center',

@@ -143,7 +143,7 @@ const InventoryAuditHistoryModal = ({ isOpen, onClose, selectedProductId = null 
             }}
           >
             {/* Search */}
-            <div style={{ position: 'relative', flex: 1, minWidth: 200 }}>
+            <div className="admin-search-wrapper" style={{ position: 'relative', flex: 1, minWidth: 200 }}>
               <Search
                 size={15}
                 style={{
@@ -152,6 +152,7 @@ const InventoryAuditHistoryModal = ({ isOpen, onClose, selectedProductId = null 
                   top: '50%',
                   transform: 'translateY(-50%)',
                   color: 'var(--text-muted)',
+                  pointerEvents: 'none',
                 }}
               />
               <input
@@ -162,8 +163,8 @@ const InventoryAuditHistoryModal = ({ isOpen, onClose, selectedProductId = null 
                   setPage(1);
                 }}
                 placeholder="Search by product, admin, order #..."
-                className="admin-input"
-                style={{ paddingLeft: 36, height: 36, fontSize: '0.82rem', borderRadius: 10 }}
+                className="admin-input admin-search-input"
+                style={{ paddingLeft: 42, height: 36, fontSize: '0.82rem', borderRadius: 10 }}
               />
             </div>
 
@@ -196,6 +197,7 @@ const InventoryAuditHistoryModal = ({ isOpen, onClose, selectedProductId = null 
             >
               <option value="ALL">All Sources</option>
               <option value="MANUAL_ADMIN">Manual Admin</option>
+              <option value="DRAWER_ADMIN">Variant Drawer</option>
               <option value="BULK_ADMIN">Bulk Dock</option>
               <option value="CSV_IMPORT">CSV / Excel</option>
               <option value="ORDER_DEDUCTION">Storefront Order</option>

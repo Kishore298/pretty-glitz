@@ -239,7 +239,7 @@ const ProductImageModal = ({
               </button>
             </div>
 
-            {/* Main Enlarged Image Stage with Light Background & Swipe */}
+            {/* Main Enlarged Image Stage with Transparent Background & Natural Aspect Ratio */}
             <div
               className="product-image-modal-stage"
               onTouchStart={handleTouchStart}
@@ -250,12 +250,10 @@ const ProductImageModal = ({
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
-                borderRadius: 20,
+                borderRadius: 16,
                 overflow: 'hidden',
-                background: isDark ? 'rgba(20, 20, 30, 0.7)' : '#FFFFFF',
-                boxShadow: isDark
-                  ? '0 20px 60px rgba(0, 0, 0, 0.55), 0 0 0 1px rgba(255, 255, 255, 0.08)'
-                  : '0 20px 60px rgba(196, 56, 108, 0.12), 0 4px 20px rgba(0, 0, 0, 0.06), 0 0 0 1px var(--border)',
+                background: 'transparent',
+                boxShadow: 'none',
                 touchAction: images.length > 1 ? 'pan-y' : 'auto',
               }}
             >
@@ -266,7 +264,7 @@ const ProductImageModal = ({
                 className="product-image-modal-img"
                 style={{
                   display: 'block',
-                  borderRadius: 18,
+                  borderRadius: 14,
                   transition: 'opacity 0.2s ease',
                 }}
                 onError={(e) => {
@@ -578,20 +576,25 @@ const ProductImageModal = ({
                 height: 36px !important;
               }
               .product-image-modal-stage {
-                flex: 1 1 0 !important;
+                flex: 1 1 auto !important;
                 width: 100% !important;
                 min-height: 0 !important;
+                max-height: calc(100dvh - 150px) !important;
                 display: flex !important;
                 align-items: center !important;
                 justify-content: center !important;
                 position: relative !important;
+                background: transparent !important;
+                box-shadow: none !important;
               }
               .product-image-modal-img {
-                width: 100% !important;
-                height: 100% !important;
+                width: auto !important;
+                height: auto !important;
                 max-width: 100% !important;
-                max-height: 100% !important;
+                max-height: calc(100dvh - 155px) !important;
                 object-fit: contain !important;
+                border-radius: 14px !important;
+                box-shadow: 0 10px 40px rgba(0, 0, 0, 0.25) !important;
               }
               .product-image-modal-bottom {
                 flex-shrink: 0 !important;
@@ -625,13 +628,17 @@ const ProductImageModal = ({
                 }
                 .product-image-modal-stage {
                   flex: 0 1 auto !important;
-                  min-height: 380px !important;
-                  max-height: 68vh !important;
+                  min-height: auto !important;
+                  max-height: 75vh !important;
+                  background: transparent !important;
+                  box-shadow: none !important;
                 }
                 .product-image-modal-img {
                   height: auto !important;
                   width: auto !important;
-                  max-height: 68vh !important;
+                  max-width: 90vw !important;
+                  max-height: 75vh !important;
+                  box-shadow: 0 12px 48px rgba(0, 0, 0, 0.3) !important;
                 }
                 .product-image-modal-bottom {
                   padding-top: 12px !important;

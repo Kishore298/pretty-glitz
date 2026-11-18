@@ -6,6 +6,7 @@ const InventoryLog = require('../models/InventoryLog');
 const Notification = require('../models/Notification');
 const { emitToAdmin, emitToUser } = require('../config/socket');
 const { sendPushToAllAdmins } = require('../services/pushService');
+const { sendFcmToCustomer } = require('../services/firebaseService');
 const jwt = require('jsonwebtoken');
 
 // Helper: Safely extract customer userId from optional authorization header
@@ -519,6 +520,60 @@ const getOrderById = async (req, res) => {
   }
 };
 
+// ─── GET /api/orders/track/:orderId (Public Customer Order Tracking) ──────────
+const trackOrderPublic = async (req, res) => {
+  try {
+    const { orderId } = req.params;
+    if (!orderId) {
+      return res.status(400).json({ message: 'Order ID is required.' });
+    }
+
+    const cleanId = orderId.trim().toUpperCase();
+    const isObjectId = mongoose.Types.ObjectId.isValid(orderId);
+    const query = isObjectId ? { $or: [{ _id: orderId }, { orderId: cleanId }] } : { orderId: cleanId };
+
+    const order = await Order.findOne(query).lean();
+    if (!order) {
+      return res.status(404).json({ message: 'Order not found.' });
+    }
+
+    // Return tracking information safely
+    return res.status(200).json({
+      success: true,
+      order: {
+        orderId: order.orderId,
+        status: order.status,
+        trackingId: order.trackingId || '',
+        courierPartner: order.courierPartner || 'ST Courier',
+        trackingUrl: order.trackingId
+          ? (order.courierPartner?.toLowerCase().includes('blue')
+              ? `https://www.bluedart.com/tracking?trackNo=${order.trackingId}`
+              : `https://stcourier.com/track?tracking_no=${order.trackingId}`)
+          : '',
+        confirmedAt: order.confirmedAt,
+        processingAt: order.processingAt,
+        dispatchedAt: order.dispatchedAt,
+        deliveredAt: order.deliveredAt,
+        createdAt: order.createdAt,
+        totalAmount: order.totalAmount,
+        customerName: order.customer?.name || 'Valued Customer',
+        customerCity: order.customer?.city || '',
+        items: (order.items || []).map((item) => ({
+          name: item.name,
+          quantity: item.quantity,
+          price: item.price,
+          image: item.image,
+          size: item.size,
+          colorName: item.colorName,
+        })),
+      },
+    });
+  } catch (err) {
+    console.error('[Orders] trackOrderPublic error:', err);
+    return res.status(500).json({ message: 'Failed to retrieve order tracking details.' });
+  }
+};
+
 // Helper: Automatically check stock levels and toggle inStock to false if 0
 const checkAndUpdateOutOfStock = async (productId) => {
   try {
@@ -704,6 +759,55 @@ const updateOrderStatus = async (req, res) => {
         }).catch(() => {});
       }
 
+      // Trigger Customer Push Notification via Firebase Cloud Messaging (FCM)
+      try {
+        let pushTitle = `Order #${order.orderId} Update`;
+        let pushBody = `Your order status has been updated to ${order.status}.`;
+
+        if (order.status === 'DISPATCHED') {
+          pushTitle = `📦 Order #${order.orderId} Dispatched!`;
+          pushBody = `Your parcel is on its way via ${order.courierPartner || 'ST Courier'}.${
+            order.trackingId ? ` Tracking ID: ${order.trackingId}.` : ''
+          } Tap to track!`;
+        } else if (order.status === 'CONFIRMED') {
+          pushTitle = `✅ Order #${order.orderId} Confirmed!`;
+          pushBody = 'Your order is confirmed and being prepared with care.';
+        } else if (order.status === 'PROCESSING') {
+          pushTitle = `⏳ Order #${order.orderId} Processing`;
+          pushBody = 'Our atelier is assembling and packing your handcrafted pieces.';
+        } else if (order.status === 'DELIVERED') {
+          pushTitle = `🎉 Order #${order.orderId} Delivered!`;
+          pushBody = 'Your parcel has been delivered. Enjoy your gorgeous PrettyGlitz collection!';
+        } else if (order.status === 'CANCELLED') {
+          pushTitle = `Order #${order.orderId} Cancelled`;
+          pushBody = 'Your order has been cancelled. Reach out if you have any questions.';
+        } else if (trackingId && !status) {
+          pushTitle = `🚚 Tracking Updated for #${order.orderId}`;
+          pushBody = `Courier: ${order.courierPartner || 'ST Courier'}. Tracking ID: ${order.trackingId}. Tap to track!`;
+        }
+
+        sendFcmToCustomer(
+          {
+            orderId: order.orderId,
+            mobile: order.customer?.mobile,
+            userId: order.userId,
+          },
+          {
+            title: pushTitle,
+            body: pushBody,
+            url: `/track-order?id=${order.orderId}`,
+            orderId: order.orderId,
+            type: 'order_status_update',
+            icon: '/pretty-glitz-logo.png',
+            requireInteraction: true,
+          }
+        ).catch((fcmErr) => {
+          console.warn('[Orders] Customer FCM dispatch caught error:', fcmErr.message);
+        });
+      } catch (fcmErr) {
+        console.warn('[Orders] Could not dispatch customer FCM:', fcmErr.message);
+      }
+
       if (order.userId) {
         emitToUser(order.userId.toString(), 'order_status_updated', {
           orderId: order.orderId,
@@ -751,6 +855,7 @@ module.exports = {
   createOrder,
   getOrders,
   getOrderById,
+  trackOrderPublic,
   getMyOrders,
   updateOrderStatus,
 };

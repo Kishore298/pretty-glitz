@@ -20,9 +20,13 @@ api.interceptors.response.use(
     if (error.response && error.response.status === 401) {
       console.warn('Session expired or unauthorized request, redirecting to login...');
       // If unauthorized on protected routes (not auth endpoints), clear stale token
-      if (!error.config.url.includes('/auth/login')) {
+      if (!error.config?.url?.includes('/auth/login')) {
         localStorage.removeItem('adminToken');
         localStorage.removeItem('adminInfo');
+        localStorage.removeItem('token');
+        if (!window.location.pathname.includes('/login')) {
+          window.location.href = '/login';
+        }
       }
     }
     return Promise.reject(error);

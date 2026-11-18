@@ -63,7 +63,7 @@ const inventoryLogSchema = new mongoose.Schema(
     },
     source: {
       type: String,
-      enum: ['MANUAL_ADMIN', 'BULK_ADMIN', 'CSV_IMPORT', 'ORDER_DEDUCTION', 'ORDER_CANCEL_RESTORE', 'SYSTEM'],
+      enum: ['MANUAL_ADMIN', 'BULK_ADMIN', 'DRAWER_ADMIN', 'CSV_IMPORT', 'ORDER_DEDUCTION', 'ORDER_CANCEL_RESTORE', 'SYSTEM'],
       required: true,
     },
     reason: {

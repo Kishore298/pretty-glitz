@@ -18,6 +18,7 @@ import {
 } from 'lucide-react';
 import api from '../utils/api';
 import { useSocket } from '../context/SocketContext';
+import PageHeader from '../components/PageHeader';
 
 const STATUS_CONFIG = {
   ALL: { label: 'All Orders', color: '#ACA6B8', bg: 'rgba(255, 255, 255, 0.05)', border: 'rgba(255, 255, 255, 0.12)' },
@@ -213,74 +214,34 @@ const Orders = () => {
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 24, paddingBottom: 60 }}>
-      {/* Header */}
-      <div
-        style={{
-          display: 'flex',
-          flexWrap: 'wrap',
-          alignItems: 'center',
-          justifyContent: 'space-between',
-          gap: 16,
-        }}
-      >
-        <div>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-            <h1
-              style={{
-                fontFamily: 'Outfit, sans-serif',
-                fontSize: '1.9rem',
-                fontWeight: 800,
-                color: '#FAF9FC',
-                margin: 0,
-                letterSpacing: '-0.02em',
-              }}
-            >
-              Orders & Requests
-            </h1>
-            <span
-              style={{
-                padding: '4px 10px',
-                borderRadius: 20,
-                background: 'rgba(201, 168, 76, 0.15)',
-                border: '1px solid rgba(201, 168, 76, 0.3)',
-                color: 'var(--accent-gold, #C9A84C)',
-                fontSize: '0.78rem',
-                fontWeight: 700,
-              }}
-            >
-              {totalOrders} total
-            </span>
-          </div>
-          <p style={{ margin: '4px 0 0', color: '#ACA6B8', fontSize: '0.88rem' }}>
-            Manage incoming WhatsApp checkout requests and track fulfillment status
-          </p>
-        </div>
-
-        <button
-          onClick={fetchOrders}
-          disabled={loading}
-          style={{
-            display: 'flex',
-            alignItems: 'center',
-            gap: 8,
-            padding: '10px 18px',
-            borderRadius: 12,
-            background: 'rgba(255, 255, 255, 0.05)',
-            border: '1px solid rgba(201, 168, 76, 0.25)',
-            color: '#FAF9FC',
-            fontSize: '0.85rem',
-            fontWeight: 600,
-            cursor: loading ? 'not-allowed' : 'pointer',
-            transition: 'all 0.2s ease',
-          }}
-        >
-          <RefreshCw size={15} className={loading ? 'spin' : ''} />
-          <span>Refresh</span>
-        </button>
-      </div>
+      {/* Page Header (Uniform with all other admin pages) */}
+      <PageHeader
+        title="Orders & Requests"
+        subtitle="Manage incoming WhatsApp checkout requests and track fulfillment status"
+        badge={`${totalOrders} total`}
+        actions={
+          <button
+            onClick={fetchOrders}
+            disabled={loading}
+            className="btn-secondary"
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: 8,
+              padding: '9px 16px',
+              borderRadius: 12,
+              fontSize: '0.84rem',
+            }}
+          >
+            <RefreshCw size={15} className={loading ? 'spin' : ''} />
+            <span>Refresh</span>
+          </button>
+        }
+      />
 
       {/* Status Filter Tabs */}
       <div
+        className="orders-filter-tabs"
         style={{
           display: 'flex',
           alignItems: 'center',
@@ -303,6 +264,7 @@ const Orders = () => {
                 setStatusFilter(key);
                 setPage(1);
               }}
+              className="orders-filter-tab-btn"
               style={{
                 display: 'flex',
                 alignItems: 'center',
@@ -343,6 +305,7 @@ const Orders = () => {
 
       {/* Search Bar */}
       <div
+        className="orders-search-bar"
         style={{
           display: 'flex',
           alignItems: 'center',
@@ -389,6 +352,7 @@ const Orders = () => {
 
       {/* Main Split Grid: Order List + Order Details */}
       <div
+        className="orders-split-grid"
         style={{
           display: 'grid',
           gridTemplateColumns: 'repeat(12, 1fr)',
@@ -398,6 +362,7 @@ const Orders = () => {
       >
         {/* Left Column: Orders List (5 cols on desktop) */}
         <div
+          className="orders-list-col"
           style={{
             gridColumn: 'span 5',
             display: 'flex',
@@ -593,6 +558,7 @@ const Orders = () => {
         {/* Right Column: Active Order Details (7 cols on desktop) */}
         <div
           ref={selectedOrderRef}
+          className={`orders-details-col ${!selectedOrder ? 'orders-details-col-empty' : ''}`}
           style={{
             gridColumn: 'span 7',
             background: 'var(--surface-primary, #14131E)',

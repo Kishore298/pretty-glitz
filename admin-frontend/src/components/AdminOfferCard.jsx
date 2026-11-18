@@ -194,7 +194,9 @@ export const AdminOfferCard = ({
           </span>
           {product.packagingType && (
             <span style={{ fontSize: '0.68rem', color: 'var(--text-muted)' }}>
-              ({product.packagingType})
+              ({product.packagingQuantity && Number(product.packagingQuantity) > 1
+                ? `${product.packagingQuantity} ${product.packagingType}${product.packagingType.toLowerCase() === 'set' ? 's' : ''}`
+                : `${product.packagingQuantity ? `${product.packagingQuantity} ` : ''}${product.packagingType}`})
             </span>
           )}
         </div>

@@ -248,7 +248,7 @@ const Offers = () => {
         }}
       >
         {/* Search */}
-        <div style={{ position: 'relative', flex: 1, minWidth: 260, maxWidth: 440 }}>
+        <div className="admin-search-wrapper" style={{ position: 'relative', flex: 1, minWidth: 260, maxWidth: 440 }}>
           <Search
             size={16}
             style={{
@@ -257,6 +257,7 @@ const Offers = () => {
               top: '50%',
               transform: 'translateY(-50%)',
               color: 'var(--accent-gold)',
+              pointerEvents: 'none',
             }}
           />
           <input
@@ -268,9 +269,9 @@ const Offers = () => {
                 ? 'Search active deals by piece name, category...'
                 : 'Search catalog pieces to add as an offer...'
             }
-            className="admin-input"
+            className="admin-input admin-search-input"
             style={{
-              paddingLeft: 40,
+              paddingLeft: 44,
               paddingRight: searchQuery ? 36 : 14,
               height: 40,
               fontSize: '0.86rem',

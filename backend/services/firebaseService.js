@@ -1,4 +1,5 @@
-const admin = require('firebase-admin');
+const { initializeApp, cert, getApps, getApp } = require('firebase-admin/app');
+const { getMessaging } = require('firebase-admin/messaging');
 const fs = require('fs');
 const path = require('path');
 const FcmToken = require('../models/FcmToken');
@@ -15,6 +16,11 @@ const initFirebase = () => {
   if (firebaseApp) return firebaseApp;
 
   try {
+    if (getApps().length > 0) {
+      firebaseApp = getApp();
+      return firebaseApp;
+    }
+
     let credential = null;
     const serviceAccountPath = process.env.FIREBASE_SERVICE_ACCOUNT_PATH;
     const serviceAccountJson = process.env.FIREBASE_SERVICE_ACCOUNT_JSON;
@@ -28,14 +34,14 @@ const initFirebase = () => {
         : path.join(__dirname, '..', serviceAccountPath);
       if (fs.existsSync(resolvedPath)) {
         const fileContent = fs.readFileSync(resolvedPath, 'utf8');
-        credential = admin.credential.cert(JSON.parse(fileContent));
+        credential = cert(JSON.parse(fileContent));
       }
     } else if (serviceAccountJson) {
-      credential = admin.credential.cert(JSON.parse(serviceAccountJson));
+      credential = cert(JSON.parse(serviceAccountJson));
     } else if (projectId && clientEmail && rawPrivateKey) {
       // Replace literal escaped \n with actual linebreaks if provided in .env
       const privateKey = rawPrivateKey.replace(/\\n/g, '\n');
-      credential = admin.credential.cert({
+      credential = cert({
         projectId,
         clientEmail,
         privateKey,
@@ -43,13 +49,13 @@ const initFirebase = () => {
     }
 
     if (credential) {
-      firebaseApp = admin.initializeApp({ credential });
+      firebaseApp = initializeApp({ credential });
       console.log(`[Firebase] Firebase Admin SDK successfully initialized (Project: ${projectId || 'default'}).`);
     } else {
       console.warn('[Firebase] Firebase credentials not configured in .env yet. FCM is ready for keys.');
     }
   } catch (err) {
-    console.error('[Firebase] Failed to initialize Firebase Admin SDK:', err.message);
+    console.error('[Firebase] Failed to initialize Firebase Admin SDK:', err.stack || err.message);
   }
 
   return firebaseApp;
@@ -66,7 +72,7 @@ const isFirebaseConfigured = () => {
 };
 
 /**
- * Returns public Firebase web client credentials for admin frontend
+ * Returns public Firebase web client credentials for admin & customer frontends
  */
 const getFirebasePublicConfig = () => {
   return {
@@ -82,88 +88,202 @@ const getFirebasePublicConfig = () => {
 };
 
 /**
- * Dispatch Firebase Cloud Messaging (FCM) push notification to all registered admin devices.
- * Automatically prunes dead/unregistered tokens.
+ * Internal helper to send multicast FCM and prune dead/unregistered tokens.
+ */
+const dispatchMulticast = async (tokens, notificationData) => {
+  if (!tokens || tokens.length === 0) return { sent: 0, failed: 0 };
+  const app = initFirebase();
+  if (!app) return { sent: 0, failed: 0, notConfigured: true };
+
+  const messaging = getMessaging(app);
+
+  const title = notificationData.title || 'PrettyGlitz Notification';
+  const body = notificationData.body || '';
+  const clickUrl = notificationData.url || '/';
+  const icon = notificationData.icon || '/favicon.ico';
+  const imageUrl = notificationData.imageUrl || undefined;
+
+  const message = {
+    tokens,
+    notification: {
+      title,
+      body,
+      ...(imageUrl ? { imageUrl } : {}),
+    },
+    data: {
+      url: clickUrl,
+      title,
+      body,
+      orderId: notificationData.orderId ? String(notificationData.orderId) : '',
+      type: notificationData.type || 'alert',
+      timestamp: new Date().toISOString(),
+      ...(imageUrl ? { imageUrl } : {}),
+    },
+    webpush: {
+      fcmOptions: {
+        link: clickUrl,
+      },
+      notification: {
+        icon,
+        badge: icon,
+        vibrate: [200, 100, 200],
+        requireInteraction: Boolean(notificationData.requireInteraction),
+        ...(imageUrl ? { image: imageUrl } : {}),
+      },
+    },
+  };
+
+  const response = await messaging.sendEachForMulticast(message);
+  console.log(`[Firebase] FCM Multicast: ${response.successCount} sent, ${response.failureCount} failed.`);
+
+  // Prune dead / invalid registration tokens
+  if (response.failureCount > 0) {
+    const deadTokens = [];
+    response.responses.forEach((resp, idx) => {
+      if (!resp.success) {
+        const errorCode = resp.error?.code;
+        if (
+          errorCode === 'messaging/invalid-registration-token' ||
+          errorCode === 'messaging/registration-token-not-registered'
+        ) {
+          deadTokens.push(tokens[idx]);
+        } else {
+          console.warn(`[Firebase] Token error (${tokens[idx]?.slice(0, 10)}...):`, resp.error?.message);
+        }
+      }
+    });
+
+    if (deadTokens.length > 0) {
+      await FcmToken.deleteMany({ token: { $in: deadTokens } }).catch((e) =>
+        console.error('[Firebase] Failed to prune dead tokens:', e.message)
+      );
+      console.log(`[Firebase] Pruned ${deadTokens.length} expired FCM token(s).`);
+    }
+  }
+
+  return {
+    sent: response.successCount,
+    failed: response.failureCount,
+  };
+};
+
+/**
+ * Dispatch FCM push notification to all registered admin devices.
  */
 const sendFcmToAllAdmins = async (payload) => {
   if (!isFirebaseConfigured()) {
-    console.warn('[Firebase] Skipping FCM dispatch: Firebase Admin credentials not yet provided in .env.');
+    console.warn('[Firebase] Skipping admin FCM dispatch: Firebase not configured.');
     return { sent: 0, failed: 0, notConfigured: true };
   }
 
   try {
-    const records = await FcmToken.find({});
-    if (!records || records.length === 0) {
+    const records = await FcmToken.find({ role: { $in: ['ADMIN', null] } });
+    const tokens = records.map((r) => r.token).filter(Boolean);
+    if (tokens.length === 0) {
       console.log('[Firebase] No registered admin FCM tokens found.');
       return { sent: 0, failed: 0 };
     }
 
-    const tokens = records.map((r) => r.token).filter(Boolean);
-    if (tokens.length === 0) return { sent: 0, failed: 0 };
-
-    const title = payload.title || 'PrettyGlitz Store Alert';
-    const body = payload.body || 'You have a new update in your admin atelier.';
-    const clickUrl = payload.url || '/orders';
-
-    const message = {
-      tokens,
-      notification: {
-        title,
-        body,
-      },
-      data: {
-        url: clickUrl,
-        type: payload.type || 'alert',
-        orderId: payload.orderId ? String(payload.orderId) : '',
-        timestamp: new Date().toISOString(),
-      },
-      webpush: {
-        fcmOptions: {
-          link: clickUrl,
-        },
-        notification: {
-          icon: '/favicon.ico',
-          badge: '/favicon.ico',
-          vibrate: [200, 100, 200],
-          requireInteraction: true,
-        },
-      },
-    };
-
-    const response = await admin.messaging().sendEachForMulticast(message);
-    console.log(`[Firebase] FCM Multicast Results: ${response.successCount} sent, ${response.failureCount} failed.`);
-
-    // Prune stale / unregistered tokens
-    if (response.failureCount > 0) {
-      const deadTokens = [];
-      response.responses.forEach((resp, idx) => {
-        if (!resp.success) {
-          const errorCode = resp.error?.code;
-          if (
-            errorCode === 'messaging/invalid-registration-token' ||
-            errorCode === 'messaging/registration-token-not-registered'
-          ) {
-            deadTokens.push(tokens[idx]);
-          } else {
-            console.warn(`[Firebase] Delivery failure for token ${tokens[idx].slice(0, 10)}...:`, resp.error?.message);
-          }
-        }
-      });
-
-      if (deadTokens.length > 0) {
-        await FcmToken.deleteMany({ token: { $in: deadTokens } });
-        console.log(`[Firebase] Pruned ${deadTokens.length} expired FCM token(s).`);
-      }
-    }
-
-    return {
-      sent: response.successCount,
-      failed: response.failureCount,
-    };
+    return await dispatchMulticast(tokens, {
+      ...payload,
+      requireInteraction: true,
+      url: payload.url || '/orders',
+    });
   } catch (err) {
     console.error('[Firebase] Unexpected error in sendFcmToAllAdmins:', err);
     return { sent: 0, failed: 0, error: err.message };
   }
+};
+
+/**
+ * Dispatch FCM push notification to a specific customer's device(s).
+ * Targets customer by orderId, customer phone / mobile, or userId.
+ */
+const sendFcmToCustomer = async ({ orderId, mobile, userId }, payload) => {
+  if (!isFirebaseConfigured()) {
+    console.warn('[Firebase] Skipping customer FCM dispatch: Firebase not configured.');
+    return { sent: 0, failed: 0, notConfigured: true };
+  }
+
+  try {
+    const queryConditions = [];
+    if (orderId) {
+      queryConditions.push({ orderIds: String(orderId).toUpperCase() });
+    }
+    if (mobile) {
+      const cleanMobile = String(mobile).replace(/\D/g, '');
+      if (cleanMobile.length >= 10) {
+        queryConditions.push({ mobile: { $regex: cleanMobile.slice(-10), $options: 'i' } });
+      }
+    }
+    if (userId) {
+      queryConditions.push({ userId });
+    }
+
+    if (queryConditions.length === 0) {
+      console.log('[Firebase] No target identifier (orderId, mobile, or userId) provided for customer FCM.');
+      return { sent: 0, failed: 0 };
+    }
+
+    const records = await FcmToken.find({
+      role: 'CUSTOMER',
+      $or: queryConditions,
+    });
+
+    const tokens = records.map((r) => r.token).filter(Boolean);
+    if (tokens.length === 0) {
+      console.log(`[Firebase] No active customer FCM tokens found for orderId: ${orderId}, mobile: ${mobile}`);
+      return { sent: 0, failed: 0 };
+    }
+
+    console.log(`[Firebase] Dispatching customer push notification to ${tokens.length} device(s) for order ${orderId}...`);
+    return await dispatchMulticast(tokens, {
+      ...payload,
+      url: payload.url || (orderId ? `/track-order?id=${orderId}` : '/'),
+    });
+  } catch (err) {
+    console.error('[Firebase] Error in sendFcmToCustomer:', err);
+    return { sent: 0, failed: 0, error: err.message };
+  }
+};
+
+/**
+ * Custom Broadcast Push notification to Customers, Admins, or Everyone.
+ */
+const sendFcmCustomBroadcast = async ({ targetAudience = 'CUSTOMERS', title, body, url, icon, imageUrl }) => {
+  if (!isFirebaseConfigured()) {
+    throw new Error('Firebase credentials are not configured in backend .env.');
+  }
+
+  let filter = {};
+  if (targetAudience === 'CUSTOMERS') {
+    filter = { role: 'CUSTOMER' };
+  } else if (targetAudience === 'ADMINS') {
+    filter = { role: { $in: ['ADMIN', null] } };
+  } else if (targetAudience === 'ALL') {
+    filter = {};
+  }
+
+  const records = await FcmToken.find(filter);
+  const tokens = records.map((r) => r.token).filter(Boolean);
+
+  if (tokens.length === 0) {
+    return { sent: 0, failed: 0, totalRecipients: 0 };
+  }
+
+  const result = await dispatchMulticast(tokens, {
+    title,
+    body,
+    url: url || '/',
+    icon: icon || '/pretty-glitz-logo.png',
+    imageUrl: imageUrl || '',
+    type: 'broadcast',
+  });
+
+  return {
+    ...result,
+    totalRecipients: tokens.length,
+  };
 };
 
 module.exports = {
@@ -171,4 +291,6 @@ module.exports = {
   isFirebaseConfigured,
   getFirebasePublicConfig,
   sendFcmToAllAdmins,
+  sendFcmToCustomer,
+  sendFcmCustomBroadcast,
 };

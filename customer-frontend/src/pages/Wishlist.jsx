@@ -230,8 +230,6 @@ const Wishlist = () => {
         paddingBottom: 'calc(var(--bottom-nav-total-height, 60px) + 40px)',
         maxWidth: 1100,
         margin: '0 auto',
-        paddingLeft: 20,
-        paddingRight: 20,
       }}
     >
       {/* Page Header */}

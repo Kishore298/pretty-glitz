@@ -14,6 +14,7 @@ import Testimonials from './pages/Testimonials';
 import Banners from './pages/Banners';
 import ProductAnalytics from './pages/ProductAnalytics';
 import Orders from './pages/Orders';
+import PushNotifications from './pages/PushNotifications';
 import AdminLayout from './components/AdminLayout';
 
 const AdminLoadingSplash = () => (
@@ -153,6 +154,7 @@ function App() {
             <Route path="/subcategories" element={<ProtectedRoute><Subcategories /></ProtectedRoute>} />
             <Route path="/banners" element={<ProtectedRoute><Banners /></ProtectedRoute>} />
             <Route path="/offers" element={<ProtectedRoute><Offers /></ProtectedRoute>} />
+            <Route path="/push-notifications" element={<ProtectedRoute><PushNotifications /></ProtectedRoute>} />
             <Route path="/testimonials" element={<ProtectedRoute><Testimonials /></ProtectedRoute>} />
             <Route path="*" element={<Navigate to="/dashboard" replace />} />
           </Routes>

@@ -51,6 +51,7 @@ const createProduct = async (req, res) => {
       isOffer,
       isActive,
       packagingType,
+      packagingQuantity,
       inStockCount,
       lowStockThreshold,
     } = req.body;
@@ -98,6 +99,7 @@ const createProduct = async (req, res) => {
       isOffer: isOffer || false,
       isActive: isActive !== undefined ? isActive : true,
       packagingType: packagingType ? packagingType.trim() : '',
+      packagingQuantity: packagingQuantity !== undefined && packagingQuantity !== null && packagingQuantity !== '' ? Number(packagingQuantity) : 1,
       inStockCount: inStockCount !== undefined && inStockCount !== null && inStockCount !== '' ? Number(inStockCount) : null,
       lowStockThreshold: lowStockThreshold !== undefined && lowStockThreshold !== null && lowStockThreshold !== '' ? Number(lowStockThreshold) : null,
     });
@@ -190,6 +192,7 @@ const updateProduct = async (req, res) => {
       isOffer,
       isActive,
       packagingType,
+      packagingQuantity,
       inStockCount,
       lowStockThreshold,
     } = req.body;
@@ -215,6 +218,9 @@ const updateProduct = async (req, res) => {
     product.isActive = isActive !== undefined ? isActive : product.isActive;
     if (packagingType !== undefined) {
       product.packagingType = packagingType ? packagingType.trim() : '';
+    }
+    if (packagingQuantity !== undefined) {
+      product.packagingQuantity = packagingQuantity !== null && packagingQuantity !== '' ? Number(packagingQuantity) : 1;
     }
     if (inStockCount !== undefined) {
       product.inStockCount = inStockCount !== null && inStockCount !== '' ? Number(inStockCount) : null;

@@ -264,6 +264,7 @@ const QuickAddColorsModal = ({
 
               {/* Search Bar */}
               <div
+                className="admin-search-wrapper"
                 style={{
                   position: 'relative',
                   marginBottom: 14,
@@ -277,6 +278,7 @@ const QuickAddColorsModal = ({
                     top: '50%',
                     transform: 'translateY(-50%)',
                     color: 'var(--text-muted, #6B7280)',
+                    pointerEvents: 'none',
                   }}
                 />
                 <input
@@ -284,10 +286,10 @@ const QuickAddColorsModal = ({
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
                   placeholder="Search color name or family (e.g. Rani, Green, Maroon)..."
-                  className="admin-input"
+                  className="admin-input admin-search-input"
                   style={{
                     width: '100%',
-                    paddingLeft: 36,
+                    paddingLeft: 42,
                     height: 38,
                     fontSize: '0.84rem',
                   }}

@@ -160,6 +160,56 @@ const ProductAnalytics = () => {
       />
 
       {/* KPI Overview Summary Cards */}
+      {/* Mobile Combined Card: Active Wishlists & Active Carts in one compact card */}
+      <div
+        className="analytics-kpi-mobile-combined-card"
+        style={{
+          background: 'var(--card-bg, #14131D)',
+          border: '1px solid var(--card-border, rgba(201, 168, 76, 0.15))',
+          borderRadius: 16,
+          padding: '14px 16px',
+          marginBottom: 16,
+        }}
+      >
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 14 }}>
+          {/* Left: Active Wishlists */}
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 4 }}>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+              <span style={{ fontSize: '0.72rem', textTransform: 'uppercase', letterSpacing: '0.06em', color: '#ACA6B8', fontWeight: 600 }}>
+                Active Wishlists
+              </span>
+              <div style={{ width: 28, height: 28, borderRadius: 8, background: 'rgba(225, 29, 72, 0.12)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#E11D48' }}>
+                <Heart size={14} />
+              </div>
+            </div>
+            <div style={{ fontSize: '1.75rem', fontWeight: 800, color: '#FAF9FC', fontFamily: 'Outfit, sans-serif', lineHeight: 1.1 }}>
+              {summary?.totalActiveWishlistCount ?? 0}
+            </div>
+            <div style={{ fontSize: '0.7rem', color: '#8E879B' }}>
+              Saved right now
+            </div>
+          </div>
+
+          {/* Right: Active User Carts */}
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 4, borderLeft: '1px solid rgba(255, 255, 255, 0.08)', paddingLeft: 14 }}>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+              <span style={{ fontSize: '0.72rem', textTransform: 'uppercase', letterSpacing: '0.06em', color: '#ACA6B8', fontWeight: 600 }}>
+                Active Carts
+              </span>
+              <div style={{ width: 28, height: 28, borderRadius: 8, background: 'rgba(196, 56, 108, 0.15)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#C4386C' }}>
+                <ShoppingCart size={14} />
+              </div>
+            </div>
+            <div style={{ fontSize: '1.75rem', fontWeight: 800, color: '#FAF9FC', fontFamily: 'Outfit, sans-serif', lineHeight: 1.1 }}>
+              {summary?.totalActiveCartUsers ?? 0}
+            </div>
+            <div style={{ fontSize: '0.7rem', color: '#8E879B' }}>
+              Across {summary?.totalActiveCartUnits ?? 0} live units
+            </div>
+          </div>
+        </div>
+      </div>
+
       <div
         style={{
           display: 'grid',
@@ -168,57 +218,60 @@ const ProductAnalytics = () => {
           marginBottom: 28,
         }}
       >
-        {/* Total Active Wishlists */}
-        <div
-          style={{
-            background: 'var(--card-bg, #14131D)',
-            border: '1px solid var(--card-border, rgba(201, 168, 76, 0.15))',
-            borderRadius: 18,
-            padding: '20px 22px',
-            position: 'relative',
-            overflow: 'hidden',
-          }}
-        >
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 }}>
-            <span style={{ fontSize: '0.78rem', textTransform: 'uppercase', letterSpacing: '0.08em', color: '#ACA6B8', fontWeight: 600 }}>
-              Active Wishlists
-            </span>
-            <div style={{ width: 36, height: 36, borderRadius: 10, background: 'rgba(225, 29, 72, 0.12)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#E11D48' }}>
-              <Heart size={18} />
+        {/* Desktop Cards for Active Wishlists & Active Carts */}
+        <div className="analytics-kpi-desktop-cards">
+          {/* Total Active Wishlists */}
+          <div
+            style={{
+              background: 'var(--card-bg, #14131D)',
+              border: '1px solid var(--card-border, rgba(201, 168, 76, 0.15))',
+              borderRadius: 18,
+              padding: '20px 22px',
+              position: 'relative',
+              overflow: 'hidden',
+            }}
+          >
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 }}>
+              <span style={{ fontSize: '0.78rem', textTransform: 'uppercase', letterSpacing: '0.08em', color: '#ACA6B8', fontWeight: 600 }}>
+                Active Wishlists
+              </span>
+              <div style={{ width: 36, height: 36, borderRadius: 10, background: 'rgba(225, 29, 72, 0.12)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#E11D48' }}>
+                <Heart size={18} />
+              </div>
+            </div>
+            <div style={{ fontSize: '2rem', fontWeight: 800, color: '#FAF9FC', fontFamily: 'Outfit, sans-serif' }}>
+              {summary?.totalActiveWishlistCount ?? 0}
+            </div>
+            <div style={{ fontSize: '0.76rem', color: '#8E879B', marginTop: 4 }}>
+              Saved by customers right now
             </div>
           </div>
-          <div style={{ fontSize: '2rem', fontWeight: 800, color: '#FAF9FC', fontFamily: 'Outfit, sans-serif' }}>
-            {summary?.totalActiveWishlistCount ?? 0}
-          </div>
-          <div style={{ fontSize: '0.76rem', color: '#8E879B', marginTop: 4 }}>
-            Saved by customers right now
-          </div>
-        </div>
 
-        {/* Total Active Carts */}
-        <div
-          style={{
-            background: 'var(--card-bg, #14131D)',
-            border: '1px solid var(--card-border, rgba(201, 168, 76, 0.15))',
-            borderRadius: 18,
-            padding: '20px 22px',
-            position: 'relative',
-            overflow: 'hidden',
-          }}
-        >
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 }}>
-            <span style={{ fontSize: '0.78rem', textTransform: 'uppercase', letterSpacing: '0.08em', color: '#ACA6B8', fontWeight: 600 }}>
-              Active User Carts
-            </span>
-            <div style={{ width: 36, height: 36, borderRadius: 10, background: 'rgba(196, 56, 108, 0.15)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#C4386C' }}>
-              <ShoppingCart size={18} />
+          {/* Total Active Carts */}
+          <div
+            style={{
+              background: 'var(--card-bg, #14131D)',
+              border: '1px solid var(--card-border, rgba(201, 168, 76, 0.15))',
+              borderRadius: 18,
+              padding: '20px 22px',
+              position: 'relative',
+              overflow: 'hidden',
+            }}
+          >
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 }}>
+              <span style={{ fontSize: '0.78rem', textTransform: 'uppercase', letterSpacing: '0.08em', color: '#ACA6B8', fontWeight: 600 }}>
+                Active User Carts
+              </span>
+              <div style={{ width: 36, height: 36, borderRadius: 10, background: 'rgba(196, 56, 108, 0.15)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#C4386C' }}>
+                <ShoppingCart size={18} />
+              </div>
             </div>
-          </div>
-          <div style={{ fontSize: '2rem', fontWeight: 800, color: '#FAF9FC', fontFamily: 'Outfit, sans-serif' }}>
-            {summary?.totalActiveCartUsers ?? 0}
-          </div>
-          <div style={{ fontSize: '0.76rem', color: '#8E879B', marginTop: 4 }}>
-            Across {summary?.totalActiveCartUnits ?? 0} live item units
+            <div style={{ fontSize: '2rem', fontWeight: 800, color: '#FAF9FC', fontFamily: 'Outfit, sans-serif' }}>
+              {summary?.totalActiveCartUsers ?? 0}
+            </div>
+            <div style={{ fontSize: '0.76rem', color: '#8E879B', marginTop: 4 }}>
+              Across {summary?.totalActiveCartUnits ?? 0} live item units
+            </div>
           </div>
         </div>
 
@@ -314,16 +367,17 @@ const ProductAnalytics = () => {
         }}
       >
         {/* Search */}
-        <div style={{ position: 'relative', flex: '1 1 220px', minWidth: 180 }}>
-          <Search size={16} style={{ position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)', color: '#8E879B' }} />
+        <div className="admin-search-wrapper" style={{ position: 'relative', flex: '1 1 220px', minWidth: 180 }}>
+          <Search size={16} style={{ position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)', color: '#8E879B', pointerEvents: 'none' }} />
           <input
             type="text"
             placeholder="Search product name..."
             value={search}
             onChange={(e) => setSearch(e.target.value)}
+            className="admin-input admin-search-input"
             style={{
               width: '100%',
-              padding: '9px 12px 9px 36px',
+              padding: '9px 14px 9px 44px',
               borderRadius: 10,
               background: 'rgba(255, 255, 255, 0.05)',
               border: '1px solid rgba(255, 255, 255, 0.1)',
@@ -374,7 +428,7 @@ const ProductAnalytics = () => {
         </select>
 
         {/* Demand Segment Filter */}
-        <div style={{ display: 'flex', gap: 6 }}>
+        <div className="analytics-demand-pills-row" style={{ display: 'flex', gap: 6 }}>
           <button
             type="button"
             onClick={() => setFilterType('ALL')}

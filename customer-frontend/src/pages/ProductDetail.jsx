@@ -25,12 +25,10 @@ import ProductDescriptionDisplay from '../components/ProductDescriptionDisplay';
 import BangleSizeChartModal from '../components/BangleSizeChartModal';
 import ProductImageModal from '../components/ProductImageModal';
 import ColorVariationSelector from '../components/ColorVariationSelector';
-import { useTheme } from '../context/ThemeContext';
 import logoImg from '../assets/pretty-glitz-logo.png';
 
 const ProductDetail = () => {
   const { id } = useParams();
-  const { isDark } = useTheme();
   const [product, setProduct] = useState(null);
   const [relatedProducts, setRelatedProducts] = useState([]);
   const [productsByCategory, setProductsByCategory] = useState({});
@@ -322,7 +320,7 @@ const ProductDetail = () => {
     <div className="product-detail-page">
       <div className="product-detail-container">
 
-        {/* ── Breadcrumb ─────────────────────────────────────── */}
+        {/* ── Breadcrumb (Category & Subcategory Only) ──────────────────────── */}
         <div className="product-detail-breadcrumb">
           <Link to="/">Home</Link>
           <ChevronRight size={14} className="separator" />
@@ -335,8 +333,6 @@ const ProductDetail = () => {
               </Link>
             </>
           )}
-          <ChevronRight size={14} className="separator" />
-          <span style={{ color: 'var(--text)', fontWeight: 600 }}>{product.name}</span>
         </div>
 
         <div className="product-detail-layout">
@@ -366,7 +362,7 @@ const ProductDetail = () => {
                 position: 'relative',
                 touchAction: allGalleryThumbnails.length > 1 ? 'pan-y' : 'auto',
                 width: '100%',
-                borderRadius: 20,
+                borderRadius: 10,
                 overflow: 'hidden',
                 cursor: 'default',
               }}
@@ -507,57 +503,6 @@ const ProductDetail = () => {
                 </div>
               )}
 
-              {/* Floating Top-Right Wishlist Heart Button (White Background Exactly Matching Container) */}
-              {/* Floating Top-Right Wishlist Heart Button (Pure Heart Icon, No White Background) */}
-              <button
-                type="button"
-                onClick={(e) => {
-                  e.preventDefault();
-                  e.stopPropagation();
-                  if (product) toggleWishlist(product);
-                }}
-                aria-label={inWishlist ? 'Remove from wishlist' : 'Add to wishlist'}
-                title={inWishlist ? 'Remove from wishlist' : 'Add to wishlist'}
-                style={{
-                  position: 'absolute',
-                  top: 14,
-                  right: 14,
-                  background: 'transparent',
-                  border: 'none',
-                  padding: 4,
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  cursor: 'pointer',
-                  zIndex: 4,
-                  outline: 'none',
-                  transition: 'transform 0.2s cubic-bezier(0.16, 1, 0.3, 1)',
-                  filter: inWishlist
-                    ? 'drop-shadow(0 2px 6px rgba(225,29,72,0.65))'
-                    : 'drop-shadow(0 1px 2px rgba(255,255,255,0.95)) drop-shadow(0 1px 3px rgba(0,0,0,0.4))',
-                }}
-                onMouseEnter={(e) => {
-                  e.currentTarget.style.transform = 'scale(1.22)';
-                  const heart = e.currentTarget.querySelector('svg');
-                  if (heart && !inWishlist) heart.style.stroke = '#E11D48';
-                }}
-                onMouseLeave={(e) => {
-                  e.currentTarget.style.transform = 'scale(1)';
-                  const heart = e.currentTarget.querySelector('svg');
-                  if (heart && !inWishlist) heart.style.stroke = isDark ? '#FFFFFF' : '#1A1118';
-                }}
-              >
-                <Heart
-                  size={22}
-                  style={{
-                    fill: inWishlist ? '#E11D48' : 'transparent',
-                    stroke: inWishlist ? '#E11D48' : (isDark ? '#FFFFFF' : '#1A1118'),
-                    strokeWidth: 2.2,
-                    transition: 'fill 0.2s ease, stroke 0.2s ease',
-                  }}
-                />
-              </button>
-
               <button
                 type="button"
                 className="product-gallery-zoom-badge"
@@ -641,12 +586,41 @@ const ProductDetail = () => {
           <div className="product-info-wrapper">
             <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5 }}>
 
-              <div className="product-detail-header-row">
-                <p className="product-detail-category">
-                  {product.category}
-                </p>
+              <p className="product-detail-category">
+                {product.category}
+              </p>
 
-                <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+              {/* Toast for copied link */}
+              {copyToast && (
+                <motion.div
+                  initial={{ opacity: 0, y: -6 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0 }}
+                  style={{
+                    background: 'rgba(16, 185, 129, 0.15)',
+                    border: '1px solid rgba(16, 185, 129, 0.35)',
+                    color: '#10B981',
+                    fontSize: '0.82rem',
+                    fontWeight: 600,
+                    padding: '6px 12px',
+                    borderRadius: 8,
+                    marginBottom: 8,
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: 6,
+                  }}
+                >
+                  <Check size={14} /> Product link copied to clipboard!
+                </motion.div>
+              )}
+
+              {/* Product Title Row: Title on Left, Wishlist Heart & Share Buttons on Right */}
+              <div className="product-detail-title-row">
+                <h1 className="product-detail-title">
+                  {product.name}
+                </h1>
+
+                <div className="product-detail-actions-group">
                   <button
                     onClick={() => product && toggleWishlist(product)}
                     className="product-detail-share-btn"
@@ -672,58 +646,39 @@ const ProductDetail = () => {
                 </div>
               </div>
 
-              {/* Toast for copied link */}
-              {copyToast && (
-                <motion.div
-                  initial={{ opacity: 0, y: -6 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  exit={{ opacity: 0 }}
-                  style={{
-                    background: 'rgba(16, 185, 129, 0.15)',
-                    border: '1px solid rgba(16, 185, 129, 0.35)',
-                    color: '#10B981',
-                    fontSize: '0.82rem',
-                    fontWeight: 600,
-                    padding: '6px 12px',
-                    borderRadius: 8,
-                    marginBottom: 12,
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: 6,
-                  }}
-                >
-                  <Check size={14} /> Product link copied to clipboard!
-                </motion.div>
-              )}
-
-              <h1 className="product-detail-title">
-                {product.name}
-              </h1>
-
               {/* Dynamic Price Display */}
               <div className="product-detail-price-row">
                 <span className="product-detail-price">
                   ₹{resolvedPrice}
                 </span>
+                {resolvedOriginalPrice && (
+                  <span className="product-detail-original-price">
+                    ₹{resolvedOriginalPrice}
+                  </span>
+                )}
                 {product.packagingType && (
                   <span
                     className="product-detail-packaging-type"
                     style={{
-                      fontSize: '0.95rem',
+                      fontSize: '0.92rem',
                       fontWeight: 600,
                       color: 'var(--text-secondary)',
                       fontFamily: 'Outfit, sans-serif',
-                      marginLeft: -4,
-                      marginRight: 4,
                       alignSelf: 'center',
                     }}
                   >
-                    / {product.packagingType}
-                  </span>
-                )}
-                {resolvedOriginalPrice && (
-                  <span className="product-detail-original-price">
-                    ₹{resolvedOriginalPrice}
+                    ({(() => {
+                      const qty = product.packagingQuantity && Number(product.packagingQuantity) > 0 ? Number(product.packagingQuantity) : 1;
+                      const unit = (product.packagingType || '').trim();
+                      const lower = unit.toLowerCase();
+                      if (lower === 'set') return `${qty} ${qty > 1 ? 'Sets' : 'Set'}`;
+                      if (lower === 'dozen') return `${qty} Dozen`;
+                      if (lower === 'pieces' || lower === 'piece') return `${qty} ${qty === 1 ? 'Piece' : 'Pieces'}`;
+                      if (lower === 'pair' || lower === 'pairs') return `${qty} ${qty === 1 ? 'Pair' : 'Pairs'}`;
+                      if (lower === 'pack' || lower === 'packs') return `${qty} ${qty === 1 ? 'Pack' : 'Packs'}`;
+                      if (lower === 'box' || lower === 'boxes') return `${qty} ${qty === 1 ? 'Box' : 'Boxes'}`;
+                      return `${qty} ${unit}`;
+                    })()})
                   </span>
                 )}
                 {!product.inStock && (
@@ -1030,7 +985,7 @@ const ProductDetail = () => {
             <div style={{
               display: 'flex',
               flexDirection: 'column',
-              gap: 32,
+              gap: 0,
             }}>
               {relatedProducts.map((relProduct, idx) => (
                 <motion.div

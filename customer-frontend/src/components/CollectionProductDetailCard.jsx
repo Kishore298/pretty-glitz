@@ -16,7 +16,6 @@ import {
 import { motion, AnimatePresence } from 'framer-motion';
 import { CartContext } from '../context/CartContext';
 import { useWishlist } from '../context/WishlistContext';
-import { useTheme } from '../context/ThemeContext';
 import { optimizeImageUrl } from '../utils/cloudinary';
 import ProductDescriptionDisplay from './ProductDescriptionDisplay';
 import BangleSizeChartModal from './BangleSizeChartModal';
@@ -25,7 +24,6 @@ import ColorVariationSelector from './ColorVariationSelector';
 import logoImg from '../assets/pretty-glitz-logo.png';
 
 const CollectionProductDetailCard = ({ product, isLast = false }) => {
-  const { isDark } = useTheme();
   const { addToCart, updateQuantity, removeFromCart, getCartItemQuantity, isInCart } = useContext(CartContext);
   const { isInWishlist, toggleWishlist } = useWishlist();
 
@@ -318,56 +316,6 @@ const CollectionProductDetailCard = ({ product, isLast = false }) => {
               </div>
             )}
 
-            {/* Floating Top-Right Wishlist Heart Button (Pure Heart Icon, No White Background) */}
-            <button
-              type="button"
-              onClick={(e) => {
-                e.preventDefault();
-                e.stopPropagation();
-                toggleWishlist(product);
-              }}
-              aria-label={inWishlist ? 'Remove from wishlist' : 'Add to wishlist'}
-              title={inWishlist ? 'Remove from wishlist' : 'Add to wishlist'}
-              style={{
-                position: 'absolute',
-                top: 14,
-                right: 14,
-                background: 'transparent',
-                border: 'none',
-                padding: 4,
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                cursor: 'pointer',
-                zIndex: 4,
-                outline: 'none',
-                transition: 'transform 0.2s cubic-bezier(0.16, 1, 0.3, 1)',
-                filter: inWishlist
-                  ? 'drop-shadow(0 2px 6px rgba(225,29,72,0.65))'
-                  : 'drop-shadow(0 1px 2px rgba(255,255,255,0.95)) drop-shadow(0 1px 3px rgba(0,0,0,0.4))',
-              }}
-              onMouseEnter={(e) => {
-                e.currentTarget.style.transform = 'scale(1.22)';
-                const heart = e.currentTarget.querySelector('svg');
-                if (heart && !inWishlist) heart.style.stroke = '#E11D48';
-              }}
-              onMouseLeave={(e) => {
-                e.currentTarget.style.transform = 'scale(1)';
-                const heart = e.currentTarget.querySelector('svg');
-                if (heart && !inWishlist) heart.style.stroke = isDark ? '#FFFFFF' : '#1A1118';
-              }}
-            >
-              <Heart
-                size={22}
-                style={{
-                  fill: inWishlist ? '#E11D48' : 'transparent',
-                  stroke: inWishlist ? '#E11D48' : (isDark ? '#FFFFFF' : '#1A1118'),
-                  strokeWidth: 2.2,
-                  transition: 'fill 0.2s ease, stroke 0.2s ease',
-                }}
-              />
-            </button>
-
             {/* Dedicated Expand Button to open enlarged image pop-up */}
             <button
               type="button"
@@ -452,13 +400,52 @@ const CollectionProductDetailCard = ({ product, isLast = false }) => {
         <div className="product-info-wrapper">
           <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5 }}>
 
-            {/* Header Row: Category on left, Wishlist + Share buttons on right */}
-            <div className="product-detail-header-row">
-              <p className="product-detail-category">
-                {product.category}
-              </p>
+            <p className="product-detail-category">
+              {product.category}
+            </p>
 
-              <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+            {/* Toast for copied link */}
+            {copyToast && (
+              <motion.div
+                initial={{ opacity: 0, y: -6 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0 }}
+                style={{
+                  background: 'rgba(16, 185, 129, 0.15)',
+                  border: '1px solid rgba(16, 185, 129, 0.35)',
+                  color: '#10B981',
+                  fontSize: '0.82rem',
+                  fontWeight: 600,
+                  padding: '6px 12px',
+                  borderRadius: 8,
+                  marginBottom: 8,
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: 6,
+                }}
+              >
+                <Check size={14} /> Product link copied to clipboard!
+              </motion.div>
+            )}
+
+            {/* Clickable Product Title Link matching .product-detail-title with inline Actions */}
+            <div className="product-detail-title-row">
+              <h3 className="product-detail-title">
+                <Link
+                  to={`/product/${product._id}`}
+                  style={{
+                    color: 'inherit',
+                    textDecoration: 'inherit',
+                    transition: 'color 0.2s ease',
+                  }}
+                  onMouseEnter={(e) => (e.currentTarget.style.color = 'var(--accent, #C4386C)')}
+                  onMouseLeave={(e) => (e.currentTarget.style.color = 'inherit')}
+                >
+                  {product.name}
+                </Link>
+              </h3>
+
+              <div className="product-detail-actions-group">
                 <button
                   type="button"
                   onClick={(e) => {
@@ -490,70 +477,39 @@ const CollectionProductDetailCard = ({ product, isLast = false }) => {
               </div>
             </div>
 
-            {/* Toast for copied link */}
-            {copyToast && (
-              <motion.div
-                initial={{ opacity: 0, y: -6 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0 }}
-                style={{
-                  background: 'rgba(16, 185, 129, 0.15)',
-                  border: '1px solid rgba(16, 185, 129, 0.35)',
-                  color: '#10B981',
-                  fontSize: '0.82rem',
-                  fontWeight: 600,
-                  padding: '6px 12px',
-                  borderRadius: 8,
-                  marginBottom: 12,
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: 6,
-                }}
-              >
-                <Check size={14} /> Product link copied to clipboard!
-              </motion.div>
-            )}
-
-            {/* Clickable Product Title Link matching .product-detail-title */}
-            <h3 className="product-detail-title">
-              <Link
-                to={`/product/${product._id}`}
-                style={{
-                  color: 'inherit',
-                  textDecoration: 'none',
-                  transition: 'color 0.2s ease',
-                }}
-                onMouseEnter={(e) => (e.currentTarget.style.color = 'var(--accent, #C4386C)')}
-                onMouseLeave={(e) => (e.currentTarget.style.color = 'inherit')}
-              >
-                {product.name}
-              </Link>
-            </h3>
-
             {/* Dynamic Price Display */}
             <div className="product-detail-price-row">
               <span className="product-detail-price">
                 ₹{resolvedPrice}
               </span>
+              {resolvedOriginalPrice && (
+                <span className="product-detail-original-price">
+                  ₹{resolvedOriginalPrice}
+                </span>
+              )}
               {product.packagingType && (
                 <span
                   className="product-detail-packaging-type"
                   style={{
-                    fontSize: '0.95rem',
+                    fontSize: '0.92rem',
                     fontWeight: 600,
                     color: 'var(--text-secondary)',
                     fontFamily: 'Outfit, sans-serif',
-                    marginLeft: -4,
-                    marginRight: 4,
                     alignSelf: 'center',
                   }}
                 >
-                  / {product.packagingType}
-                </span>
-              )}
-              {resolvedOriginalPrice && (
-                <span className="product-detail-original-price">
-                  ₹{resolvedOriginalPrice}
+                  ({(() => {
+                    const qty = product.packagingQuantity && Number(product.packagingQuantity) > 0 ? Number(product.packagingQuantity) : 1;
+                    const unit = (product.packagingType || '').trim();
+                    const lower = unit.toLowerCase();
+                    if (lower === 'set') return `${qty} ${qty > 1 ? 'Sets' : 'Set'}`;
+                    if (lower === 'dozen') return `${qty} Dozen`;
+                    if (lower === 'pieces' || lower === 'piece') return `${qty} ${qty === 1 ? 'Piece' : 'Pieces'}`;
+                    if (lower === 'pair' || lower === 'pairs') return `${qty} ${qty === 1 ? 'Pair' : 'Pairs'}`;
+                    if (lower === 'pack' || lower === 'packs') return `${qty} ${qty === 1 ? 'Pack' : 'Packs'}`;
+                    if (lower === 'box' || lower === 'boxes') return `${qty} ${qty === 1 ? 'Box' : 'Boxes'}`;
+                    return `${qty} ${unit}`;
+                  })()})
                 </span>
               )}
               {discountPercent > 0 && resolvedOriginalPrice && (

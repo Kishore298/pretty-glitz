@@ -5,6 +5,7 @@ const {
   createOrder,
   getOrders,
   getOrderById,
+  trackOrderPublic,
   getMyOrders,
   updateOrderStatus,
 } = require('../controllers/orderController');
@@ -14,6 +15,9 @@ router.post('/', createOrder);
 
 // Customer view their own orders
 router.get('/my-orders', protectCustomer, getMyOrders);
+
+// Public Order Tracking (used by customers & push notification links)
+router.get('/track/:orderId', trackOrderPublic);
 
 // Admin Order Management
 router.get('/', protectAdmin, getOrders);

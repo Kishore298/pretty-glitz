@@ -131,6 +131,14 @@ const Footer = () => {
               listStyle: 'none', padding: 0, margin: 0,
               columnCount: 2, columnGap: 24
             }}>
+              <li style={{ breakInside: 'avoid', marginBottom: 14 }}>
+                <Link to="/track-order" style={{ color: 'var(--accent)', textDecoration: 'none', fontSize: '0.9rem', fontWeight: 700, transition: 'color 0.2s', display: 'flex', alignItems: 'center', gap: 6 }}
+                  onMouseEnter={e => e.currentTarget.style.opacity = '0.8'}
+                  onMouseLeave={e => e.currentTarget.style.opacity = '1'}
+                >
+                  🚚 Track Order
+                </Link>
+              </li>
               {categories.map(cat => (
                 <li key={cat._id} style={{ breakInside: 'avoid', marginBottom: 14 }}>
                   <Link to={`/category/${cat.name}`} style={{ color: isDark ? 'rgba(255, 255, 255, 0.8)' : '#5A4E40', textDecoration: 'none', fontSize: '0.9rem', fontWeight: 600, transition: 'color 0.2s' }}

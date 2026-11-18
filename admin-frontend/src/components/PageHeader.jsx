@@ -26,12 +26,12 @@ const PageHeader = ({
             className="page-header-title"
             style={{
               fontFamily: 'Outfit, sans-serif',
-              fontSize: '2rem',
+              fontSize: '1.65rem',
               fontWeight: 800,
               color: 'var(--text-primary)',
               margin: 0,
               letterSpacing: '-0.02em',
-              lineHeight: 1.15,
+              lineHeight: 1.2,
             }}
           >
             {title}

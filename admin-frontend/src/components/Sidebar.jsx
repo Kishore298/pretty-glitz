@@ -13,7 +13,8 @@ import {
   ShieldCheck,
   ShoppingBag,
   Image,
-  Boxes
+  Boxes,
+  BellRing
 } from 'lucide-react';
 
 const navGroups = [
@@ -37,6 +38,7 @@ const navGroups = [
   {
     label: 'Marketing & Storefront',
     items: [
+      { to: '/push-notifications', label: 'Push Notifications', Icon: BellRing },
       { to: '/banners', label: 'Hero Banners', Icon: Image },
       { to: '/offers', label: 'Special Offers', Icon: Tag },
       { to: '/testimonials', label: 'Testimonials', Icon: MessageSquareQuote },
