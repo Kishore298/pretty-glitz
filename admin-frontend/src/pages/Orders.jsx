@@ -682,16 +682,14 @@ const Orders = () => {
                     value={selectedOrder.status}
                     disabled={statusUpdating}
                     onChange={(e) => handleUpdateStatus(selectedOrder.orderId, e.target.value, trackingInput)}
+                    className="admin-input"
                     style={{
-                      background: '#1A1828',
-                      border: '1px solid rgba(201, 168, 76, 0.35)',
-                      color: '#FAF9FC',
-                      padding: '8px 12px',
+                      padding: '8px 36px 8px 14px',
                       borderRadius: 10,
                       fontWeight: 600,
                       fontSize: '0.84rem',
                       cursor: 'pointer',
-                      outline: 'none',
+                      width: 'auto',
                     }}
                   >
                     <option value="PENDING_WHATSAPP">Pending WhatsApp</option>

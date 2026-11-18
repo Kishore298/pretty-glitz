@@ -128,6 +128,66 @@ const Products = () => {
 
   return (
     <PageWrapper>
+      {/* Top Navigation Tabs */}
+      <div
+        style={{
+          display: 'flex',
+          alignItems: 'center',
+          gap: 12,
+          marginBottom: 20,
+          borderBottom: '1px solid var(--card-border, rgba(201, 168, 76, 0.15))',
+          paddingBottom: 12,
+        }}
+      >
+        <button
+          type="button"
+          style={{
+            padding: '8px 20px',
+            borderRadius: 12,
+            background: 'linear-gradient(135deg, rgba(196, 56, 108, 0.25), rgba(138, 43, 226, 0.2))',
+            border: '1px solid var(--accent, #C4386C)',
+            color: '#FFFFFF',
+            fontSize: '0.88rem',
+            fontWeight: 700,
+            display: 'flex',
+            alignItems: 'center',
+            gap: 8,
+            boxShadow: '0 4px 14px rgba(196, 56, 108, 0.2)',
+          }}
+        >
+          <span>Catalog Sequencer</span>
+        </button>
+
+        <button
+          type="button"
+          onClick={() => navigate('/inventory')}
+          style={{
+            padding: '8px 18px',
+            borderRadius: 12,
+            background: 'transparent',
+            border: '1px solid transparent',
+            color: 'var(--text-secondary)',
+            fontSize: '0.88rem',
+            fontWeight: 600,
+            cursor: 'pointer',
+            display: 'flex',
+            alignItems: 'center',
+            gap: 6,
+            transition: 'all 0.15s ease',
+          }}
+          onMouseEnter={(e) => {
+            e.currentTarget.style.color = '#FFFFFF';
+            e.currentTarget.style.background = 'rgba(255, 255, 255, 0.05)';
+          }}
+          onMouseLeave={(e) => {
+            e.currentTarget.style.color = 'var(--text-secondary)';
+            e.currentTarget.style.background = 'transparent';
+          }}
+        >
+          <span>★ Quick Inventory Hub</span>
+        </button>
+      </div>
+
       {/* Page Header */}
       <PageHeader
         title="Products & Inventory"
@@ -237,7 +297,7 @@ const Products = () => {
               className="admin-input"
               style={{
                 height: 42,
-                padding: '0 14px',
+                padding: '0 38px 0 14px',
                 fontSize: '0.84rem',
                 borderRadius: 12,
                 minWidth: 170,

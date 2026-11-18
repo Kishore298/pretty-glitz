@@ -46,38 +46,48 @@ export const SkeletonStatCards = ({ count = 4 }) => (
 );
 
 export const SkeletonCategories = ({ count = 6 }) => (
-  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: 22 }}>
+  <div
+    style={{
+      display: 'flex',
+      flexDirection: 'column',
+      gap: 12,
+      maxWidth: 960,
+      width: '100%',
+      margin: 0,
+    }}
+  >
     {Array.from({ length: count }).map((_, idx) => (
       <div
         key={idx}
         style={{
-          background: 'var(--surface-primary)',
-          border: '1px solid var(--card-border)',
-          borderRadius: 20,
-          overflow: 'hidden',
+          background: 'var(--surface-primary, #14131E)',
+          border: '1px solid var(--card-border, rgba(201, 168, 76, 0.12))',
+          borderRadius: 14,
+          padding: '12px 18px',
           display: 'flex',
-          flexDirection: 'column',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          gap: 16,
+          boxShadow: '0 4px 16px rgba(0, 0, 0, 0.15)',
         }}
       >
-        <SkeletonBox width="100%" height="180px" borderRadius="0" />
-        <div style={{ padding: '20px 22px', display: 'flex', flexDirection: 'column', gap: 14, flex: 1 }}>
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 10, flex: 1 }}>
-              <SkeletonBox width="34px" height="34px" borderRadius="10px" />
-              <div style={{ flex: 1 }}>
-                <SkeletonBox width="65%" height="18px" style={{ marginBottom: 6 }} />
-                <SkeletonBox width="35%" height="12px" />
-              </div>
-            </div>
-            <SkeletonBox width="32px" height="32px" borderRadius="8px" />
-          </div>
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', paddingTop: 12, borderTop: '1px solid var(--card-border)' }}>
-            <SkeletonBox width="70px" height="24px" borderRadius="999px" />
-            <div style={{ display: 'flex', gap: 8 }}>
-              <SkeletonBox width="32px" height="32px" borderRadius="8px" />
-              <SkeletonBox width="32px" height="32px" borderRadius="8px" />
+        {/* Left: Drag handle badge, Thumbnail, Title & details */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: 16, minWidth: 0, flex: 1 }}>
+          <SkeletonBox width="52px" height="32px" borderRadius="8px" />
+          <SkeletonBox width="72px" height="52px" borderRadius="10px" />
+          <div style={{ minWidth: 0, flex: 1 }}>
+            <SkeletonBox width="180px" height="18px" style={{ marginBottom: 6 }} />
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 4 }}>
+              <SkeletonBox width="110px" height="12px" />
+              <SkeletonBox width="140px" height="12px" />
             </div>
           </div>
+        </div>
+
+        {/* Right: Actions */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexShrink: 0 }}>
+          <SkeletonBox width="74px" height="34px" borderRadius="8px" />
+          <SkeletonBox width="74px" height="34px" borderRadius="8px" />
         </div>
       </div>
     ))}
@@ -229,6 +239,40 @@ export const SkeletonTestimonials = ({ count = 6 }) => (
           <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: 6 }}>
             <SkeletonBox width="60%" height="14px" />
             <SkeletonBox width="40%" height="12px" />
+          </div>
+        </div>
+      </div>
+    ))}
+  </div>
+);
+
+export const SkeletonOfferCards = ({ count = 6 }) => (
+  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(340px, 1fr))', gap: 16 }}>
+    {Array.from({ length: count }).map((_, idx) => (
+      <div
+        key={idx}
+        style={{
+          background: 'var(--surface-primary, #14131E)',
+          border: '1px solid var(--card-border, rgba(201, 168, 76, 0.14))',
+          borderRadius: 16,
+          padding: '12px 14px',
+          display: 'flex',
+          alignItems: 'center',
+          gap: 14,
+          minHeight: 120,
+        }}
+      >
+        <SkeletonBox width="96px" height="96px" borderRadius="12px" />
+        <div style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', gap: 8 }}>
+          <SkeletonBox width="35%" height="11px" borderRadius="4px" />
+          <SkeletonBox width="80%" height="15px" borderRadius="6px" />
+          <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+            <SkeletonBox width="60px" height="18px" borderRadius="4px" />
+            <SkeletonBox width="45px" height="14px" borderRadius="4px" />
+          </div>
+          <div style={{ display: 'flex', gap: 8, marginTop: 4 }}>
+            <SkeletonBox width="50%" height="26px" borderRadius="8px" />
+            <SkeletonBox width="50%" height="26px" borderRadius="8px" />
           </div>
         </div>
       </div>

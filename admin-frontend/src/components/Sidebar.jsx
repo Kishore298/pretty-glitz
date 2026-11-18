@@ -12,7 +12,8 @@ import {
   ExternalLink,
   ShieldCheck,
   ShoppingBag,
-  Image
+  Image,
+  Boxes
 } from 'lucide-react';
 
 const navGroups = [
@@ -27,9 +28,10 @@ const navGroups = [
   {
     label: 'Catalog & Inventory',
     items: [
+      { to: '/inventory', label: 'Inventory Hub', Icon: Boxes },
+      { to: '/products', label: 'Products & Sequencing', Icon: Gem },
       { to: '/categories', label: 'Categories', Icon: Layers },
       { to: '/subcategories', label: 'Collection Subcategories', Icon: Layers },
-      { to: '/products', label: 'Products & Inventory', Icon: Gem },
     ]
   },
   {

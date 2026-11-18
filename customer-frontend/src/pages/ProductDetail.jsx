@@ -30,7 +30,6 @@ import logoImg from '../assets/pretty-glitz-logo.png';
 
 const ProductDetail = () => {
   const { id } = useParams();
-  const { isDark } = useTheme();
   const [product, setProduct] = useState(null);
   const [relatedProducts, setRelatedProducts] = useState([]);
   const [productsByCategory, setProductsByCategory] = useState({});
@@ -204,8 +203,8 @@ const ProductDetail = () => {
   const activeSizes = (selectedColor && selectedColor.sizes?.length > 0)
     ? selectedColor.sizes
     : (product?.colorVariants?.[0]?.sizes?.length > 0
-        ? product.colorVariants[0].sizes
-        : (product?.sizes || []));
+      ? product.colorVariants[0].sizes
+      : (product?.sizes || []));
 
   // Resolved price (piece count price overrides product price)
   const resolvedPrice = selectedPieceCount ? selectedPieceCount.price : product?.price;
@@ -392,7 +391,7 @@ const ProductDetail = () => {
                     style={{
                       width: '100%',
                       height: '100%',
-                      objectFit: currentMainImageUrl ? 'cover' : 'contain',
+                      objectFit: 'contain',
                       display: 'block',
                       padding: 0,
                     }}
@@ -507,7 +506,7 @@ const ProductDetail = () => {
                 </div>
               )}
 
-              {/* Floating Top-Right Wishlist Heart Button (No White Background) */}
+              {/* Floating Top-Right Wishlist Heart Button (White Background Exactly Matching Container) */}
               <button
                 type="button"
                 onClick={(e) => {
@@ -521,9 +520,12 @@ const ProductDetail = () => {
                   position: 'absolute',
                   top: 14,
                   right: 14,
-                  background: 'transparent',
-                  border: 'none',
-                  padding: 4,
+                  width: 38,
+                  height: 38,
+                  borderRadius: '50%',
+                  background: '#FFFFFF',
+                  border: '1px solid rgba(0, 0, 0, 0.08)',
+                  boxShadow: '0 2px 10px rgba(0, 0, 0, 0.12)',
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'center',
@@ -531,27 +533,20 @@ const ProductDetail = () => {
                   zIndex: 4,
                   outline: 'none',
                   transition: 'transform 0.2s cubic-bezier(0.16, 1, 0.3, 1)',
-                  filter: inWishlist
-                    ? 'drop-shadow(0 2px 6px rgba(225,29,72,0.65))'
-                    : 'drop-shadow(0 1px 2px rgba(255,255,255,0.95)) drop-shadow(0 1px 3px rgba(0,0,0,0.4))',
                 }}
                 onMouseEnter={(e) => {
-                  e.currentTarget.style.transform = 'scale(1.22)';
-                  const heart = e.currentTarget.querySelector('svg');
-                  if (heart && !inWishlist) heart.style.stroke = '#E11D48';
+                  e.currentTarget.style.transform = 'scale(1.08)';
                 }}
                 onMouseLeave={(e) => {
                   e.currentTarget.style.transform = 'scale(1)';
-                  const heart = e.currentTarget.querySelector('svg');
-                  if (heart && !inWishlist) heart.style.stroke = isDark ? '#FFFFFF' : '#1A1118';
                 }}
               >
                 <Heart
-                  size={22}
+                  size={20}
                   style={{
                     fill: inWishlist ? '#E11D48' : 'transparent',
-                    stroke: inWishlist ? '#E11D48' : (isDark ? '#FFFFFF' : '#1A1118'),
-                    strokeWidth: 2.2,
+                    stroke: inWishlist ? '#E11D48' : '#1A1118',
+                    strokeWidth: 2,
                     transition: 'fill 0.2s ease, stroke 0.2s ease',
                   }}
                 />
@@ -652,12 +647,13 @@ const ProductDetail = () => {
                     title={inWishlist ? 'Remove from Wishlist' : 'Add to Wishlist'}
                     aria-label={inWishlist ? 'Remove from Wishlist' : 'Add to Wishlist'}
                     style={{
-                      color: inWishlist ? '#E11D48' : 'var(--text-secondary)',
-                      borderColor: inWishlist ? 'rgba(225,29,72,0.3)' : 'var(--border)',
-                      background: inWishlist ? 'rgba(225,29,72,0.08)' : 'transparent',
+                      background: '#FFFFFF',
+                      border: '1px solid var(--border)',
+                      color: inWishlist ? '#E11D48' : '#1A1118',
+                      boxShadow: '0 2px 8px rgba(0, 0, 0, 0.08)',
                     }}
                   >
-                    <Heart size={16} style={{ fill: inWishlist ? '#E11D48' : 'transparent', stroke: inWishlist ? '#E11D48' : 'currentColor' }} />
+                    <Heart size={16} style={{ fill: inWishlist ? '#E11D48' : 'transparent', stroke: inWishlist ? '#E11D48' : '#1A1118' }} />
                   </button>
 
                   <button
@@ -704,6 +700,22 @@ const ProductDetail = () => {
                 <span className="product-detail-price">
                   ₹{resolvedPrice}
                 </span>
+                {product.packagingType && (
+                  <span
+                    className="product-detail-packaging-type"
+                    style={{
+                      fontSize: '0.95rem',
+                      fontWeight: 600,
+                      color: 'var(--text-secondary)',
+                      fontFamily: 'Outfit, sans-serif',
+                      marginLeft: -4,
+                      marginRight: 4,
+                      alignSelf: 'center',
+                    }}
+                  >
+                    / {product.packagingType}
+                  </span>
+                )}
                 {resolvedOriginalPrice && (
                   <span className="product-detail-original-price">
                     ₹{resolvedOriginalPrice}

@@ -19,7 +19,7 @@ const idempotencyRecordSchema = new mongoose.Schema(
     },
     operationType: {
       type: String,
-      enum: ['cart_merge', 'wishlist_merge'],
+      enum: ['cart_merge', 'wishlist_merge', 'order_stock_deduction', 'order_stock_restoration'],
       required: true,
     },
     idempotencyKey: {

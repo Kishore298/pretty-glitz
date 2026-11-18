@@ -160,7 +160,8 @@ const Categories = () => {
       {/* Sync Status Info Banner */}
       <div
         style={{
-          marginBottom: 28,
+          maxWidth: 960,
+          margin: '0 0 24px 0',
           padding: '14px 20px',
           background: 'rgba(201, 168, 76, 0.08)',
           border: '1px solid rgba(201, 168, 76, 0.22)',
@@ -176,7 +177,7 @@ const Categories = () => {
       >
         <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
           <Sparkles size={16} color="var(--accent-gold)" />
-          <span>Drag vertical cards up and down to customize collection hierarchy and storefront sequence.</span>
+          <span>Drag horizontal cards up and down to customize collection hierarchy and storefront sequence.</span>
         </div>
         <div style={{ fontSize: '0.78rem', color: 'var(--accent-gold-light)', fontWeight: 600 }}>
           Auto-Saved
@@ -207,9 +208,9 @@ const Categories = () => {
                   display: 'flex',
                   flexDirection: 'column',
                   gap: 12,
-                  maxWidth: 900,
+                  maxWidth: 960,
                   width: '100%',
-                  margin: '0 auto',
+                  margin: 0,
                 }}
               >
                 {categories.map((category, index) => {

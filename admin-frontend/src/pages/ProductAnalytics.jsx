@@ -338,15 +338,13 @@ const ProductAnalytics = () => {
         <select
           value={category}
           onChange={(e) => setCategory(e.target.value)}
+          className="admin-input"
           style={{
-            padding: '9px 14px',
+            padding: '9px 38px 9px 14px',
             borderRadius: 10,
-            background: '#1A1826',
-            border: '1px solid rgba(255, 255, 255, 0.12)',
-            color: '#FAF9FC',
             fontSize: '0.85rem',
-            outline: 'none',
             cursor: 'pointer',
+            width: 'auto',
           }}
         >
           <option value="ALL">All Categories</option>
@@ -361,15 +359,13 @@ const ProductAnalytics = () => {
         <select
           value={stockStatus}
           onChange={(e) => setStockStatus(e.target.value)}
+          className="admin-input"
           style={{
-            padding: '9px 14px',
+            padding: '9px 38px 9px 14px',
             borderRadius: 10,
-            background: '#1A1826',
-            border: '1px solid rgba(255, 255, 255, 0.12)',
-            color: '#FAF9FC',
             fontSize: '0.85rem',
-            outline: 'none',
             cursor: 'pointer',
+            width: 'auto',
           }}
         >
           <option value="ALL">All Stock Status</option>
@@ -442,15 +438,13 @@ const ProductAnalytics = () => {
           <select
             value={datePreset}
             onChange={(e) => setDatePreset(e.target.value)}
+            className="admin-input"
             style={{
-              padding: '9px 12px',
+              padding: '9px 38px 9px 12px',
               borderRadius: 10,
-              background: '#1A1826',
-              border: '1px solid rgba(255, 255, 255, 0.12)',
-              color: '#FAF9FC',
               fontSize: '0.85rem',
-              outline: 'none',
               cursor: 'pointer',
+              width: 'auto',
             }}
           >
             <option value="ALL">All Time</option>
@@ -465,15 +459,13 @@ const ProductAnalytics = () => {
           <select
             value={sortBy}
             onChange={(e) => setSortBy(e.target.value)}
+            className="admin-input"
             style={{
-              padding: '9px 14px',
+              padding: '9px 38px 9px 14px',
               borderRadius: 10,
-              background: '#1A1826',
-              border: '1px solid rgba(255, 255, 255, 0.12)',
-              color: '#FAF9FC',
               fontSize: '0.85rem',
-              outline: 'none',
               cursor: 'pointer',
+              width: 'auto',
             }}
           >
             <option value="demandScore">Sort by: Demand Score</option>

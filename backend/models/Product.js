@@ -74,6 +74,9 @@ const productSchema = new mongoose.Schema(
     // Subcategory association (Artificial Flowers & Designer Glass Bangles)
     subcategoryId: { type: mongoose.Schema.Types.ObjectId, ref: 'Subcategory' },
 
+    // Packaging / Quantity Unit (e.g., 'Pieces', 'Dozen', 'Set')
+    packagingType: { type: String, trim: true, default: '' },
+
     isOffer: { type: Boolean, default: false },
     isBestseller: { type: Boolean, default: false },
 
@@ -109,9 +112,18 @@ const productSchema = new mongoose.Schema(
 
     isActive: { type: Boolean, default: true },
     inStock: { type: Boolean, default: true },
+    inStockCount: { type: Number, default: null, min: 0 }, // null = untracked legacy; number = active tracking
+    lowStockThreshold: { type: Number, default: null, min: 1 }, // null = fallback to global default (5)
+    stockVersion: { type: Number, default: 1 }, // Optimistic Concurrency Control
     order: { type: Number, default: 0 },
   },
   { timestamps: true }
 );
+
+// Indexes for inventory search, filtering, and sorting
+productSchema.index({ category: 1, isActive: 1, inStock: 1 });
+productSchema.index({ name: 'text', description: 'text' });
+productSchema.index({ inStockCount: 1 });
+productSchema.index({ stockVersion: 1 });
 
 module.exports = mongoose.model('Product', productSchema);

@@ -25,7 +25,6 @@ import ColorVariationSelector from './ColorVariationSelector';
 import logoImg from '../assets/pretty-glitz-logo.png';
 
 const CollectionProductDetailCard = ({ product, isLast = false }) => {
-  const { isDark } = useTheme();
   const { addToCart, updateQuantity, removeFromCart, getCartItemQuantity, isInCart } = useContext(CartContext);
   const { isInWishlist, toggleWishlist } = useWishlist();
 
@@ -196,9 +195,9 @@ const CollectionProductDetailCard = ({ product, isLast = false }) => {
               style={{
                 width: '100%',
                 height: '100%',
-                objectFit: currentImageUrl ? 'cover' : 'contain',
+                objectFit: 'contain',
                 display: 'block',
-                transition: 'transform 0.35s ease',
+                transition: 'opacity 0.2s ease',
               }}
             />
 
@@ -271,32 +270,45 @@ const CollectionProductDetailCard = ({ product, isLast = false }) => {
               </>
             )}
 
-            {/* Mobile Swipe Dot Indicators */}
+            {/* Swipe & Click Dot Indicators (Always visible when multiple images exist) */}
             {hasMultipleImages && (
               <div
-                className="product-gallery-dots"
+                className="collection-gallery-dots"
                 style={{
                   position: 'absolute',
                   bottom: 14,
                   left: '50%',
                   transform: 'translateX(-50%)',
+                  display: 'flex',
                   alignItems: 'center',
                   gap: 6,
                   zIndex: 3,
-                  pointerEvents: 'none',
+                  background: 'rgba(0, 0, 0, 0.35)',
+                  backdropFilter: 'blur(4px)',
+                  WebkitBackdropFilter: 'blur(4px)',
+                  padding: '4px 8px',
+                  borderRadius: 999,
                 }}
               >
                 {images.map((_, dotIdx) => {
                   const isCurrent = dotIdx === activeImg;
                   return (
-                    <span
+                    <button
                       key={dotIdx}
+                      type="button"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setActiveImg(dotIdx);
+                      }}
+                      aria-label={`Go to photo ${dotIdx + 1}`}
                       style={{
-                        width: isCurrent ? 18 : 6,
+                        width: isCurrent ? 16 : 6,
                         height: 6,
                         borderRadius: 3,
-                        background: isCurrent ? 'var(--accent, #C4386C)' : 'rgba(255, 255, 255, 0.5)',
-                        boxShadow: '0 1px 4px rgba(0, 0, 0, 0.4)',
+                        background: isCurrent ? 'var(--accent, #C4386C)' : 'rgba(255, 255, 255, 0.55)',
+                        border: 'none',
+                        padding: 0,
+                        cursor: 'pointer',
                         transition: 'all 0.25s ease',
                       }}
                     />
@@ -305,7 +317,7 @@ const CollectionProductDetailCard = ({ product, isLast = false }) => {
               </div>
             )}
 
-            {/* Floating Top-Right Wishlist Heart Button (Pure Heart Icon, No White Background) */}
+            {/* Floating Top-Right Wishlist Heart Button (White Background Exactly Matching Container) */}
             <button
               type="button"
               onClick={(e) => {
@@ -319,9 +331,12 @@ const CollectionProductDetailCard = ({ product, isLast = false }) => {
                 position: 'absolute',
                 top: 14,
                 right: 14,
-                background: 'transparent',
-                border: 'none',
-                padding: 4,
+                width: 38,
+                height: 38,
+                borderRadius: '50%',
+                background: '#FFFFFF',
+                border: '1px solid rgba(0, 0, 0, 0.08)',
+                boxShadow: '0 2px 10px rgba(0, 0, 0, 0.12)',
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
@@ -329,27 +344,20 @@ const CollectionProductDetailCard = ({ product, isLast = false }) => {
                 zIndex: 4,
                 outline: 'none',
                 transition: 'transform 0.2s cubic-bezier(0.16, 1, 0.3, 1)',
-                filter: inWishlist
-                  ? 'drop-shadow(0 2px 6px rgba(225,29,72,0.65))'
-                  : 'drop-shadow(0 1px 2px rgba(255,255,255,0.95)) drop-shadow(0 1px 3px rgba(0,0,0,0.4))',
               }}
               onMouseEnter={(e) => {
-                e.currentTarget.style.transform = 'scale(1.22)';
-                const heart = e.currentTarget.querySelector('svg');
-                if (heart && !inWishlist) heart.style.stroke = '#E11D48';
+                e.currentTarget.style.transform = 'scale(1.08)';
               }}
               onMouseLeave={(e) => {
                 e.currentTarget.style.transform = 'scale(1)';
-                const heart = e.currentTarget.querySelector('svg');
-                if (heart && !inWishlist) heart.style.stroke = isDark ? '#FFFFFF' : '#1A1118';
               }}
             >
               <Heart
-                size={22}
+                size={20}
                 style={{
                   fill: inWishlist ? '#E11D48' : 'transparent',
-                  stroke: inWishlist ? '#E11D48' : (isDark ? '#FFFFFF' : '#1A1118'),
-                  strokeWidth: 2.2,
+                  stroke: inWishlist ? '#E11D48' : '#1A1118',
+                  strokeWidth: 2,
                   transition: 'fill 0.2s ease, stroke 0.2s ease',
                 }}
               />
@@ -457,12 +465,13 @@ const CollectionProductDetailCard = ({ product, isLast = false }) => {
                   title={inWishlist ? 'Remove from Wishlist' : 'Add to Wishlist'}
                   aria-label={inWishlist ? 'Remove from Wishlist' : 'Add to Wishlist'}
                   style={{
-                    color: inWishlist ? '#E11D48' : 'var(--text-secondary)',
-                    borderColor: inWishlist ? 'rgba(225,29,72,0.3)' : 'var(--border)',
-                    background: inWishlist ? 'rgba(225,29,72,0.08)' : 'transparent',
+                    background: '#FFFFFF',
+                    border: '1px solid var(--border)',
+                    color: inWishlist ? '#E11D48' : '#1A1118',
+                    boxShadow: '0 2px 8px rgba(0, 0, 0, 0.08)',
                   }}
                 >
-                  <Heart size={16} style={{ fill: inWishlist ? '#E11D48' : 'transparent', stroke: inWishlist ? '#E11D48' : 'currentColor' }} />
+                  <Heart size={16} style={{ fill: inWishlist ? '#E11D48' : 'transparent', stroke: inWishlist ? '#E11D48' : '#1A1118' }} />
                 </button>
 
                 <button
@@ -522,6 +531,22 @@ const CollectionProductDetailCard = ({ product, isLast = false }) => {
               <span className="product-detail-price">
                 ₹{resolvedPrice}
               </span>
+              {product.packagingType && (
+                <span
+                  className="product-detail-packaging-type"
+                  style={{
+                    fontSize: '0.95rem',
+                    fontWeight: 600,
+                    color: 'var(--text-secondary)',
+                    fontFamily: 'Outfit, sans-serif',
+                    marginLeft: -4,
+                    marginRight: 4,
+                    alignSelf: 'center',
+                  }}
+                >
+                  / {product.packagingType}
+                </span>
+              )}
               {resolvedOriginalPrice && (
                 <span className="product-detail-original-price">
                   ₹{resolvedOriginalPrice}

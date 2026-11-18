@@ -6,6 +6,7 @@ import { SocketProvider } from './context/SocketContext';
 import Login from './pages/Login';
 import Dashboard from './pages/Dashboard';
 import Products from './pages/Products';
+import Inventory from './pages/Inventory';
 import Categories from './pages/Categories';
 import Subcategories from './pages/Subcategories';
 import Offers from './pages/Offers';
@@ -147,6 +148,7 @@ function App() {
             <Route path="/orders" element={<ProtectedRoute><Orders /></ProtectedRoute>} />
             <Route path="/analytics" element={<ProtectedRoute><ProductAnalytics /></ProtectedRoute>} />
             <Route path="/products" element={<ProtectedRoute><Products /></ProtectedRoute>} />
+            <Route path="/inventory" element={<ProtectedRoute><Inventory /></ProtectedRoute>} />
             <Route path="/categories" element={<ProtectedRoute><Categories /></ProtectedRoute>} />
             <Route path="/subcategories" element={<ProtectedRoute><Subcategories /></ProtectedRoute>} />
             <Route path="/banners" element={<ProtectedRoute><Banners /></ProtectedRoute>} />

@@ -128,6 +128,14 @@ const orderSchema = new mongoose.Schema(
       type: Date,
       default: null,
     },
+    stockDeducted: {
+      type: Boolean,
+      default: false,
+    },
+    stockRestored: {
+      type: Boolean,
+      default: false,
+    },
     internalNotes: {
       type: String,
       default: '',

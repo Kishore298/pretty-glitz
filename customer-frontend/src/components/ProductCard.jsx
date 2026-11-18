@@ -164,9 +164,8 @@ const ProductCard = ({ product, showVariants = false }) => {
               }}
               style={{
                 width: '100%', height: '100%',
-                objectFit: 'cover',
-                transform: isHovered ? 'scale(1.05)' : 'scale(1)',
-                transition: 'transform 0.45s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.2s ease',
+                objectFit: 'contain',
+                transition: 'opacity 0.2s ease',
               }}
             />
           ) : (
@@ -348,7 +347,7 @@ const ProductCard = ({ product, showVariants = false }) => {
           </div>
 
 
-          {/* Bottom-Right Wishlist Button (Pure Heart Icon, No White Background) */}
+          {/* Bottom-Right Wishlist Button (White Background Exactly Matching Container) */}
           <button
             type="button"
             onClick={(e) => {
@@ -362,37 +361,34 @@ const ProductCard = ({ product, showVariants = false }) => {
               position: 'absolute',
               bottom: 8,
               right: 8,
-              background: 'transparent',
-              border: 'none',
-              padding: 4,
+              width: 32,
+              height: 32,
+              borderRadius: '50%',
+              background: '#FFFFFF',
+              border: '1px solid rgba(0, 0, 0, 0.08)',
+              boxShadow: '0 2px 8px rgba(0, 0, 0, 0.12)',
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
               cursor: 'pointer',
               zIndex: 4,
+              padding: 0,
               outline: 'none',
-              transition: 'transform 0.2s cubic-bezier(0.16, 1, 0.3, 1)',
-              filter: inWishlist
-                ? 'drop-shadow(0 2px 6px rgba(225,29,72,0.65))'
-                : 'drop-shadow(0 1px 2px rgba(255,255,255,0.95)) drop-shadow(0 1px 3px rgba(0,0,0,0.4))',
+              transition: 'transform 0.2s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.2s ease',
             }}
             onMouseEnter={(e) => {
-              e.currentTarget.style.transform = 'scale(1.22)';
-              const heart = e.currentTarget.querySelector('svg');
-              if (heart && !inWishlist) heart.style.stroke = '#E11D48';
+              e.currentTarget.style.transform = 'scale(1.08)';
             }}
             onMouseLeave={(e) => {
               e.currentTarget.style.transform = 'scale(1)';
-              const heart = e.currentTarget.querySelector('svg');
-              if (heart && !inWishlist) heart.style.stroke = isDark ? '#FFFFFF' : '#1A1118';
             }}
           >
             <Heart
-              size={19}
+              size={17}
               style={{
                 fill: inWishlist ? '#E11D48' : 'transparent',
-                stroke: inWishlist ? '#E11D48' : (isDark ? '#FFFFFF' : '#1A1118'),
-                strokeWidth: 2.2,
+                stroke: inWishlist ? '#E11D48' : '#1A1118',
+                strokeWidth: 2,
                 transition: 'fill 0.2s ease, stroke 0.2s ease',
               }}
             />
@@ -487,10 +483,9 @@ const ProductCard = ({ product, showVariants = false }) => {
             lineHeight: 1.25,
             color: isHovered ? 'var(--accent)' : 'var(--text)',
             margin: '0 0 6px',
-            display: '-webkit-box',
-            WebkitLineClamp: 2,
-            WebkitBoxOrient: 'vertical',
-            overflow: 'hidden',
+            display: 'block',
+            overflow: 'visible',
+            wordBreak: 'break-word',
             transition: 'color 0.2s ease',
             width: '100%',
           }}>
@@ -621,7 +616,7 @@ const ProductCard = ({ product, showVariants = false }) => {
                     onClick={handleCartClick}
                   >
                     <ShoppingBag size={11} />
-                    <span>{needsDetailPage ? 'Options' : 'Add to Cart'}</span>
+                    <span>{needsDetailPage ? 'Options' : 'Add'}</span>
                   </button>
                 )
               ) : (

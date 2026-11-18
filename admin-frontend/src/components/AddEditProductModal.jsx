@@ -44,6 +44,7 @@ const AddEditProductModal = ({ isOpen, onClose, productId, onSuccess, isOfferPre
     colorVariants: [],
     images: [],
     giftBoxDetails: '',
+    packagingType: '',
   });
   const [categories, setCategories] = useState([]);
   const [subcategories, setSubcategories] = useState([]);
@@ -73,6 +74,7 @@ const AddEditProductModal = ({ isOpen, onClose, productId, onSuccess, isOfferPre
           colorVariants: [],
           images: [],
           giftBoxDetails: '',
+          packagingType: '',
         });
       }
     }
@@ -508,7 +510,7 @@ const AddEditProductModal = ({ isOpen, onClose, productId, onSuccess, isOfferPre
                     </div>
                   </div>
 
-                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 14 }}>
+                  <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(160px, 1fr))', gap: 14 }}>
                     {field(
                       'Selling Price (₹) *',
                       <input
@@ -531,6 +533,20 @@ const AddEditProductModal = ({ isOpen, onClose, productId, onSuccess, isOfferPre
                         placeholder="e.g. 1499 (optional, for discount slash)"
                         className="admin-input"
                       />
+                    )}
+                    {field(
+                      'Quantity / Packaging Unit',
+                      <select
+                        name="packagingType"
+                        value={formData.packagingType || ''}
+                        onChange={handleChange}
+                        className="admin-input"
+                      >
+                        <option value="">-- Standard / Unspecified --</option>
+                        <option value="Pieces">Pieces</option>
+                        <option value="Dozen">Dozen</option>
+                        <option value="Set">Set</option>
+                      </select>
                     )}
                   </div>
                 </div>

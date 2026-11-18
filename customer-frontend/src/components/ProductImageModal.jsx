@@ -137,13 +137,14 @@ const ProductImageModal = ({
             zIndex: 9999,
             display: 'flex',
             flexDirection: 'column',
-            alignItems: 'center',
+            alignItems: 'stretch',
             background: isDark
               ? 'rgba(10, 10, 16, 0.88)'
               : 'rgba(253, 250, 245, 0.88)',
             backdropFilter: 'blur(20px)',
             WebkitBackdropFilter: 'blur(20px)',
             userSelect: 'none',
+            padding: 0,
           }}
           onClick={onClose}
         >
@@ -364,7 +365,7 @@ const ProductImageModal = ({
                 </button>
               )}
 
-              {/* Mobile Dot Indicators (Shown on small devices) */}
+              {/* Interactive Dot Indicators (Visible on all screen sizes) */}
               {images.length > 1 && (
                 <div
                   className="modal-gallery-dots"
@@ -373,21 +374,34 @@ const ProductImageModal = ({
                     bottom: 12,
                     left: '50%',
                     transform: 'translateX(-50%)',
+                    display: 'flex',
                     alignItems: 'center',
                     gap: 6,
-                    zIndex: 3,
-                    pointerEvents: 'none',
+                    zIndex: 4,
+                    background: 'rgba(0, 0, 0, 0.35)',
+                    backdropFilter: 'blur(4px)',
+                    WebkitBackdropFilter: 'blur(4px)',
+                    padding: '4px 8px',
+                    borderRadius: 999,
                   }}
                 >
                   {images.map((_, dotIdx) => (
-                    <span
+                    <button
                       key={dotIdx}
+                      type="button"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setActiveIndex(dotIdx);
+                      }}
+                      aria-label={`View photo ${dotIdx + 1}`}
                       style={{
-                        width: dotIdx === activeIndex ? 18 : 6,
+                        width: dotIdx === activeIndex ? 16 : 6,
                         height: 6,
                         borderRadius: 3,
                         background: dotIdx === activeIndex ? 'var(--accent, #C4386C)' : 'rgba(255, 255, 255, 0.55)',
-                        boxShadow: '0 1px 4px rgba(0, 0, 0, 0.4)',
+                        border: 'none',
+                        padding: 0,
+                        cursor: 'pointer',
                         transition: 'all 0.25s ease',
                       }}
                     />
@@ -533,24 +547,30 @@ const ProductImageModal = ({
             <style>{`
               .product-image-modal-root {
                 justify-content: flex-start !important;
-                padding: max(8px, env(safe-area-inset-top, 8px)) 10px max(10px, env(safe-area-inset-bottom, 10px)) !important;
+                padding: 0 !important;
                 overflow-y: auto !important;
                 -webkit-overflow-scrolling: touch !important;
+                align-items: stretch !important;
               }
               .product-image-modal-card {
                 width: 100% !important;
                 max-width: 100% !important;
-                height: 100% !important;
-                max-height: calc(100dvh - max(16px, env(safe-area-inset-top, 8px) + env(safe-area-inset-bottom, 10px))) !important;
+                min-height: 100dvh !important;
+                height: 100dvh !important;
+                max-height: 100dvh !important;
                 display: flex !important;
                 flex-direction: column !important;
-                justify-content: space-between !important;
+                justify-content: flex-start !important;
                 align-items: center !important;
                 margin: 0 auto !important;
+                padding: 8px 10px 6px !important;
+                padding-top: max(10px, env(safe-area-inset-top, 10px)) !important;
+                padding-bottom: max(8px, env(safe-area-inset-bottom, 8px)) !important;
+                box-sizing: border-box !important;
               }
               .product-image-modal-header {
                 flex-shrink: 0 !important;
-                padding: 2px 4px 6px !important;
+                padding: 0 0 6px !important;
                 width: 100% !important;
               }
               .product-image-modal-close-btn {
@@ -558,10 +578,9 @@ const ProductImageModal = ({
                 height: 36px !important;
               }
               .product-image-modal-stage {
-                flex: 1 1 auto !important;
+                flex: 1 1 0 !important;
                 width: 100% !important;
-                min-height: 320px !important;
-                max-height: calc(100dvh - 165px) !important;
+                min-height: 0 !important;
                 display: flex !important;
                 align-items: center !important;
                 justify-content: center !important;
@@ -621,7 +640,7 @@ const ProductImageModal = ({
                   display: flex !important;
                 }
                 .modal-gallery-dots {
-                  display: none !important;
+                  display: flex !important;
                 }
               }
             `}</style>

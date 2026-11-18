@@ -1,30 +1,38 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { Plus, Tag, ArrowRight, Sparkles, Percent, Pencil, Trash2 } from 'lucide-react';
+import { Plus, Tag, ArrowRight, Sparkles, Percent, Pencil, Trash2, Search, X, Filter, Flame } from 'lucide-react';
 import api from '../utils/api';
-import { optimizeImageUrl } from '../utils/cloudinary';
 import AddEditProductModal from '../components/AddEditProductModal';
 import ConfirmModal from '../components/ConfirmModal';
 import PageWrapper from '../components/PageWrapper';
 import PageHeader from '../components/PageHeader';
 import EmptyState from '../components/EmptyState';
-import { SkeletonGrid } from '../components/SkeletonLoader';
+import { SkeletonOfferCards } from '../components/SkeletonLoader';
+import AdminOfferCard from '../components/AdminOfferCard';
 import toast from 'react-hot-toast';
 
 const Offers = () => {
   const [products, setProducts] = useState([]);
   const [offerProducts, setOfferProducts] = useState([]);
+  const [categories, setCategories] = useState([]);
   const [loading, setLoading] = useState(true);
+
+  // Tabs: 'active' (Live offers) | 'add' (Catalog items to promote)
+  const [activeTab, setActiveTab] = useState('active');
 
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingProductId, setEditingProductId] = useState(null);
 
-  const [selectedProductId, setSelectedProductId] = useState('');
-  const [discountPrice, setDiscountPrice] = useState('');
   const [removeTarget, setRemoveTarget] = useState(null);
   const [isRemoving, setIsRemoving] = useState(false);
+  const [addingId, setAddingId] = useState(null);
+
+  // Filters
+  const [searchQuery, setSearchQuery] = useState('');
+  const [selectedCategory, setSelectedCategory] = useState('all');
 
   useEffect(() => {
     fetchProducts();
+    fetchCategories();
   }, []);
 
   const fetchProducts = async () => {
@@ -42,29 +50,37 @@ const Offers = () => {
     }
   };
 
-  const handleMakeOffer = async (e) => {
-    e.preventDefault();
-    if (!selectedProductId || !discountPrice) return;
-
-    const product = products.find((p) => p._id === selectedProductId);
-    if (!product) return;
-
+  const fetchCategories = async () => {
     try {
-      await api.put(`/products/${selectedProductId}`, {
-        price: Number(discountPrice),
-        originalPrice: product.price,
-        isOffer: true,
-      });
-      toast.success(`Special offer created for "${product.name}"`);
-      setSelectedProductId('');
-      setDiscountPrice('');
-      fetchProducts();
+      const res = await api.get('/categories');
+      setCategories(Array.isArray(res.data) ? res.data : []);
     } catch (err) {
-      console.error(err);
-      toast.error('Failed to create offer');
+      console.error('Failed to load categories:', err);
     }
   };
 
+  // Add a catalog product to offers
+  const handleAddOffer = async (product, offerPrice) => {
+    if (!product || !offerPrice) return;
+    setAddingId(product._id);
+    try {
+      await api.put(`/products/${product._id}`, {
+        price: Number(offerPrice),
+        originalPrice: product.originalPrice && product.originalPrice > product.price ? product.originalPrice : product.price,
+        isOffer: true,
+      });
+      toast.success(`Special offer activated for "${product.name}" at ₹${offerPrice}`);
+      await fetchProducts();
+      setActiveTab('active');
+    } catch (err) {
+      console.error('Failed to create offer:', err);
+      toast.error(err.response?.data?.message || 'Failed to create offer');
+    } finally {
+      setAddingId(null);
+    }
+  };
+
+  // Remove offer from product
   const handleRemoveOffer = async () => {
     if (!removeTarget) return;
     setIsRemoving(true);
@@ -76,7 +92,7 @@ const Offers = () => {
       });
       toast.success(`Offer removed for "${removeTarget.name}"`);
       setRemoveTarget(null);
-      fetchProducts();
+      await fetchProducts();
     } catch (err) {
       console.error(err);
       toast.error('Failed to remove offer');
@@ -85,31 +101,43 @@ const Offers = () => {
     }
   };
 
-  const [productFilterQuery, setProductFilterQuery] = useState('');
+  const nonOfferProducts = useMemo(() => {
+    return products.filter((p) => !p.isOffer);
+  }, [products]);
 
-  const nonOfferProducts = products.filter((p) => !p.isOffer);
-
-  const productsByCategory = useMemo(() => {
-    const q = productFilterQuery.trim().toLowerCase();
-    const filtered = q
-      ? nonOfferProducts.filter(
-          (p) =>
-            p.name.toLowerCase().includes(q) ||
-            (p.category && p.category.toLowerCase().includes(q))
-        )
-      : nonOfferProducts;
-
-    const grouped = {};
-    filtered.forEach((p) => {
-      const cat = p.category || 'Other Jewellery';
-      if (!grouped[cat]) grouped[cat] = [];
-      grouped[cat].push(p);
+  // Filtered Active Offers
+  const filteredActiveOffers = useMemo(() => {
+    const q = searchQuery.trim().toLowerCase();
+    return offerProducts.filter((p) => {
+      const matchSearch =
+        !q ||
+        p.name.toLowerCase().includes(q) ||
+        (p.category && p.category.toLowerCase().includes(q));
+      const matchCat =
+        selectedCategory === 'all' ||
+        (p.category && p.category.toLowerCase() === selectedCategory.toLowerCase());
+      return matchSearch && matchCat;
     });
-    return grouped;
-  }, [nonOfferProducts, productFilterQuery]);
+  }, [offerProducts, searchQuery, selectedCategory]);
+
+  // Filtered Catalog Candidates (to Add)
+  const filteredCatalogCandidates = useMemo(() => {
+    const q = searchQuery.trim().toLowerCase();
+    return nonOfferProducts.filter((p) => {
+      const matchSearch =
+        !q ||
+        p.name.toLowerCase().includes(q) ||
+        (p.category && p.category.toLowerCase().includes(q));
+      const matchCat =
+        selectedCategory === 'all' ||
+        (p.category && p.category.toLowerCase() === selectedCategory.toLowerCase());
+      return matchSearch && matchCat;
+    });
+  }, [nonOfferProducts, searchQuery, selectedCategory]);
 
   return (
     <PageWrapper>
+      {/* ── Page Header ────────────────────────────────────────── */}
       <PageHeader
         title="Special Offers & Discounts"
         subtitle="Manage promotional festive discounts, strikethrough pricing, and highlighted deals on the storefront."
@@ -137,477 +165,290 @@ const Offers = () => {
         }
       />
 
-      {/* Convert Existing Product into Offer */}
+      {/* ── Tabs Navigation ────────────────────────────────────── */}
       <div
         style={{
-          background: 'linear-gradient(135deg, rgba(196, 56, 108, 0.08) 0%, rgba(201, 168, 76, 0.08) 100%)',
-          border: '1px solid rgba(201, 168, 76, 0.22)',
-          borderRadius: 20,
-          padding: '28px 32px',
-          marginBottom: 40,
-          boxShadow: '0 8px 30px rgba(0, 0, 0, 0.25)',
+          display: 'flex',
+          alignItems: 'center',
+          gap: 12,
+          marginBottom: 20,
+          borderBottom: '1px solid var(--card-border, rgba(201, 168, 76, 0.15))',
+          paddingBottom: 12,
+          flexWrap: 'wrap',
         }}
       >
-        <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 8 }}>
-          <div
-            style={{
-              width: 36,
-              height: 36,
-              borderRadius: 10,
-              background: 'rgba(201, 168, 76, 0.15)',
-              display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              color: 'var(--accent-gold)',
-            }}
-          >
-            <Tag size={18} />
-          </div>
-          <h3 style={{ margin: 0, color: 'var(--text-primary)', fontSize: '1.25rem', fontWeight: 700 }}>
-            Quickly Promote an Existing Product
-          </h3>
-        </div>
-        <p style={{ margin: '0 0 22px', color: 'var(--text-secondary)', fontSize: '0.86rem' }}>
-          Select an active product from the catalog to mark down with a discounted sale price and offer banner.
-        </p>
-
-        {/* Category-Grouped Horizontal Scrolling Product Selector with Fixed Container Height */}
-        <div style={{ marginBottom: 18 }}>
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 10, flexWrap: 'wrap', gap: 10 }}>
-            <label style={{ fontSize: '0.84rem', color: 'var(--text-secondary)', fontWeight: 600 }}>
-              Select Catalog Product to Discount:
-            </label>
-            <input
-              type="text"
-              value={productFilterQuery}
-              onChange={(e) => setProductFilterQuery(e.target.value)}
-              placeholder="Search product name or category..."
-              className="admin-input"
-              style={{ height: 34, width: 240, fontSize: '0.8rem', borderRadius: 8 }}
-            />
-          </div>
-
-          <div
-            style={{
-              height: 220,
-              overflowY: 'auto',
-              background: 'rgba(255, 255, 255, 0.02)',
-              border: '1px solid rgba(255, 255, 255, 0.08)',
-              borderRadius: 14,
-              padding: '14px',
-              display: 'flex',
-              flexDirection: 'column',
-              gap: 16,
-            }}
-            className="no-scrollbar"
-          >
-            {Object.keys(productsByCategory).length === 0 ? (
-              <div style={{ padding: '30px 0', textAlign: 'center', color: 'var(--text-muted)', fontSize: '0.85rem' }}>
-                No matching products available for offer.
-              </div>
-            ) : (
-              Object.entries(productsByCategory).map(([categoryName, prods]) => (
-                <div key={categoryName}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 8 }}>
-                    <span style={{ fontSize: '0.74rem', fontWeight: 700, color: 'var(--accent-gold, #C9A84C)', textTransform: 'uppercase', letterSpacing: '0.06em' }}>
-                      {categoryName}
-                    </span>
-                    <span style={{ fontSize: '0.7rem', color: 'var(--text-muted)' }}>({prods.length})</span>
-                  </div>
-
-                  <div
-                    style={{
-                      display: 'flex',
-                      gap: 10,
-                      overflowX: 'auto',
-                      paddingBottom: 6,
-                    }}
-                    className="no-scrollbar"
-                  >
-                    {prods.map((p) => {
-                      const isSelected = selectedProductId === p._id;
-                      const thumb = p.images?.[0]?.url;
-                      return (
-                        <div
-                          key={p._id}
-                          onClick={() => {
-                            setSelectedProductId(p._id);
-                            if (!discountPrice) {
-                              setDiscountPrice(Math.round(p.price * 0.85));
-                            }
-                          }}
-                          style={{
-                            flex: '0 0 170px',
-                            background: isSelected ? 'rgba(201, 168, 76, 0.16)' : 'var(--surface-primary, #14131E)',
-                            border: isSelected
-                              ? '1.5px solid var(--accent-gold, #C9A84C)'
-                              : '1px solid rgba(255, 255, 255, 0.08)',
-                            borderRadius: 10,
-                            padding: '8px 10px',
-                            cursor: 'pointer',
-                            transition: 'all 0.18s ease',
-                            display: 'flex',
-                            alignItems: 'center',
-                            gap: 10,
-                            boxShadow: isSelected ? '0 0 14px rgba(201, 168, 76, 0.28)' : 'none',
-                          }}
-                        >
-                          <div style={{ width: 44, height: 54, borderRadius: 6, background: '#111019', overflow: 'hidden', flexShrink: 0 }}>
-                            <img
-                              src={thumb ? optimizeImageUrl(thumb, 120) : '/pretty-glitz-logo.png'}
-                              alt={p.name}
-                              style={{ width: '100%', height: '100%', objectFit: thumb ? 'cover' : 'contain' }}
-                            />
-                          </div>
-                          <div style={{ minWidth: 0, flex: 1 }}>
-                            <div style={{ fontSize: '0.78rem', fontWeight: 600, color: '#FAF9FC', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                              {p.name}
-                            </div>
-                            <div style={{ fontSize: '0.74rem', color: 'var(--accent-gold, #C9A84C)', fontWeight: 700, marginTop: 2 }}>
-                              ₹{p.price}
-                            </div>
-                          </div>
-                        </div>
-                      );
-                    })}
-                  </div>
-                </div>
-              ))
-            )}
-          </div>
-        </div>
-
-        {/* Selected Product Action Bar */}
-        {selectedProductId ? (
-          <form onSubmit={handleMakeOffer} style={{ display: 'flex', gap: 16, alignItems: 'center', flexWrap: 'wrap', background: 'rgba(201, 168, 76, 0.08)', padding: '14px 18px', borderRadius: 12, border: '1px solid rgba(201, 168, 76, 0.25)' }}>
-            <div style={{ flex: '1 1 240px' }}>
-              <div style={{ fontSize: '0.74rem', color: 'var(--text-secondary)', textTransform: 'uppercase', letterSpacing: '0.04em' }}>
-                Selected for Promotion:
-              </div>
-              <div style={{ fontSize: '0.94rem', fontWeight: 700, color: '#FAF9FC', marginTop: 2 }}>
-                {products.find((p) => p._id === selectedProductId)?.name}
-                <span style={{ color: 'var(--text-muted)', fontWeight: 500, fontSize: '0.82rem', marginLeft: 8 }}>
-                  (Current: ₹{products.find((p) => p._id === selectedProductId)?.price})
-                </span>
-              </div>
-            </div>
-
-            <div style={{ display: 'flex', alignItems: 'center', gap: 10, flexWrap: 'wrap' }}>
-              <div>
-                <input
-                  type="number"
-                  value={discountPrice}
-                  onChange={(e) => setDiscountPrice(e.target.value)}
-                  placeholder="Offer Price (₹)"
-                  className="admin-input"
-                  required
-                  min="0"
-                  style={{ height: 40, width: 150, borderRadius: 8, fontSize: '0.88rem' }}
-                />
-              </div>
-
-              <button type="submit" className="btn-primary" style={{ height: 40, padding: '0 20px', borderRadius: 8, gap: 6, fontSize: '0.84rem' }}>
-                <span>Activate Offer</span>
-                <ArrowRight size={15} />
-              </button>
-
-              <button
-                type="button"
-                onClick={() => {
-                  setSelectedProductId('');
-                  setDiscountPrice('');
-                }}
-                className="btn-secondary"
-                style={{ height: 40, padding: '0 14px', borderRadius: 8, fontSize: '0.82rem' }}
-              >
-                Clear
-              </button>
-            </div>
-          </form>
-        ) : (
-          <p style={{ margin: 0, fontSize: '0.82rem', color: 'var(--text-muted)', fontStyle: 'italic' }}>
-            Click any product above to set a promotional offer price.
-          </p>
-        )}
-      </div>
-
-      {/* Header */}
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 20 }}>
-        <h2 style={{ fontFamily: 'Outfit, sans-serif', fontSize: '1.35rem', fontWeight: 800, color: 'var(--text-primary)', margin: 0 }}>
-          Active Storefront Deals
-        </h2>
-        <span style={{ fontSize: '0.82rem', color: 'var(--text-muted)' }}>
-          {offerProducts.length} deal{offerProducts.length !== 1 ? 's' : ''} currently live
-        </span>
-      </div>
-
-      {/* Content: Skeleton vs Grid */}
-      {loading ? (
-        <SkeletonGrid count={4} />
-      ) : offerProducts.length === 0 ? (
-        <EmptyState
-          icon={Tag}
-          title="No Active Offers"
-          description="Convert an existing product to an offer or create a promotional item using the form above."
-        />
-      ) : (
-        <div
+        <button
+          type="button"
+          onClick={() => setActiveTab('active')}
           style={{
-            display: 'grid',
-            gridTemplateColumns: 'repeat(auto-fill, minmax(230px, 1fr))',
-            gap: 16,
+            padding: '9px 20px',
+            borderRadius: 12,
+            background: activeTab === 'active'
+              ? 'linear-gradient(135deg, rgba(196, 56, 108, 0.25), rgba(138, 43, 226, 0.2))'
+              : 'rgba(255, 255, 255, 0.04)',
+            border: activeTab === 'active'
+              ? '1px solid var(--accent, #C4386C)'
+              : '1px solid rgba(255, 255, 255, 0.08)',
+            color: activeTab === 'active' ? '#FFFFFF' : 'var(--text-secondary)',
+            fontSize: '0.88rem',
+            fontWeight: activeTab === 'active' ? 700 : 500,
+            cursor: 'pointer',
+            display: 'flex',
+            alignItems: 'center',
+            gap: 8,
+            boxShadow: activeTab === 'active' ? '0 4px 14px rgba(196, 56, 108, 0.2)' : 'none',
+            transition: 'all 0.18s ease',
           }}
         >
-          {offerProducts.map((product) => {
-            const discountPct =
-              product.originalPrice && product.originalPrice > product.price
-                ? Math.round(((product.originalPrice - product.price) / product.originalPrice) * 100)
-                : null;
-            const savings =
-              product.originalPrice && product.originalPrice > product.price
-                ? product.originalPrice - product.price
-                : 0;
+          <Flame size={16} color={activeTab === 'active' ? 'var(--accent, #C4386C)' : 'var(--text-muted)'} />
+          <span>Active Storefront Deals ({offerProducts.length})</span>
+        </button>
 
-            const primaryImg = product.images?.[0]?.url;
+        <button
+          type="button"
+          onClick={() => setActiveTab('add')}
+          style={{
+            padding: '9px 20px',
+            borderRadius: 12,
+            background: activeTab === 'add'
+              ? 'linear-gradient(135deg, rgba(201, 168, 76, 0.25), rgba(196, 56, 108, 0.18))'
+              : 'rgba(255, 255, 255, 0.04)',
+            border: activeTab === 'add'
+              ? '1px solid var(--accent-gold, #C9A84C)'
+              : '1px solid rgba(255, 255, 255, 0.08)',
+            color: activeTab === 'add' ? '#FFFFFF' : 'var(--text-secondary)',
+            fontSize: '0.88rem',
+            fontWeight: activeTab === 'add' ? 700 : 500,
+            cursor: 'pointer',
+            display: 'flex',
+            alignItems: 'center',
+            gap: 8,
+            boxShadow: activeTab === 'add' ? '0 4px 14px rgba(201, 168, 76, 0.2)' : 'none',
+            transition: 'all 0.18s ease',
+          }}
+        >
+          <Plus size={16} color={activeTab === 'add' ? 'var(--accent-gold, #C9A84C)' : 'var(--text-muted)'} />
+          <span>Add Products to Offers ({nonOfferProducts.length})</span>
+        </button>
+      </div>
 
-            return (
-              <div
-                key={product._id}
+      {/* ── Control & Filter Center ────────────────────────────── */}
+      <div
+        style={{
+          background: 'var(--surface-primary, #14131E)',
+          border: '1px solid var(--card-border, rgba(201, 168, 76, 0.12))',
+          borderRadius: 18,
+          padding: '16px 20px',
+          marginBottom: 24,
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          flexWrap: 'wrap',
+          gap: 14,
+        }}
+      >
+        {/* Search */}
+        <div style={{ position: 'relative', flex: 1, minWidth: 260, maxWidth: 440 }}>
+          <Search
+            size={16}
+            style={{
+              position: 'absolute',
+              left: 14,
+              top: '50%',
+              transform: 'translateY(-50%)',
+              color: 'var(--accent-gold)',
+            }}
+          />
+          <input
+            type="text"
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            placeholder={
+              activeTab === 'active'
+                ? 'Search active deals by piece name, category...'
+                : 'Search catalog pieces to add as an offer...'
+            }
+            className="admin-input"
+            style={{
+              paddingLeft: 40,
+              paddingRight: searchQuery ? 36 : 14,
+              height: 40,
+              fontSize: '0.86rem',
+              borderRadius: 12,
+            }}
+          />
+          {searchQuery && (
+            <button
+              type="button"
+              onClick={() => setSearchQuery('')}
+              style={{
+                position: 'absolute',
+                right: 12,
+                top: '50%',
+                transform: 'translateY(-50%)',
+                background: 'none',
+                border: 'none',
+                color: 'var(--text-muted)',
+                cursor: 'pointer',
+                padding: 4,
+              }}
+            >
+              <X size={14} />
+            </button>
+          )}
+        </div>
+
+        {/* Category Dropdown Filter */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+          <Filter size={15} color="var(--accent-gold)" />
+          <select
+            value={selectedCategory}
+            onChange={(e) => setSelectedCategory(e.target.value)}
+            className="admin-input"
+            style={{
+              height: 40,
+              padding: '0 36px 0 14px',
+              fontSize: '0.84rem',
+              borderRadius: 12,
+              minWidth: 170,
+              cursor: 'pointer',
+            }}
+          >
+            <option value="all">All Categories</option>
+            {categories.map((c) => (
+              <option key={c._id} value={c.name}>
+                {c.name}
+              </option>
+            ))}
+          </select>
+        </div>
+      </div>
+
+      {/* ── TAB 1: ACTIVE STOREFRONT DEALS ─────────────────────── */}
+      {activeTab === 'active' && (
+        <div>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16 }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+              <h2 style={{ fontFamily: 'Outfit, sans-serif', fontSize: '1.25rem', fontWeight: 800, color: 'var(--text-primary)', margin: 0 }}>
+                Active Deals on Storefront
+              </h2>
+              <span
                 style={{
-                  background: 'var(--surface-primary, #14131E)',
-                  border: '1px solid var(--card-border, rgba(201, 168, 76, 0.14))',
-                  borderRadius: 14,
-                  overflow: 'hidden',
-                  display: 'flex',
-                  flexDirection: 'column',
-                  height: '100%',
-                  boxShadow: '0 4px 14px rgba(0, 0, 0, 0.22)',
-                  transition: 'all 0.22s cubic-bezier(0.16, 1, 0.3, 1)',
-                  position: 'relative',
-                }}
-                onMouseEnter={(e) => {
-                  e.currentTarget.style.borderColor = 'rgba(201, 168, 76, 0.4)';
-                  e.currentTarget.style.transform = 'translateY(-3px)';
-                  e.currentTarget.style.boxShadow = '0 10px 24px rgba(0, 0, 0, 0.4), 0 0 16px rgba(201, 168, 76, 0.12)';
-                }}
-                onMouseLeave={(e) => {
-                  e.currentTarget.style.borderColor = 'var(--card-border, rgba(201, 168, 76, 0.14))';
-                  e.currentTarget.style.transform = 'none';
-                  e.currentTarget.style.boxShadow = '0 4px 14px rgba(0, 0, 0, 0.22)';
+                  fontSize: '0.74rem',
+                  fontWeight: 700,
+                  padding: '2px 8px',
+                  borderRadius: 999,
+                  background: 'rgba(196, 56, 108, 0.18)',
+                  color: 'var(--accent, #C4386C)',
                 }}
               >
-                {/* Media Showcase Area - Vertical Aspect Ratio 3:4 */}
-                <div
-                  style={{
-                    position: 'relative',
-                    width: '100%',
-                    aspectRatio: '3 / 4',
-                    maxHeight: 240,
-                    background: '#111019',
-                    overflow: 'hidden',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
+                {filteredActiveOffers.length} Live
+              </span>
+            </div>
+
+            <button
+              type="button"
+              onClick={() => setActiveTab('add')}
+              className="btn-secondary"
+              style={{ padding: '6px 14px', borderRadius: 10, fontSize: '0.8rem', display: 'flex', alignItems: 'center', gap: 6 }}
+            >
+              <Plus size={14} />
+              <span>Add More Offers</span>
+            </button>
+          </div>
+
+          {loading ? (
+            <SkeletonOfferCards count={6} />
+          ) : filteredActiveOffers.length === 0 ? (
+            <EmptyState
+              icon={Tag}
+              title="No Active Offers Found"
+              description={
+                searchQuery || selectedCategory !== 'all'
+                  ? 'No active offers match your current filter criteria.'
+                  : 'You do not have any active promotional deals live right now. Add pieces from the catalog to activate deals!'
+              }
+              actionText="Add Products to Offers"
+              onAction={() => setActiveTab('add')}
+            />
+          ) : (
+            /* Responsive Grid of Compact Horizontal Cards */
+            <div
+              style={{
+                display: 'grid',
+                gridTemplateColumns: 'repeat(auto-fill, minmax(340px, 1fr))',
+                gap: 16,
+              }}
+            >
+              {filteredActiveOffers.map((product) => (
+                <AdminOfferCard
+                  key={product._id}
+                  product={product}
+                  mode="active"
+                  onEdit={(id) => {
+                    setEditingProductId(id);
+                    setIsModalOpen(true);
                   }}
-                >
-                  <img
-                    src={primaryImg ? optimizeImageUrl(primaryImg, 400) : '/pretty-glitz-logo.png'}
-                    alt={product.name}
-                    loading="lazy"
-                    onError={(e) => {
-                      e.currentTarget.onerror = null;
-                      e.currentTarget.src = '/pretty-glitz-logo.png';
-                      e.currentTarget.style.objectFit = 'contain';
-                      e.currentTarget.style.padding = '12px';
-                    }}
-                    style={{
-                      width: '100%',
-                      height: '100%',
-                      objectFit: primaryImg ? 'cover' : 'contain',
-                      padding: primaryImg ? '0' : '12px',
-                      transition: 'transform 0.35s ease',
-                    }}
-                  />
-
-                  {/* Floating Category Pill - Dainty & Compact */}
-                  <span
-                    style={{
-                      position: 'absolute',
-                      top: 7,
-                      left: 7,
-                      background: 'rgba(10, 10, 15, 0.85)',
-                      backdropFilter: 'blur(8px)',
-                      border: '1px solid rgba(201, 168, 76, 0.25)',
-                      color: 'var(--accent-gold-light, #E8CE8A)',
-                      fontSize: '0.55rem',
-                      fontWeight: 700,
-                      padding: '1.5px 6px',
-                      borderRadius: 999,
-                      textTransform: 'uppercase',
-                      letterSpacing: '0.04em',
-                      display: 'flex',
-                      alignItems: 'center',
-                      gap: 3,
-                      zIndex: 2,
-                    }}
-                  >
-                    <Sparkles size={8} color="var(--accent-gold)" />
-                    {product.category}
-                  </span>
-
-                  {/* Floating Discount Badge */}
-                  {discountPct && (
-                    <span
-                      style={{
-                        position: 'absolute',
-                        top: 7,
-                        right: 7,
-                        background: 'linear-gradient(135deg, #C4386C, #8A2BE2)',
-                        color: '#FFFFFF',
-                        fontSize: '0.60rem',
-                        fontWeight: 800,
-                        padding: '1.5px 6px',
-                        borderRadius: 999,
-                        boxShadow: '0 2px 8px rgba(196, 56, 108, 0.4)',
-                        display: 'flex',
-                        alignItems: 'center',
-                        gap: 3,
-                        letterSpacing: '0.02em',
-                        zIndex: 2,
-                      }}
-                    >
-                      <Percent size={8} />
-                      {discountPct}% OFF
-                    </span>
-                  )}
-                </div>
-
-                {/* Content Details: Uniform height, flex: 1 for dynamic expansion */}
-                <div style={{ padding: '10px 12px', display: 'flex', flexDirection: 'column', flex: 1 }}>
-                  <h3
-                    style={{
-                      margin: '0 0 4px',
-                      color: 'var(--text-primary)',
-                      fontFamily: 'Outfit, sans-serif',
-                      fontSize: '0.92rem',
-                      fontWeight: 700,
-                      lineHeight: 1.25,
-                      display: '-webkit-box',
-                      WebkitLineClamp: 2,
-                      WebkitBoxOrient: 'vertical',
-                      overflow: 'hidden',
-                      wordBreak: 'break-word',
-                    }}
-                    title={product.name}
-                  >
-                    {product.name}
-                  </h3>
-
-                  {/* Price Section - Dainty, reduced size & single-line */}
-                  <div style={{ display: 'flex', alignItems: 'baseline', gap: 5, marginBottom: 6, flexWrap: 'nowrap' }}>
-                    <span
-                      style={{
-                        fontSize: '0.98rem',
-                        fontWeight: 800,
-                        color: 'var(--accent-gold, #C9A84C)',
-                        fontFamily: 'Outfit, sans-serif',
-                        lineHeight: 1,
-                        whiteSpace: 'nowrap',
-                      }}
-                    >
-                      ₹{product.price}
-                    </span>
-                    {product.originalPrice && product.originalPrice > product.price && (
-                      <>
-                        <span
-                          style={{
-                            fontSize: '0.72rem',
-                            color: 'var(--text-muted)',
-                            textDecoration: 'line-through',
-                            fontWeight: 500,
-                            whiteSpace: 'nowrap',
-                          }}
-                        >
-                          ₹{product.originalPrice}
-                        </span>
-                        <span
-                          style={{
-                            fontSize: '0.58rem',
-                            color: '#10B981',
-                            fontWeight: 700,
-                            background: 'rgba(16, 185, 129, 0.12)',
-                            border: '1px solid rgba(16, 185, 129, 0.25)',
-                            padding: '1px 4px',
-                            borderRadius: 4,
-                            whiteSpace: 'nowrap',
-                          }}
-                        >
-                          Save ₹{savings}
-                        </span>
-                      </>
-                    )}
-                  </div>
-
-                  {/* Action Footer: Aligns neatly at the bottom with marginTop: auto */}
-                  <div
-                    style={{
-                      display: 'flex',
-                      alignItems: 'center',
-                      gap: 6,
-                      marginTop: 'auto',
-                      paddingTop: 8,
-                      borderTop: '1px solid var(--card-border, rgba(201, 168, 76, 0.12))',
-                    }}
-                  >
-                    <button
-                      onClick={() => {
-                        setEditingProductId(product._id);
-                        setIsModalOpen(true);
-                      }}
-                      className="btn-edit"
-                      style={{
-                        flex: 1,
-                        padding: '6px 8px',
-                        borderRadius: 8,
-                        fontSize: '0.76rem',
-                        fontWeight: 600,
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        gap: 4,
-                        whiteSpace: 'nowrap',
-                      }}
-                    >
-                      <Pencil size={12} />
-                      <span>Edit</span>
-                    </button>
-                    <button
-                      onClick={() => setRemoveTarget(product)}
-                      className="btn-danger"
-                      style={{
-                        flex: 1,
-                        padding: '6px 8px',
-                        borderRadius: 8,
-                        fontSize: '0.76rem',
-                        fontWeight: 600,
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        gap: 4,
-                        whiteSpace: 'nowrap',
-                      }}
-                    >
-                      <Trash2 size={12} />
-                      <span>Remove</span>
-                    </button>
-                  </div>
-                </div>
-              </div>
-            );
-          })}
+                  onRemove={(prod) => setRemoveTarget(prod)}
+                />
+              ))}
+            </div>
+          )}
         </div>
       )}
 
+      {/* ── TAB 2: ADD PRODUCTS TO OFFERS (CATALOG CANDIDATES) ── */}
+      {activeTab === 'add' && (
+        <div>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16 }}>
+            <div>
+              <h2 style={{ fontFamily: 'Outfit, sans-serif', fontSize: '1.25rem', fontWeight: 800, color: 'var(--text-primary)', margin: 0 }}>
+                Select Catalog Products to Promote
+              </h2>
+              <p style={{ margin: '4px 0 0', fontSize: '0.8rem', color: 'var(--text-muted)' }}>
+                Set your desired offer price and click <b>Add to Offers</b> to instantly activate the promotion.
+              </p>
+            </div>
+
+            <span style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>
+              {filteredCatalogCandidates.length} eligible piece{filteredCatalogCandidates.length !== 1 ? 's' : ''}
+            </span>
+          </div>
+
+          {loading ? (
+            <SkeletonOfferCards count={6} />
+          ) : filteredCatalogCandidates.length === 0 ? (
+            <EmptyState
+              icon={Tag}
+              title="No Catalog Pieces Available"
+              description="All products in this category are already marked as special offers, or none match your search."
+              actionText="View Active Deals"
+              onAction={() => setActiveTab('active')}
+            />
+          ) : (
+            /* Responsive Grid of Compact Horizontal Cards with Add Button */
+            <div
+              style={{
+                display: 'grid',
+                gridTemplateColumns: 'repeat(auto-fill, minmax(340px, 1fr))',
+                gap: 16,
+              }}
+            >
+              {filteredCatalogCandidates.map((product) => (
+                <AdminOfferCard
+                  key={product._id}
+                  product={product}
+                  mode="add"
+                  onAddOffer={handleAddOffer}
+                  adding={addingId === product._id}
+                />
+              ))}
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* Add / Edit Product Modal */}
       <AddEditProductModal
         isOpen={isModalOpen}
         onClose={() => setIsModalOpen(false)}
@@ -616,6 +457,7 @@ const Offers = () => {
         isOfferPreset={true}
       />
 
+      {/* Remove Offer Confirmation Modal */}
       <ConfirmModal
         isOpen={!!removeTarget}
         onClose={() => setRemoveTarget(null)}
@@ -628,7 +470,7 @@ const Offers = () => {
         type="warning"
         loading={isRemoving}
       />
-    </PageWrapper >
+    </PageWrapper>
   );
 };
 

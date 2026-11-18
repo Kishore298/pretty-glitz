@@ -2,6 +2,7 @@ const crypto = require('crypto');
 const mongoose = require('mongoose');
 const Order = require('../models/Order');
 const Product = require('../models/Product');
+const InventoryLog = require('../models/InventoryLog');
 const Notification = require('../models/Notification');
 const { emitToAdmin, emitToUser } = require('../config/socket');
 const { sendPushToAllAdmins } = require('../services/pushService');
@@ -120,7 +121,10 @@ const createOrder = async (req, res) => {
           };
 
           const stockUpdate = {
-            $inc: { 'colorVariants.$[c].sizes.$[s].stockCount': -item.quantity },
+            $inc: {
+              'colorVariants.$[c].sizes.$[s].stockCount': -item.quantity,
+              stockVersion: 1,
+            },
           };
 
           const options = {
@@ -136,6 +140,31 @@ const createOrder = async (req, res) => {
             throw new Error(
               `Unable to reserve stock for ${item.name} (${item.colorName || 'Variant'} - Size ${item.size || 'N/A'}). Item is either out of stock or sold out.`
             );
+          }
+
+          // Create audit trail entry
+          try {
+            const auditLog = new InventoryLog({
+              productId: item.product,
+              productName: item.name,
+              category: 'Designer Glass Bangles',
+              variantType: 'COLOR_SIZE',
+              colorVariantId: item.colorVariantId,
+              sizeVariantId: item.sizeVariantId,
+              colorName: item.colorName || '',
+              size: item.size || '',
+              previousStock: 0,
+              updatedStock: 0,
+              quantityChanged: -item.quantity,
+              operation: 'ORDER_DEDUCTION',
+              source: 'ORDER_DEDUCTION',
+              reason: `Order #${orderId} purchase`,
+              referenceId: orderId,
+              adminUsername: 'System',
+            });
+            await auditLog.save(useTransaction && session ? { session } : {});
+          } catch (logErr) {
+            console.warn('[Orders] Audit log error during deduction:', logErr.message);
           }
 
           deductedItemsLog.push({
@@ -160,7 +189,10 @@ const createOrder = async (req, res) => {
               },
             };
             const stockUpdate = {
-              $inc: { 'sizes.$[s].stockCount': -item.quantity },
+              $inc: {
+                'sizes.$[s].stockCount': -item.quantity,
+                stockVersion: 1,
+              },
             };
             const options = {
               arrayFilters: [{ 's.size': item.size }],
@@ -173,6 +205,28 @@ const createOrder = async (req, res) => {
                 `Unable to reserve stock for ${item.name} (Size ${item.size}). Item is either out of stock or sold out.`
               );
             }
+
+            try {
+              const auditLog = new InventoryLog({
+                productId: item.product,
+                productName: item.name,
+                category: prodDoc.category || 'Bangles',
+                variantType: 'SIZE',
+                size: item.size || '',
+                previousStock: 0,
+                updatedStock: 0,
+                quantityChanged: -item.quantity,
+                operation: 'ORDER_DEDUCTION',
+                source: 'ORDER_DEDUCTION',
+                reason: `Order #${orderId} purchase`,
+                referenceId: orderId,
+                adminUsername: 'System',
+              });
+              await auditLog.save(useTransaction && session ? { session } : {});
+            } catch (logErr) {
+              console.warn('[Orders] Audit log error during size deduction:', logErr.message);
+            }
+
             deductedItemsLog.push({
               type: 'sizeStock',
               productId: item.product,
@@ -191,13 +245,37 @@ const createOrder = async (req, res) => {
               inStockCount: { $gte: item.quantity },
             };
             const stockUpdate = {
-              $inc: { inStockCount: -item.quantity },
+              $inc: {
+                inStockCount: -item.quantity,
+                stockVersion: 1,
+              },
             };
             const options = useTransaction && session ? { session } : {};
             const updateRes = await Product.updateOne(stockQuery, stockUpdate, options);
             if (updateRes.modifiedCount === 0) {
               throw new Error(`Insufficient stock for ${item.name}.`);
             }
+
+            try {
+              const auditLog = new InventoryLog({
+                productId: item.product,
+                productName: item.name,
+                category: prodDoc.category || 'Jewellery',
+                variantType: 'SIMPLE',
+                previousStock: prodDoc.inStockCount,
+                updatedStock: prodDoc.inStockCount - item.quantity,
+                quantityChanged: -item.quantity,
+                operation: 'ORDER_DEDUCTION',
+                source: 'ORDER_DEDUCTION',
+                reason: `Order #${orderId} purchase`,
+                referenceId: orderId,
+                adminUsername: 'System',
+              });
+              await auditLog.save(useTransaction && session ? { session } : {});
+            } catch (logErr) {
+              console.warn('[Orders] Audit log error during simple deduction:', logErr.message);
+            }
+
             deductedItemsLog.push({
               type: 'standard',
               productId: item.product,
@@ -223,6 +301,8 @@ const createOrder = async (req, res) => {
         items: cleanItems,
         totalAmount: finalAmount,
         status: 'PENDING_WHATSAPP',
+        stockDeducted: deductedItemsLog.length > 0,
+        stockRestored: false,
       };
 
       let createdOrder;
@@ -574,7 +654,19 @@ const updateOrderStatus = async (req, res) => {
       if (status === 'PROCESSING') order.processingAt = now;
       if (status === 'DISPATCHED') order.dispatchedAt = now;
       if (status === 'DELIVERED') order.deliveredAt = now;
-      if (status === 'CANCELLED') order.cancelledAt = now;
+      if (status === 'CANCELLED') {
+        order.cancelledAt = now;
+        try {
+          const { processOrderRestoration } = require('../services/inventoryService');
+          await processOrderRestoration({
+            orderId: order.orderId,
+            admin: req.admin || req.user || { username: 'Admin' },
+            reason: internalNotes || 'Order status updated to CANCELLED',
+          });
+        } catch (restoreErr) {
+          console.error('[Orders] Failed to restore stock for cancelled order:', restoreErr.message);
+        }
+      }
     }
 
     if (trackingId !== undefined) {

@@ -12,6 +12,7 @@ const Search = () => {
   const [results, setResults] = useState([]);
   const [categories, setCategories] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [sortBy, setSortBy] = useState('newest');
 
   useEffect(() => {
     api.get('/categories')
@@ -169,16 +170,60 @@ const Search = () => {
             </div>
           </div>
         ) : (
-          <motion.div 
-            initial={{ opacity: 0 }} animate={{ opacity: 1 }} 
-            className="product-grid-4"
-          >
-            {results.map((product, idx) => (
-              <motion.div key={product._id} initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: idx * 0.05 }}>
-                <ProductCard product={product} />
-              </motion.div>
-            ))}
-          </motion.div>
+          <div>
+            <div
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+                flexWrap: 'wrap',
+                gap: 12,
+                marginBottom: 20,
+                paddingBottom: 12,
+                borderBottom: '1px solid var(--border)',
+              }}
+            >
+              <span style={{ fontSize: '0.86rem', color: 'var(--text-secondary)', fontWeight: 600 }}>
+                {results.length} Products Found
+              </span>
+
+              {/* Sort Dropdown */}
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8, width: '100%', maxWidth: 280, marginLeft: 'auto' }}>
+                <span style={{ fontSize: '0.8rem', fontWeight: 600, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em', whiteSpace: 'nowrap' }}>
+                  Sort:
+                </span>
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <select
+                    value={sortBy}
+                    onChange={(e) => setSortBy(e.target.value)}
+                    className="pg-select"
+                    aria-label="Sort search results"
+                  >
+                    <option value="newest">✨ Newest Arrivals</option>
+                    <option value="price-asc">💵 Price: Low to High</option>
+                    <option value="price-desc">💎 Price: High to Low</option>
+                  </select>
+                </div>
+              </div>
+            </div>
+
+            <motion.div 
+              initial={{ opacity: 0 }} animate={{ opacity: 1 }} 
+              className="product-grid-4"
+            >
+              {[...results]
+                .sort((a, b) => {
+                  if (sortBy === 'price-asc') return a.price - b.price;
+                  if (sortBy === 'price-desc') return b.price - a.price;
+                  return new Date(b.createdAt || 0) - new Date(a.createdAt || 0);
+                })
+                .map((product, idx) => (
+                  <motion.div key={product._id} initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: Math.min(idx * 0.04, 0.3) }}>
+                    <ProductCard product={product} />
+                  </motion.div>
+                ))}
+            </motion.div>
+          </div>
         )}
       </div>
     </div>

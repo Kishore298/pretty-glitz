@@ -50,6 +50,9 @@ const createProduct = async (req, res) => {
       isBestseller,
       isOffer,
       isActive,
+      packagingType,
+      inStockCount,
+      lowStockThreshold,
     } = req.body;
 
     const trimmedCat = (category || '').trim();
@@ -94,6 +97,9 @@ const createProduct = async (req, res) => {
       isBestseller: isBestseller || false,
       isOffer: isOffer || false,
       isActive: isActive !== undefined ? isActive : true,
+      packagingType: packagingType ? packagingType.trim() : '',
+      inStockCount: inStockCount !== undefined && inStockCount !== null && inStockCount !== '' ? Number(inStockCount) : null,
+      lowStockThreshold: lowStockThreshold !== undefined && lowStockThreshold !== null && lowStockThreshold !== '' ? Number(lowStockThreshold) : null,
     });
 
     const savedProduct = await product.save();
@@ -183,6 +189,9 @@ const updateProduct = async (req, res) => {
       isBestseller,
       isOffer,
       isActive,
+      packagingType,
+      inStockCount,
+      lowStockThreshold,
     } = req.body;
 
     const product = await Product.findById(req.params.id);
@@ -204,6 +213,15 @@ const updateProduct = async (req, res) => {
     product.isBestseller = isBestseller !== undefined ? isBestseller : product.isBestseller;
     product.isOffer = isOffer !== undefined ? isOffer : product.isOffer;
     product.isActive = isActive !== undefined ? isActive : product.isActive;
+    if (packagingType !== undefined) {
+      product.packagingType = packagingType ? packagingType.trim() : '';
+    }
+    if (inStockCount !== undefined) {
+      product.inStockCount = inStockCount !== null && inStockCount !== '' ? Number(inStockCount) : null;
+    }
+    if (lowStockThreshold !== undefined) {
+      product.lowStockThreshold = lowStockThreshold !== null && lowStockThreshold !== '' ? Number(lowStockThreshold) : null;
+    }
 
     // Three-Tier Category & Inventory Logic
     if (isDesignerGlassBangles) {

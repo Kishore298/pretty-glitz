@@ -54,17 +54,73 @@ const CategoryPage = () => {
     });
   };
 
+  // Derive all active subcategories, ensuring any subcategories present on products
+  // (e.g. Daily Wear Bangles, Velvet Finish Bangles) are included even if subcategories API returns empty
+  const resolvedSubcategories = React.useMemo(() => {
+    const list = [...subcategories];
+    const existingIds = new Set(list.map((s) => s._id?.toString()));
+    const existingNames = new Set(list.map((s) => s.name?.toLowerCase()));
+
+    // Collect from products
+    products.forEach((p) => {
+      if (p.subcategoryId && typeof p.subcategoryId === 'object' && p.subcategoryId.name) {
+        const idStr = p.subcategoryId._id?.toString();
+        const nameLower = p.subcategoryId.name.toLowerCase();
+        if (!existingIds.has(idStr) && !existingNames.has(nameLower)) {
+          list.push({ _id: idStr || p.subcategoryId.name, name: p.subcategoryId.name });
+          if (idStr) existingIds.add(idStr);
+          existingNames.add(nameLower);
+        }
+      }
+    });
+
+    // For Designer Glass Bangles, ensure standard subcategories are recognized if present in data
+    if (/glass\s+bangles|bangles/i.test(normalizedCategory)) {
+      const defaults = ['Daily Wear Bangles', 'Velvet Finish Bangles'];
+      defaults.forEach((defName) => {
+        if (!existingNames.has(defName.toLowerCase())) {
+          // Check if any product has this in subcategoryId or name
+          const hasMatchingProduct = products.some(
+            (p) =>
+              (p.subcategoryId?.name && p.subcategoryId.name.toLowerCase() === defName.toLowerCase()) ||
+              p.name.toLowerCase().includes(defName.toLowerCase())
+          );
+          if (hasMatchingProduct) {
+            list.push({ _id: defName, name: defName });
+            existingNames.add(defName.toLowerCase());
+          }
+        }
+      });
+    }
+
+    return list;
+  }, [subcategories, products, normalizedCategory]);
+
   // Find active subcategory document if filtered
-  const activeSubDoc = subcategories.find(
+  const activeSubDoc = resolvedSubcategories.find(
     (s) => s._id.toString() === activeSubParam || s.name.toLowerCase() === activeSubParam.toLowerCase()
   );
 
+  // Matcher function to test if product belongs to subcategory
+  const productMatchesSubcategory = (p, sub) => {
+    if (!sub || !p) return false;
+    const subId = sub._id?.toString();
+    const subName = sub.name?.toLowerCase();
+
+    const pSubId = (p.subcategoryId?._id || p.subcategoryId)?.toString();
+    if (pSubId && subId && pSubId === subId) return true;
+
+    const pSubName = p.subcategoryId?.name?.toLowerCase();
+    if (pSubName && subName && pSubName === subName) return true;
+
+    if (subName && p.name && p.name.toLowerCase().includes(subName)) return true;
+
+    return false;
+  };
+
   // Products filtered by selected subcategory chip
   const displayedProducts = activeSubDoc
-    ? products.filter((p) => {
-        const pSubId = (p.subcategoryId?._id || p.subcategoryId)?.toString();
-        return pSubId === activeSubDoc._id.toString();
-      })
+    ? products.filter((p) => productMatchesSubcategory(p, activeSubDoc))
     : products;
 
   const handleSubSelect = (subId) => {
@@ -131,30 +187,29 @@ const CategoryPage = () => {
 
           {/* Right Side Sort */}
           {!loading && displayedProducts.length > 0 && (
-            <motion.div initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} style={{ display: 'flex', alignItems: 'center', gap: 8, width: '100%', maxWidth: 300, marginLeft: 'auto' }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 6, color: 'var(--text-muted)' }}>
-                <Filter size={16} />
+            <motion.div initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} style={{ display: 'flex', alignItems: 'center', gap: 8, width: '100%', maxWidth: 280, marginLeft: 'auto' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 5, color: 'var(--text-muted)', fontSize: '0.8rem', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.05em', whiteSpace: 'nowrap' }}>
+                <Filter size={14} color="var(--accent)" />
+                <span>Sort:</span>
               </div>
-              <select 
-                value={sortBy} 
-                onChange={e => setSortBy(e.target.value)}
-                style={{
-                  padding: '8px 12px', borderRadius: 8, flex: 1,
-                  background: 'var(--bg)', border: `1px solid var(--border-strong)`,
-                  color: 'var(--text)', fontSize: '0.85rem', outline: 'none', cursor: 'pointer',
-                  fontFamily: 'Inter, sans-serif', fontWeight: 500
-                }}
-              >
-                <option value="newest">Newest Arrivals</option>
-                <option value="price-asc">Price: Low to High</option>
-                <option value="price-desc">Price: High to Low</option>
-              </select>
+              <div style={{ flex: 1, minWidth: 0 }}>
+                <select 
+                  value={sortBy} 
+                  onChange={e => setSortBy(e.target.value)}
+                  className="pg-select"
+                  aria-label="Sort products"
+                >
+                  <option value="newest">✨ Newest Arrivals</option>
+                  <option value="price-asc">💵 Price: Low to High</option>
+                  <option value="price-desc">💎 Price: High to Low</option>
+                </select>
+              </div>
             </motion.div>
           )}
         </div>
 
         {/* Subcategory Filter Tabs (for categories that support subcategories) */}
-        {!loading && subcategories.length > 0 && (
+        {!loading && resolvedSubcategories.length > 0 && (
           <div
             className="subcategory-filter-pills"
             style={{
@@ -184,16 +239,14 @@ const CategoryPage = () => {
             >
               All Pieces ({products.length})
             </button>
-            {subcategories.map((sub) => {
-              const isSelected = activeSubDoc && activeSubDoc._id.toString() === sub._id.toString();
-              const count = products.filter(
-                (p) => (p.subcategoryId?._id || p.subcategoryId)?.toString() === sub._id.toString()
-              ).length;
+            {resolvedSubcategories.map((sub) => {
+              const isSelected = activeSubDoc && (activeSubDoc._id?.toString() === sub._id?.toString() || activeSubDoc.name === sub.name);
+              const count = products.filter((p) => productMatchesSubcategory(p, sub)).length;
 
               return (
                 <button
-                  key={sub._id}
-                  onClick={() => handleSubSelect(sub._id.toString())}
+                  key={sub._id || sub.name}
+                  onClick={() => handleSubSelect(sub._id?.toString() || sub.name)}
                   style={{
                     padding: '7px 16px',
                     borderRadius: 999,
@@ -259,23 +312,21 @@ const CategoryPage = () => {
               </button>
             )}
           </motion.div>
-        ) : !activeSubDoc && subcategories.length > 0 ? (
-          /* Main category view with rollup: grouped sections per subcategory + unassigned pieces */
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 56 }}>
-            {subcategories.map((sub, sIdx) => {
+        ) : !activeSubDoc && resolvedSubcategories.length > 0 ? (
+          /* Main category view: grouped sections per subcategory + unassigned pieces */
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 48 }}>
+            {resolvedSubcategories.map((sub, sIdx) => {
               const subProducts = getSortedProducts(
-                products.filter(
-                  (p) => (p.subcategoryId?._id || p.subcategoryId)?.toString() === sub._id.toString()
-                )
+                products.filter((p) => productMatchesSubcategory(p, sub))
               );
               if (subProducts.length === 0) return null;
 
               return (
-                <motion.div key={sub._id} initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: sIdx * 0.08 }}>
-                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 20 }}>
+                <motion.div key={sub._id || sub.name} initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: sIdx * 0.08 }}>
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 20, paddingBottom: 10, borderBottom: '1px solid var(--border)' }}>
                     <h2 style={{
-                      fontSize: '1.35rem', fontWeight: 700, color: 'var(--text)',
-                      fontFamily: 'Outfit, sans-serif', margin: 0,
+                      fontSize: 'clamp(1.3rem, 2.5vw, 1.8rem)', fontWeight: 700, color: 'var(--text)',
+                      fontFamily: '"Cormorant Garamond", Georgia, serif', margin: 0,
                       display: 'flex', alignItems: 'center', gap: 10
                     }}>
                       <Sparkles size={16} color="var(--accent)" />
@@ -285,7 +336,7 @@ const CategoryPage = () => {
                       </span>
                     </h2>
                     <button
-                      onClick={() => handleSubSelect(sub._id.toString())}
+                      onClick={() => handleSubSelect(sub._id?.toString() || sub.name)}
                       style={{
                         background: 'none', border: 'none', cursor: 'pointer',
                         color: 'var(--accent)', fontSize: '0.8rem', fontWeight: 600,
@@ -310,26 +361,24 @@ const CategoryPage = () => {
 
             {/* Any products not tagged with subcategories */}
             {(() => {
-              const subcatIds = new Set(subcategories.map((s) => s._id.toString()));
               const unassigned = getSortedProducts(
-                products.filter((p) => {
-                  const pSubId = (p.subcategoryId?._id || p.subcategoryId)?.toString();
-                  return !pSubId || !subcatIds.has(pSubId);
-                })
+                products.filter((p) => !resolvedSubcategories.some((sub) => productMatchesSubcategory(p, sub)))
               );
               if (unassigned.length === 0) return null;
               return (
                 <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}>
-                  <h2 style={{
-                    fontSize: '1.35rem', fontWeight: 700, color: 'var(--text)',
-                    fontFamily: 'Outfit, sans-serif', marginBottom: 20,
-                    display: 'flex', alignItems: 'center', gap: 10
-                  }}>
-                    Signature Atelier Pieces
-                    <span style={{ fontSize: '0.78rem', color: 'var(--text-muted)', fontWeight: 500 }}>
-                      ({unassigned.length})
-                    </span>
-                  </h2>
+                  <div style={{ marginBottom: 20, paddingBottom: 10, borderBottom: '1px solid var(--border)' }}>
+                    <h2 style={{
+                      fontSize: 'clamp(1.3rem, 2.5vw, 1.8rem)', fontWeight: 700, color: 'var(--text)',
+                      fontFamily: '"Cormorant Garamond", Georgia, serif', margin: 0,
+                      display: 'flex', alignItems: 'center', gap: 10
+                    }}>
+                      Signature Collection
+                      <span style={{ fontSize: '0.78rem', color: 'var(--text-muted)', fontWeight: 500 }}>
+                        ({unassigned.length})
+                      </span>
+                    </h2>
+                  </div>
                   <div className="product-grid-4">
                     <AnimatePresence>
                       {unassigned.map((product, idx) => (
@@ -345,15 +394,32 @@ const CategoryPage = () => {
           </div>
         ) : (
           /* Single Grid view (when specific subcategory is selected OR category has no subcategories) */
-          <motion.div layout className="product-grid-4">
-            <AnimatePresence>
-              {getSortedProducts(displayedProducts).map((product, idx) => (
-                <motion.div key={product._id} layout initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.9 }} transition={{ delay: idx * 0.04 }}>
-                  <ProductCard product={product} />
-                </motion.div>
-              ))}
-            </AnimatePresence>
-          </motion.div>
+          <div>
+            {activeSubDoc && (
+              <div style={{ marginBottom: 20, paddingBottom: 10, borderBottom: '1px solid var(--border)' }}>
+                <h2 style={{
+                  fontSize: 'clamp(1.3rem, 2.5vw, 1.8rem)', fontWeight: 700, color: 'var(--text)',
+                  fontFamily: '"Cormorant Garamond", Georgia, serif', margin: 0,
+                  display: 'flex', alignItems: 'center', gap: 10
+                }}>
+                  <Sparkles size={16} color="var(--accent)" />
+                  {activeSubDoc.name}
+                  <span style={{ fontSize: '0.78rem', color: 'var(--text-muted)', fontWeight: 500 }}>
+                    ({displayedProducts.length})
+                  </span>
+                </h2>
+              </div>
+            )}
+            <motion.div layout className="product-grid-4">
+              <AnimatePresence>
+                {getSortedProducts(displayedProducts).map((product, idx) => (
+                  <motion.div key={product._id} layout initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} exit={{ opacity: 0, scale: 0.9 }} transition={{ delay: idx * 0.04 }}>
+                    <ProductCard product={product} />
+                  </motion.div>
+                ))}
+              </AnimatePresence>
+            </motion.div>
+          </div>
         )}
       </div>
     </div>
