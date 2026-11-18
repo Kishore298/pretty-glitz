@@ -362,7 +362,7 @@ const ProductDetail = () => {
                 position: 'relative',
                 touchAction: allGalleryThumbnails.length > 1 ? 'pan-y' : 'auto',
                 width: '100%',
-                borderRadius: 10,
+                borderRadius: 5,
                 overflow: 'hidden',
                 cursor: 'default',
               }}
