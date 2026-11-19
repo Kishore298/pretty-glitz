@@ -1,7 +1,7 @@
 import React, { useContext, useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { User, Phone, Heart, ShoppingBag, LogOut, MessageCircle, ArrowRight, Package, Truck, ExternalLink } from 'lucide-react';
+import { User, Phone, Heart, ShoppingBag, LogOut, MessageCircle, ArrowRight, Package, Truck, ExternalLink, Copy, Check } from 'lucide-react';
 import { AuthContext } from '../context/AuthContext';
 import { CartContext } from '../context/CartContext';
 import { useWishlist } from '../context/WishlistContext';
@@ -18,6 +18,18 @@ const Account = () => {
 
   const [orders, setOrders] = useState([]);
   const [loadingOrders, setLoadingOrders] = useState(true);
+  const [copiedId, setCopiedId] = useState(null);
+
+  const handleCopyTracking = (trackingId) => {
+    if (!trackingId) return;
+    try {
+      navigator.clipboard.writeText(trackingId);
+      setCopiedId(trackingId);
+      setTimeout(() => setCopiedId(null), 2500);
+    } catch {
+      // fallback
+    }
+  };
 
   const cartCount = getCartCount();
   const wishlistCount = getWishlistCount();
@@ -380,32 +392,63 @@ const Account = () => {
                     ))}
                   </div>
 
-                  {/* ST Courier Live Tracking Box */}
-                  {ord.trackingId && (
+                  {/* ST Courier Tracking Details Card */}
+                  {ord.trackingId ? (
                     <div
                       style={{
                         marginTop: 12,
-                        padding: '12px 16px',
-                        borderRadius: 12,
+                        padding: '14px 16px',
+                        borderRadius: 14,
                         background: isDark ? 'rgba(139, 92, 246, 0.08)' : 'rgba(139, 92, 246, 0.05)',
                         border: '1px solid rgba(139, 92, 246, 0.25)',
                         display: 'flex',
                         alignItems: 'center',
                         justifyContent: 'space-between',
                         flexWrap: 'wrap',
-                        gap: 10,
+                        gap: 12,
                       }}
                     >
-                      <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-                        <div style={{ width: 34, height: 34, borderRadius: 8, background: 'rgba(139, 92, 246, 0.15)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#8B5CF6' }}>
-                          <Truck size={18} />
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+                        <div style={{ width: 38, height: 38, borderRadius: 10, background: 'rgba(139, 92, 246, 0.15)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#8B5CF6' }}>
+                          <Truck size={20} />
                         </div>
                         <div>
                           <div style={{ fontSize: '0.74rem', color: 'var(--text-secondary)', textTransform: 'uppercase', letterSpacing: '0.06em', fontWeight: 600 }}>
-                            {ord.courierPartner || 'ST Courier'} Tracking
+                            {ord.courierPartner || 'ST Courier'} Tracking Number
                           </div>
-                          <div style={{ fontSize: '0.88rem', fontWeight: 700, color: 'var(--text)', fontFamily: 'monospace' }}>
-                            {ord.trackingId}
+                          <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 2 }}>
+                            <span style={{ fontSize: '0.96rem', fontWeight: 700, color: 'var(--text)', fontFamily: 'monospace', letterSpacing: '0.05em' }}>
+                              {ord.trackingId}
+                            </span>
+                            <button
+                              type="button"
+                              onClick={() => handleCopyTracking(ord.trackingId)}
+                              title="Copy Tracking ID"
+                              style={{
+                                background: copiedId === ord.trackingId ? 'rgba(16, 185, 129, 0.15)' : (isDark ? 'rgba(255,255,255,0.08)' : 'rgba(0,0,0,0.06)'),
+                                border: `1px solid ${copiedId === ord.trackingId ? '#10B981' : 'var(--border)'}`,
+                                color: copiedId === ord.trackingId ? '#10B981' : 'var(--text)',
+                                padding: '3px 8px',
+                                borderRadius: 6,
+                                fontSize: '0.72rem',
+                                fontWeight: 600,
+                                cursor: 'pointer',
+                                display: 'inline-flex',
+                                alignItems: 'center',
+                                gap: 4,
+                                transition: 'all 0.2s ease',
+                              }}
+                            >
+                              {copiedId === ord.trackingId ? (
+                                <>
+                                  <Check size={12} /> Copied!
+                                </>
+                              ) : (
+                                <>
+                                  <Copy size={12} /> Copy
+                                </>
+                              )}
+                            </button>
                           </div>
                         </div>
                       </div>
@@ -418,20 +461,32 @@ const Account = () => {
                           display: 'inline-flex',
                           alignItems: 'center',
                           gap: 6,
-                          padding: '7px 14px',
-                          borderRadius: 8,
+                          padding: '8px 16px',
+                          borderRadius: 9,
                           background: '#8B5CF6',
                           color: '#FFFFFF',
                           textDecoration: 'none',
-                          fontSize: '0.78rem',
+                          fontSize: '0.82rem',
                           fontWeight: 700,
+                          boxShadow: '0 4px 14px rgba(139, 92, 246, 0.3)',
                           transition: 'opacity 0.2s',
                         }}
                       >
-                        Track Shipment <ExternalLink size={13} />
+                        Track on ST Courier <ExternalLink size={13} />
                       </a>
                     </div>
-                  )}
+                  ) : isDispatched ? (
+                    <div
+                      style={{
+                        marginTop: 10,
+                        fontSize: '0.78rem',
+                        color: 'var(--text-secondary)',
+                        fontStyle: 'italic',
+                      }}
+                    >
+                      📦 Your parcel is dispatched. ST Courier tracking details will appear here shortly.
+                    </div>
+                  ) : null}
                 </div>
               );
             })}

@@ -34,7 +34,7 @@ const ColorVariationSelector = ({
     : colorVariants;
 
   return (
-    <div className="color-variation-selector" style={{ marginBottom: 20 }}>
+    <div className="color-variation-selector" style={{ marginBottom: 10 }}>
       {/* Heading & Current Selection Header Row */}
       <div
         className="color-variation-header"
@@ -42,7 +42,7 @@ const ColorVariationSelector = ({
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'space-between',
-          marginBottom: 12,
+          marginBottom: 6,
           gap: 12,
           flexWrap: 'wrap',
         }}

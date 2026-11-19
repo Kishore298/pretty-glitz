@@ -8,6 +8,7 @@ import Navbar from './components/Navbar';
 import Footer from './components/Footer';
 import BottomNav from './components/BottomNav';
 import ScrollToTop from './components/ScrollToTop';
+import PageTracker from './components/PageTracker';
 
 // Lazy loaded pages for performance optimization
 const Home        = lazy(() => import('./pages/Home'));
@@ -22,7 +23,6 @@ const Wishlist    = lazy(() => import('./pages/Wishlist'));
 const Login       = lazy(() => import('./pages/Login'));
 const Register    = lazy(() => import('./pages/Register'));
 const Account     = lazy(() => import('./pages/Account'));
-const TrackOrder   = lazy(() => import('./pages/TrackOrder'));
 
 // Premium fallback loader
 const PageLoader = () => (
@@ -76,6 +76,7 @@ function App() {
             <Router>
               <AuthSyncBridge />
               <ScrollToTop />
+              <PageTracker />
               <div className="flex flex-col min-h-screen" style={{ position: 'relative', zIndex: 1 }}>
                 <Navbar />
                 <main className="flex-grow">
@@ -85,8 +86,9 @@ function App() {
                       <Route path="/"                          element={<Home />} />
                       <Route path="/products"                 element={<AllProducts />} />
                       <Route path="/categories"              element={<Navigate to="/#categories" replace />} />
-                      <Route path="/category/:categoryName"  element={<CategoryPage />} />
-                      <Route path="/product/:id"             element={<ProductDetail />} />
+                      <Route path="/category/:categoryName"                  element={<CategoryPage />} />
+                      <Route path="/category/:categoryName/:subcategoryName" element={<CategoryPage />} />
+                      <Route path="/product/:id"                             element={<ProductDetail />} />
                       <Route path="/search"                  element={<Search />} />
                       <Route path="/offers"                  element={<Offers />} />
                       <Route path="/cart"                    element={<Cart />} />
@@ -97,7 +99,7 @@ function App() {
                       <Route path="/login"                   element={<Login />} />
                       <Route path="/register"               element={<Register />} />
                       <Route path="/account"                element={<Account />} />
-                      <Route path="/track-order"            element={<TrackOrder />} />
+                      <Route path="/track-order"            element={<Navigate to="/account" replace />} />
                     </Routes>
                   </Suspense>
                 </main>

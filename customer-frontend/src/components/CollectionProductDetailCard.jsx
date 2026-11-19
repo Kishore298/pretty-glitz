@@ -1,4 +1,4 @@
-import React, { useState, useContext } from 'react';
+import React, { useState, useContext, useMemo } from 'react';
 import { Link } from 'react-router-dom';
 import {
   Heart,
@@ -17,6 +17,8 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { CartContext, resolveStock } from '../context/CartContext';
 import { useWishlist } from '../context/WishlistContext';
 import { optimizeImageUrl } from '../utils/cloudinary';
+import { sortSizesAscending } from '../utils/sizeHelper';
+import { getProductUrl } from '../utils/urlHelper';
 import ProductDescriptionDisplay from './ProductDescriptionDisplay';
 import BangleSizeChartModal from './BangleSizeChartModal';
 import ProductImageModal from './ProductImageModal';
@@ -46,19 +48,18 @@ const CollectionProductDetailCard = ({ product, isLast = false }) => {
   const [showSizeChart, setShowSizeChart] = useState(false);
 
   const inWishlist = isInWishlist(product._id);
+  const [error, setError] = useState('');
 
-  // Available Sizes for currently selected variant
-  const activeSizes = (selectedColor && selectedColor.sizes?.length > 0)
-    ? selectedColor.sizes
-    : (product.sizes || []);
+  // Available Sizes for currently selected variant - sorted ascending (e.g. 2.2 before 2.4, 2.6, 2.8)
+  const activeSizes = useMemo(() => {
+    const raw = (selectedColor && selectedColor.sizes?.length > 0)
+      ? selectedColor.sizes
+      : (product.sizes || []);
+    return sortSizesAscending(raw);
+  }, [selectedColor, product.sizes]);
 
-  const [selectedSize, setSelectedSize] = useState(() => {
-    if (selectedColor?.sizes?.length > 0) {
-      const firstInStock = selectedColor.sizes.find(s => s.inStock !== false);
-      return firstInStock ? firstInStock.size : selectedColor.sizes[0].size;
-    }
-    return product.sizes?.length > 0 ? product.sizes[0].size : null;
-  });
+  // Keep size initially unselected per user instruction
+  const [selectedSize, setSelectedSize] = useState(null);
 
   const [selectedPieceCount, setSelectedPieceCount] = useState(() => {
     if (product.pieceCounts?.length > 0) {
@@ -94,17 +95,16 @@ const CollectionProductDetailCard = ({ product, isLast = false }) => {
   const handleSelectColor = (cVar) => {
     setSelectedColor(cVar);
     setActiveImg(0); // Reset gallery to index 0 on colour switch
-    if (cVar.sizes?.length > 0) {
+    if (selectedSize && cVar.sizes?.length > 0) {
       const stillValid = cVar.sizes.find(s => s.size === selectedSize && s.inStock !== false);
       if (!stillValid) {
-        const firstAvailable = cVar.sizes.find(s => s.inStock !== false);
-        setSelectedSize(firstAvailable ? firstAvailable.size : cVar.sizes[0].size);
+        setSelectedSize(null);
       }
     }
   };
 
   const handleShare = async () => {
-    const shareUrl = `${window.location.origin}/product/${product._id}`;
+    const shareUrl = `${window.location.origin}${getProductUrl(product)}`;
     if (navigator.share) {
       try {
         await navigator.share({
@@ -128,7 +128,12 @@ const CollectionProductDetailCard = ({ product, isLast = false }) => {
 
   const handleAddToCart = (e) => {
     e.preventDefault();
+    if (activeSizes?.length > 0 && !selectedSize) {
+      setError('Please select a size first');
+      return;
+    }
     if (isOutOfStock) return;
+    setError('');
     addToCart(product, selectedSize, 1, selectedPieceCount?.count ?? null, resolvedPrice, selectedColor);
     setAddedFeedback(true);
     setTimeout(() => setAddedFeedback(false), 2000);
@@ -438,7 +443,7 @@ const CollectionProductDetailCard = ({ product, isLast = false }) => {
             <div className="product-detail-title-row">
               <h3 className="complete-look-title-container" style={{ margin: 0 }}>
                 <Link
-                  to={`/product/${product._id}`}
+                  to={getProductUrl(product)}
                   className="complete-look-title-link"
                 >
                   <span>{product.name}</span>
@@ -547,7 +552,7 @@ const CollectionProductDetailCard = ({ product, isLast = false }) => {
             {/* Bangle Size Selector with Live Stock Availability */}
             {activeSizes?.length > 0 && (
               <div className="product-detail-section">
-                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 10 }}>
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 6 }}>
                   <span className="product-detail-label" style={{ margin: 0 }}>
                     Select Size
                   </span>
@@ -584,6 +589,7 @@ const CollectionProductDetailCard = ({ product, isLast = false }) => {
                         onClick={() => {
                           if (!isOutOfStock) {
                             setSelectedSize(s.size);
+                            setError('');
                           }
                         }}
                         className="product-size-btn"
@@ -641,6 +647,16 @@ const CollectionProductDetailCard = ({ product, isLast = false }) => {
                   })}
                 </div>
               </div>
+            )}
+
+            {error && (
+              <motion.p
+                initial={{ opacity: 0, y: -4 }}
+                animate={{ opacity: 1, y: 0 }}
+                style={{ color: '#ef4444', fontSize: '0.82rem', fontWeight: 600, marginBottom: 8 }}
+              >
+                {error}
+              </motion.p>
             )}
 
             {/* Cart Controls with Live Stock Validation */}

@@ -4,6 +4,7 @@ import { CartContext, resolveStock } from '../context/CartContext';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Trash2, ArrowRight, ChevronRight, Lock, AlertCircle } from 'lucide-react';
 import { optimizeImageUrl } from '../utils/cloudinary';
+import { getProductUrl } from '../utils/urlHelper';
 import logoImg from '../assets/pretty-glitz-logo.png';
 
 const Cart = () => {
@@ -109,7 +110,7 @@ const Cart = () => {
                       >
                         {/* Compact Thumbnail */}
                         <Link
-                          to={`/product/${item.product._id}`}
+                          to={getProductUrl(item.product)}
                           className="cart-item-thumb-box"
                           style={{
                             width: 56,
@@ -148,7 +149,7 @@ const Cart = () => {
                         {/* Middle Info: Name, Price, Variations, Packaging, Stock Warnings */}
                         <div style={{ flex: 1, minWidth: 0 }}>
                           <Link
-                            to={`/product/${item.product._id}`}
+                            to={getProductUrl(item.product)}
                             style={{
                               fontSize: '0.81rem',
                               fontWeight: 600,

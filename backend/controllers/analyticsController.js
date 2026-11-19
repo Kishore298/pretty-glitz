@@ -8,6 +8,7 @@ const Cart = require('../models/Cart');
 const ProductAnalytics = require('../models/ProductAnalytics');
 const AnalyticsEvent = require('../models/AnalyticsEvent');
 const ActiveGuestSession = require('../models/ActiveGuestSession');
+const PageVisit = require('../models/PageVisit');
 
 // Configurable rolling deduplication window (default 24 hours)
 const COOLDOWN_HOURS = parseInt(process.env.ANALYTICS_COOLDOWN_HOURS || '24', 10);
@@ -710,10 +711,219 @@ const exportProductAnalytics = async (req, res) => {
   }
 };
 
+// ─── POST /api/analytics/page-visit ──────────────────────────────────────────
+// Ingests device page visit and duration, deduplicated by deviceId per page & day
+const recordPageVisit = async (req, res) => {
+  try {
+    let payload = req.body;
+    if (typeof payload === 'string') {
+      try {
+        payload = JSON.parse(payload);
+      } catch {
+        payload = {};
+      }
+    }
+
+    const { deviceId, path, pageTitle, durationSeconds, platform } = payload || {};
+    if (!deviceId || !path) {
+      return res.status(400).json({ message: 'deviceId and path are required' });
+    }
+
+    // Clean and normalize path
+    const rawPath = String(path).trim() || '/';
+    let cleanPath = rawPath;
+    try {
+      cleanPath = decodeURIComponent(rawPath);
+    } catch {
+      // keep rawPath
+    }
+
+    const cleanTitle = (pageTitle && String(pageTitle).trim()) || cleanPath;
+    const cleanPlatform = ['mobile', 'desktop', 'tablet'].includes(platform) ? platform : 'desktop';
+    const visitDate = new Date().toISOString().slice(0, 10);
+    const safeDuration = Math.max(0, Math.min(Number(durationSeconds) || 0, 1800));
+
+    // Update or insert page visit record
+    await PageVisit.findOneAndUpdate(
+      { deviceId, path: cleanPath, visitDate },
+      {
+        $inc: { hits: 1, durationSeconds: Math.round(safeDuration) },
+        $set: {
+          pageTitle: cleanTitle,
+          platform: cleanPlatform,
+          lastVisitedAt: new Date(),
+        },
+        $setOnInsert: {
+          deviceId,
+          path: cleanPath,
+          visitDate,
+        },
+      },
+      { upsert: true, new: true, setDefaultsOnInsert: true }
+    );
+
+    return res.status(200).json({ success: true });
+  } catch (err) {
+    console.error('[analytics] recordPageVisit error:', err);
+    return res.status(500).json({ message: 'Failed to record page visit' });
+  }
+};
+
+// ─── GET /api/analytics/traffic ──────────────────────────────────────────────
+// Aggregates site visits and per-page metrics, deduplicated by physical deviceId
+const getPageAnalytics = async (req, res) => {
+  try {
+    // Purge any synthetic verification test records
+    await PageVisit.deleteMany({ deviceId: 'test_device_verification_123' }).catch(() => {});
+
+    const { range = '30d' } = req.query;
+    let matchFilter = { deviceId: { $ne: 'test_device_verification_123' } };
+
+    if (range === 'today') {
+      const todayStr = new Date().toISOString().slice(0, 10);
+      matchFilter.visitDate = todayStr;
+    } else if (range === '7d') {
+      const d = new Date();
+      d.setDate(d.getDate() - 7);
+      matchFilter.visitDate = { $gte: d.toISOString().slice(0, 10) };
+    } else if (range === '30d') {
+      const d = new Date();
+      d.setDate(d.getDate() - 30);
+      matchFilter.visitDate = { $gte: d.toISOString().slice(0, 10) };
+    }
+
+    // 1. Overall Site Unique Device Visitors
+    const distinctDevices = await PageVisit.distinct('deviceId', matchFilter);
+    const totalUniqueVisitors = distinctDevices.length;
+
+    // 2. Total Hits & Total Duration Site-wide
+    const overallAgg = await PageVisit.aggregate([
+      { $match: matchFilter },
+      {
+        $group: {
+          _id: null,
+          totalViews: { $sum: '$hits' },
+          totalSeconds: { $sum: '$durationSeconds' },
+        },
+      },
+    ]);
+    const totalViews = overallAgg[0]?.totalViews || 0;
+    const totalDurationSeconds = overallAgg[0]?.totalSeconds || 0;
+    const avgDurationPerVisitor = totalUniqueVisitors > 0 ? Math.round(totalDurationSeconds / totalUniqueVisitors) : 0;
+
+    // 3. Platform Breakdown (Unique Devices)
+    const platformAgg = await PageVisit.aggregate([
+      { $match: matchFilter },
+      {
+        $group: {
+          _id: { platform: '$platform', deviceId: '$deviceId' },
+        },
+      },
+      {
+        $group: {
+          _id: '$_id.platform',
+          uniqueCount: { $sum: 1 },
+        },
+      },
+    ]);
+    const platformBreakdown = {
+      mobile: 0,
+      desktop: 0,
+      tablet: 0,
+    };
+    platformAgg.forEach((item) => {
+      if (item._id && platformBreakdown[item._id] !== undefined) {
+        platformBreakdown[item._id] = item.uniqueCount;
+      }
+    });
+
+    // 4. Per-Page Aggregation (strictly deduplicated by deviceId per page)
+    const pageStats = await PageVisit.aggregate([
+      { $match: matchFilter },
+      {
+        $group: {
+          _id: '$path',
+          uniqueDevices: { $addToSet: '$deviceId' },
+          totalViews: { $sum: '$hits' },
+          totalDurationSeconds: { $sum: '$durationSeconds' },
+          pageTitle: { $last: '$pageTitle' },
+          lastVisitedAt: { $max: '$lastVisitedAt' },
+        },
+      },
+      {
+        $project: {
+          path: '$_id',
+          pageTitle: 1,
+          uniqueVisitors: { $size: '$uniqueDevices' },
+          totalViews: 1,
+          totalDurationSeconds: 1,
+          avgDurationSeconds: {
+            $cond: [
+              { $gt: [{ $size: '$uniqueDevices' }, 0] },
+              { $round: [{ $divide: ['$totalDurationSeconds', { $size: '$uniqueDevices' }] }, 0] },
+              0,
+            ],
+          },
+          lastVisitedAt: 1,
+        },
+      },
+      { $sort: { uniqueVisitors: -1, totalDurationSeconds: -1 } },
+      { $limit: 100 },
+    ]);
+
+    // 5. Daily Trend (last 14 days)
+    const dailyTrend = await PageVisit.aggregate([
+      { $match: matchFilter },
+      {
+        $group: {
+          _id: { visitDate: '$visitDate', deviceId: '$deviceId' },
+        },
+      },
+      {
+        $group: {
+          _id: '$_id.visitDate',
+          uniqueDevices: { $sum: 1 },
+        },
+      },
+      { $sort: { _id: 1 } },
+    ]);
+
+    return res.status(200).json({
+      summary: {
+        totalUniqueVisitors,
+        totalViews,
+        totalDurationSeconds,
+        avgDurationPerVisitor,
+        platformBreakdown,
+      },
+      dailyTrend: dailyTrend.map((t) => ({ date: t._id, uniqueVisitors: t.uniqueDevices })),
+      pages: pageStats,
+    });
+  } catch (err) {
+    console.error('[analytics] getPageAnalytics error:', err);
+    return res.status(500).json({ message: 'Failed to fetch page traffic analytics.' });
+  }
+};
+
+// ─── DELETE /api/analytics/traffic/reset ─────────────────────────────────────
+// Clears all page visit records so admin can test from a clean slate
+const resetTrafficAnalytics = async (req, res) => {
+  try {
+    await PageVisit.deleteMany({});
+    return res.status(200).json({ success: true, message: 'All traffic analytics data reset successfully.' });
+  } catch (err) {
+    console.error('[analytics] resetTrafficAnalytics error:', err);
+    return res.status(500).json({ message: 'Failed to reset traffic data' });
+  }
+};
+
 module.exports = {
   trackEvent,
   syncGuestSession,
   getProductAnalytics,
   exportProductAnalytics,
+  recordPageVisit,
+  getPageAnalytics,
+  resetTrafficAnalytics,
 };
 

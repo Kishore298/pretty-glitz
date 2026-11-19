@@ -289,7 +289,7 @@ const Checkout = () => {
             </button>
 
             <Link
-              to={`/track-order?id=${createdOrderId}`}
+              to="/account"
               onClick={() => clearCart()}
               style={{
                 width: '100%',
@@ -308,7 +308,7 @@ const Checkout = () => {
               }}
             >
               <Truck size={16} />
-              Track Shipment Status Live
+              View My Orders & Tracking
             </Link>
 
             <button

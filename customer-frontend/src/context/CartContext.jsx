@@ -351,6 +351,7 @@ export const CartProvider = ({ children }) => {
     if (cartItems.length > 0) {
       validateCartStock();
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []); // Run on mount
 
   return (

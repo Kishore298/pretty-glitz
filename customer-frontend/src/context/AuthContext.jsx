@@ -7,26 +7,18 @@ export const AuthContext = createContext();
 /**
  * AuthProvider
  *
- * Manages customer phone + password authentication.
+ * Manages customer mobile OTP authentication (MSG91 / 1234 bypass).
  * Admin authentication is completely separate (/api/admin/auth) and unaffected.
- *
- * Exposes:
- *   login(mobile, password)  → returns { token, user } or { status: 'NEEDS_PASSWORD_SETUP', ... }
- *   register(name, mobile, password) → returns { token, user }
- *   setPassword(mobile, newPassword, confirmPassword) → returns { token, user }
- *   logout()
- *   user, loading, token
  */
 export const AuthProvider = ({ children }) => {
-  const [user,    setUser]    = useState(null);
-  const [token,   setToken]   = useState(null);
+  const [user, setUser] = useState(null);
+  const [token, setToken] = useState(null);
   const [loading, setLoading] = useState(true);
-  const [isWhatsAppOtpEnabled, setIsWhatsAppOtpEnabled] = useState(false);
 
-  // Restore session from localStorage on mount and check WhatsApp OTP feature flag
+  // Restore session from localStorage on mount
   useEffect(() => {
     const storedToken = localStorage.getItem(LS_CUSTOMER_TOKEN);
-    const storedUser  = localStorage.getItem(LS_CUSTOMER_INFO);
+    const storedUser = localStorage.getItem(LS_CUSTOMER_INFO);
     if (storedToken && storedUser) {
       try {
         const parsedUser = JSON.parse(storedUser);
@@ -34,27 +26,12 @@ export const AuthProvider = ({ children }) => {
         setUser(parsedUser);
         api.defaults.headers.common['Authorization'] = `Bearer ${storedToken}`;
       } catch {
-        // Corrupt storage — clear it silently.
         localStorage.removeItem(LS_CUSTOMER_TOKEN);
         localStorage.removeItem(LS_CUSTOMER_INFO);
       }
     }
     setLoading(false);
-
-    // Fetch feature flag status from backend
-    api.get('/customer/whatsapp-auth/config')
-      .then((res) => {
-        if (res.data && typeof res.data.enabled === 'boolean') {
-          setIsWhatsAppOtpEnabled(res.data.enabled);
-        }
-      })
-      .catch(() => {
-        // Safe default: remains false
-        setIsWhatsAppOtpEnabled(false);
-      });
   }, []);
-
-  // ── Internal helper to persist a new session ─────────────────────────────────
 
   const _persistSession = useCallback((newToken, newUser) => {
     localStorage.setItem(LS_CUSTOMER_TOKEN, newToken);
@@ -64,91 +41,39 @@ export const AuthProvider = ({ children }) => {
     setUser(newUser);
   }, []);
 
-  // ── Login ────────────────────────────────────────────────────────────────────
-
   /**
-   * Attempt to log in with mobile + password.
-   *
-   * Returns:
-   *   { success: true, token, user }           → authenticated
-   *   { success: false, needsPasswordSetup: true, mobile, name } → legacy account
-   *   { success: false, message }              → validation / auth error
+   * Send OTP to customer mobile via MSG91
    */
-  const login = useCallback(async (mobile, password) => {
+  const sendOtp = useCallback(async (mobile) => {
     try {
-      const { data } = await api.post('/customer/auth/login', { mobile, password });
-
-      if (data.status === 'NEEDS_PASSWORD_SETUP') {
-        return { success: false, needsPasswordSetup: true, mobile: data.mobile, name: data.name };
-      }
-
-      _persistSession(data.token, data.user);
-      return { success: true, token: data.token, user: data.user };
+      const { data } = await api.post('/customer/auth/send-otp', { mobile });
+      return { success: true, message: data.message, simulated: data.simulated };
     } catch (err) {
-      const message = err.response?.data?.message || 'Login failed. Please try again.';
+      const message = err.response?.data?.message || 'Failed to dispatch OTP. Please check your number.';
       return { success: false, message };
-    }
-  }, [_persistSession]);
-
-  // ── Register ─────────────────────────────────────────────────────────────────
-
-  const register = useCallback(async (name, mobile, password) => {
-    try {
-      const { data } = await api.post('/customer/auth/register', { name, mobile, password });
-      _persistSession(data.token, data.user);
-      return { success: true, token: data.token, user: data.user };
-    } catch (err) {
-      const message = err.response?.data?.message || 'Registration failed. Please try again.';
-      return { success: false, message };
-    }
-  }, [_persistSession]);
-
-  // ── Set Password (legacy migration) ──────────────────────────────────────────
-
-  const setPassword = useCallback(async (mobile, newPassword, confirmPassword) => {
-    try {
-      const { data } = await api.post('/customer/auth/set-password', {
-        mobile, newPassword, confirmPassword,
-      });
-      _persistSession(data.token, data.user);
-      return { success: true, token: data.token, user: data.user };
-    } catch (err) {
-      const message = err.response?.data?.message || 'Failed to set password. Please try again.';
-      return { success: false, message };
-    }
-  }, [_persistSession]);
-
-  // ── WhatsApp OTP Authentication (Side-by-Side Feature-Flagged) ──────────────
-
-  const sendWhatsAppOtp = useCallback(async (mobile) => {
-    try {
-      const { data } = await api.post('/customer/whatsapp-auth/send-otp', { mobile });
-      return {
-        success: true,
-        message: data.message,
-        cooldownSeconds: data.cooldownSeconds || 60,
-        simulated: data.simulated,
-        devOtp: data.devOtp,
-      };
-    } catch (err) {
-      const message = err.response?.data?.message || 'Failed to dispatch WhatsApp OTP.';
-      return { success: false, message, retryAfter: err.response?.data?.retryAfter };
     }
   }, []);
 
-  const verifyWhatsAppOtp = useCallback(async (mobile, otp) => {
+  /**
+   * Verify OTP and log in / auto-register customer
+   */
+  const verifyOtp = useCallback(async (mobile, otp, name = '') => {
     try {
-      const { data } = await api.post('/customer/whatsapp-auth/verify-otp', { mobile, otp });
-      _persistSession(data.token, data.user);
-      return { success: true, token: data.token, user: data.user };
+      const { data } = await api.post('/customer/auth/verify-otp', { mobile, otp, name });
+      if (data.token && data.user) {
+        _persistSession(data.token, data.user);
+        return { success: true, token: data.token, user: data.user };
+      }
+      return { success: false, message: 'Invalid response from server' };
     } catch (err) {
-      const message = err.response?.data?.message || 'Invalid or expired OTP.';
+      const message = err.response?.data?.message || 'Verification failed. Use 1234 or verify your OTP.';
       return { success: false, message };
     }
   }, [_persistSession]);
 
-  // ── Logout ───────────────────────────────────────────────────────────────────
-
+  /**
+   * Logout
+   */
   const logout = useCallback(() => {
     localStorage.removeItem(LS_CUSTOMER_TOKEN);
     localStorage.removeItem(LS_CUSTOMER_INFO);
@@ -157,8 +82,9 @@ export const AuthProvider = ({ children }) => {
     setUser(null);
   }, []);
 
-  // Keep a stable reference to the current token for downstream consumers.
-  const getToken = useCallback(() => localStorage.getItem(LS_CUSTOMER_TOKEN), []);
+  const getToken = useCallback(() => {
+    return token || localStorage.getItem(LS_CUSTOMER_TOKEN);
+  }, [token]);
 
   return (
     <AuthContext.Provider
@@ -166,14 +92,12 @@ export const AuthProvider = ({ children }) => {
         user,
         token,
         loading,
-        isWhatsAppOtpEnabled,
-        login,
-        register,
-        setPassword,
-        sendWhatsAppOtp,
-        verifyWhatsAppOtp,
+        sendOtp,
+        verifyOtp,
+        login: verifyOtp, // Backward compatible alias
         logout,
         getToken,
+        isAuthenticated: Boolean(user && token),
       }}
     >
       {children}

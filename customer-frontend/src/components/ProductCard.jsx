@@ -5,6 +5,8 @@ import { CartContext } from '../context/CartContext';
 import { useWishlist } from '../context/WishlistContext';
 import { optimizeImageUrl } from '../utils/cloudinary';
 import { ShoppingBag, Plus, Minus, Sparkles, Heart, ChevronLeft, ChevronRight } from 'lucide-react';
+import { getProductUrl } from '../utils/urlHelper';
+import { sortSizesAscending } from '../utils/sizeHelper';
 import ProductImageModal from './ProductImageModal';
 import logoImg from '../assets/pretty-glitz-logo.png';
 
@@ -93,7 +95,7 @@ const ProductCard = ({ product, showVariants = false }) => {
     e.stopPropagation();
     if (isOutOfStock) return;
     if (needsDetailPage) {
-      navigate(`/product/${product._id}`);
+      navigate(getProductUrl(product));
       return;
     }
     addToCart(product, null, 1, null, product.price);
@@ -102,7 +104,7 @@ const ProductCard = ({ product, showVariants = false }) => {
   const handleIncrease = (e) => {
     e.preventDefault();
     e.stopPropagation();
-    if (needsDetailPage) { navigate(`/product/${product._id}`); return; }
+    if (needsDetailPage) { navigate(getProductUrl(product)); return; }
     addToCart(product, null, 1, null, product.price);
   };
 
@@ -118,7 +120,7 @@ const ProductCard = ({ product, showVariants = false }) => {
 
   return (
     <>
-      <Link to={`/product/${product._id}`} style={{ textDecoration: 'none', display: 'block', height: '100%' }}>
+      <Link to={getProductUrl(product)} style={{ textDecoration: 'none', display: 'block', height: '100%' }}>
         <div
         onMouseEnter={() => setIsHovered(true)}
         onMouseLeave={() => setIsHovered(false)}
@@ -524,7 +526,7 @@ const ProductCard = ({ product, showVariants = false }) => {
                   border: '1px solid var(--border)',
                   whiteSpace: 'nowrap',
                 }}>
-                  Sizes: {product.sizes.map(s => s.size).join(', ')}
+                  Sizes: {sortSizesAscending(product.sizes).map(s => s.size).join(', ')}
                 </span>
               )}
               {product.pieceCounts?.length > 0 && (

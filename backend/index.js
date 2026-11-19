@@ -20,6 +20,7 @@ initSocket(server);
 
 // Middleware
 app.use(express.json());
+app.use(express.text({ type: ['text/plain', 'application/json'] }));
 app.use(cors());
 app.use(helmet());
 
@@ -28,6 +29,7 @@ connectDB();
 
 // Routes — existing (UNCHANGED)
 app.use('/api/admin/auth', adminAuthRoutes);
+app.use('/api/admin/customers', require('./routes/customerAdminRoutes'));
 app.use('/api/products',   require('./routes/productRoutes'));
 app.use('/api/inventory',  require('./routes/inventoryRoutes'));
 app.use('/api/categories', require('./routes/categoryRoutes'));

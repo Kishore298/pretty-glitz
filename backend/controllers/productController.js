@@ -22,12 +22,12 @@ const sanitizeColorVariants = (variants) => {
     isDefault: Boolean(v.isDefault),
     sizes: Array.isArray(v.sizes)
       ? v.sizes.map((s) => ({
-          size: (s.size || '').trim(),
-          inStock: Boolean(s.inStock),
-          stockCount: Math.max(0, parseInt(s.stockCount, 10) || 0),
-          price: s.price !== undefined && s.price !== '' ? Number(s.price) : undefined,
-          originalPrice: s.originalPrice !== undefined && s.originalPrice !== '' ? Number(s.originalPrice) : undefined,
-        }))
+        size: (s.size || '').trim(),
+        inStock: Boolean(s.inStock),
+        stockCount: Math.max(0, parseInt(s.stockCount, 10) || 0),
+        price: s.price !== undefined && s.price !== '' ? Number(s.price) : undefined,
+        originalPrice: s.originalPrice !== undefined && s.originalPrice !== '' ? Number(s.originalPrice) : undefined,
+      }))
       : [],
   }));
 };
@@ -164,7 +164,41 @@ const getProducts = async (req, res) => {
 
 const getProductById = async (req, res) => {
   try {
-    const product = await Product.findById(req.params.id).populate('subcategoryId', 'name');
+    const { id } = req.params;
+    if (!id) return res.status(400).json({ message: 'Product identifier is required' });
+
+    let product = null;
+
+    // 1. If 24-character hexadecimal ObjectId, attempt direct findById
+    if (/^[0-9a-fA-F]{24}$/.test(id)) {
+      product = await Product.findById(id).populate('subcategoryId', 'name');
+    }
+
+    // 2. If not found or if id is a slug/name, resolve by slug or name
+    if (!product) {
+      const decoded = decodeURIComponent(id).trim();
+      const normalizedQuery = decoded.replace(/-/g, ' ');
+
+      // Escape special regex characters in the query string
+      const escapedQuery = normalizedQuery.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+      const escapedRaw = decoded.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+
+      const words = decoded.split(/[-_\s]+/).filter(Boolean);
+      const flexiblePattern = words.length > 0
+        ? '^[^a-zA-Z0-9]*' + words.map(w => w.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')).join('[^a-zA-Z0-9]+') + '[^a-zA-Z0-9]*$'
+        : escapedRaw;
+
+      product = await Product.findOne({
+        $or: [
+          { slug: decoded.toLowerCase() },
+          { name: { $regex: new RegExp(flexiblePattern, 'i') } },
+          { name: { $regex: new RegExp(`^${escapedQuery}$`, 'i') } },
+          { name: { $regex: new RegExp(`^${escapedRaw}$`, 'i') } },
+          { name: { $regex: new RegExp(escapedQuery, 'i') } },
+        ],
+      }).populate('subcategoryId', 'name');
+    }
+
     if (!product) return res.status(404).json({ message: 'Product not found' });
     res.json(product);
   } catch (error) {

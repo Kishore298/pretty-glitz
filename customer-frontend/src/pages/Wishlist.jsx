@@ -6,6 +6,7 @@ import { useWishlist } from '../context/WishlistContext';
 import { useTheme } from '../context/ThemeContext';
 import { CartContext } from '../context/CartContext';
 import { optimizeImageUrl } from '../utils/cloudinary';
+import { getProductUrl } from '../utils/urlHelper';
 import logoImg from '../assets/pretty-glitz-logo.png';
 
 /**
@@ -37,7 +38,7 @@ const WishlistItemRow = ({ product }) => {
     e.preventDefault();
     e.stopPropagation();
     if (hasOptions) {
-      navigate(`/product/${product._id}`);
+      navigate(getProductUrl(product));
       return;
     }
     addToCart(product, null, 1, null, product.price);
@@ -68,7 +69,7 @@ const WishlistItemRow = ({ product }) => {
     >
       {/* Thumbnail */}
       <Link
-        to={`/product/${product._id}`}
+        to={getProductUrl(product)}
         style={{
           width: 56,
           height: 64,
@@ -104,7 +105,7 @@ const WishlistItemRow = ({ product }) => {
       {/* Middle: Details */}
       <div style={{ flex: 1, minWidth: 0 }}>
         <Link
-          to={`/product/${product._id}`}
+          to={getProductUrl(product)}
           style={{
             fontSize: '0.88rem',
             fontWeight: 600,

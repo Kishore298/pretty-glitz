@@ -7,6 +7,7 @@ import { AuthContext } from '../context/AuthContext';
 import { CartContext } from '../context/CartContext';
 import { useWishlist } from '../context/WishlistContext';
 import api from '../utils/api';
+import { getProductUrl } from '../utils/urlHelper';
 import logoImg from '../assets/pretty-glitz-logo.png';
 
 // Fallback non-bangle categories in desired display order
@@ -694,7 +695,7 @@ const Navbar = () => {
                               </p>
                             </div>
                             {searchResults.map(product => (
-                              <Link key={product._id} to={`/product/${product._id}`} onClick={() => setSearchOpen(false)} style={{
+                              <Link key={product._id} to={getProductUrl(product)} onClick={() => setSearchOpen(false)} style={{
                                 display: 'flex', alignItems: 'center', gap: 12,
                                 padding: '10px 20px', textDecoration: 'none',
                                 transition: 'background 0.15s',

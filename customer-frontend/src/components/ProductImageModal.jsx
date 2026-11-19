@@ -3,6 +3,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { X, ChevronLeft, ChevronRight, ExternalLink } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { optimizeImageUrl } from '../utils/cloudinary';
+import { getProductUrl } from '../utils/urlHelper';
 import { useTheme } from '../context/ThemeContext';
 import logoImg from '../assets/pretty-glitz-logo.png';
 
@@ -148,12 +149,12 @@ const ProductImageModal = ({
           }}
           onClick={onClose}
         >
-          {/* Modal Container with Fade and Scale */}
+          {/* Modal Container with Fade and Scale & Slight Upward Lift */}
           <motion.div
             key="product-image-modal-card"
-            initial={{ opacity: 0, scale: 0.94, y: 14 }}
-            animate={{ opacity: 1, scale: 1, y: 0 }}
-            exit={{ opacity: 0, scale: 0.94, y: 14 }}
+            initial={{ opacity: 0, scale: 0.94, y: 0 }}
+            animate={{ opacity: 1, scale: 1, y: -16 }}
+            exit={{ opacity: 0, scale: 0.94, y: 0 }}
             transition={{ duration: 0.24, ease: [0.16, 1, 0.3, 1] }}
             className="product-image-modal-card"
             style={{
@@ -257,23 +258,79 @@ const ProductImageModal = ({
                 touchAction: images.length > 1 ? 'pan-y' : 'auto',
               }}
             >
-              <img
-                key={activeIndex}
-                src={currentImage ? optimizeImageUrl(currentImage, 1600) : logoImg}
-                alt={`${product.name} enlarged view`}
-                className="product-image-modal-img"
+              <div
+                className="product-image-modal-img-wrapper"
                 style={{
-                  display: 'block',
+                  position: 'relative',
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
                   borderRadius: 14,
-                  transition: 'opacity 0.2s ease',
+                  overflow: 'hidden',
                 }}
-                onError={(e) => {
-                  e.currentTarget.onerror = null;
-                  e.currentTarget.src = logoImg;
-                  e.currentTarget.style.objectFit = 'contain';
-                  e.currentTarget.style.padding = '40px';
-                }}
-              />
+              >
+                <img
+                  key={activeIndex}
+                  src={currentImage ? optimizeImageUrl(currentImage, 1600) : logoImg}
+                  alt={`${product.name} enlarged view`}
+                  className="product-image-modal-img"
+                  style={{
+                    display: 'block',
+                    borderRadius: 14,
+                    transition: 'opacity 0.2s ease',
+                  }}
+                  onError={(e) => {
+                    e.currentTarget.onerror = null;
+                    e.currentTarget.src = logoImg;
+                    e.currentTarget.style.objectFit = 'contain';
+                    e.currentTarget.style.padding = '40px';
+                  }}
+                />
+
+                {/* Interactive Dot Indicators (Placed directly on the image at the bottom) */}
+                {images.length > 1 && (
+                  <div
+                    className="modal-gallery-dots"
+                    style={{
+                      position: 'absolute',
+                      bottom: 10,
+                      left: '50%',
+                      transform: 'translateX(-50%)',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: 6,
+                      zIndex: 10,
+                      background: 'rgba(0, 0, 0, 0.45)',
+                      backdropFilter: 'blur(4px)',
+                      WebkitBackdropFilter: 'blur(4px)',
+                      padding: '3px 8px',
+                      borderRadius: 999,
+                    }}
+                  >
+                    {images.map((_, dotIdx) => (
+                      <button
+                        key={dotIdx}
+                        type="button"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setActiveIndex(dotIdx);
+                        }}
+                        aria-label={`View photo ${dotIdx + 1}`}
+                        style={{
+                          width: dotIdx === activeIndex ? 16 : 6,
+                          height: 6,
+                          borderRadius: 3,
+                          background: dotIdx === activeIndex ? 'var(--accent, #C4386C)' : 'rgba(255, 255, 255, 0.65)',
+                          border: 'none',
+                          padding: 0,
+                          cursor: 'pointer',
+                          transition: 'all 0.25s ease',
+                        }}
+                      />
+                    ))}
+                  </div>
+                )}
+              </div>
 
               {/* Left Chevron Navigation Button (Desktop only) */}
               {images.length > 1 && (
@@ -362,50 +419,6 @@ const ProductImageModal = ({
                   <ChevronRight size={24} />
                 </button>
               )}
-
-              {/* Interactive Dot Indicators (Visible on all screen sizes) */}
-              {images.length > 1 && (
-                <div
-                  className="modal-gallery-dots"
-                  style={{
-                    position: 'absolute',
-                    bottom: 12,
-                    left: '50%',
-                    transform: 'translateX(-50%)',
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: 6,
-                    zIndex: 4,
-                    background: 'rgba(0, 0, 0, 0.35)',
-                    backdropFilter: 'blur(4px)',
-                    WebkitBackdropFilter: 'blur(4px)',
-                    padding: '4px 8px',
-                    borderRadius: 999,
-                  }}
-                >
-                  {images.map((_, dotIdx) => (
-                    <button
-                      key={dotIdx}
-                      type="button"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        setActiveIndex(dotIdx);
-                      }}
-                      aria-label={`View photo ${dotIdx + 1}`}
-                      style={{
-                        width: dotIdx === activeIndex ? 16 : 6,
-                        height: 6,
-                        borderRadius: 3,
-                        background: dotIdx === activeIndex ? 'var(--accent, #C4386C)' : 'rgba(255, 255, 255, 0.55)',
-                        border: 'none',
-                        padding: 0,
-                        cursor: 'pointer',
-                        transition: 'all 0.25s ease',
-                      }}
-                    />
-                  ))}
-                </div>
-              )}
             </div>
 
             {/* Bottom Thumbnails & Action Controls Row */}
@@ -416,20 +429,27 @@ const ProductImageModal = ({
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: images.length > 1 ? 'space-between' : 'flex-end',
-                paddingTop: 12,
+                paddingTop: 10,
                 gap: 12,
-                flexWrap: 'wrap',
+                flexWrap: 'nowrap',
               }}
             >
-              {/* Clickable Image Thumbnails when multiple images exist */}
+              {/* Responsive Clickable Image Thumbnails when multiple images exist */}
               {images.length > 1 && (
                 <div
+                  className="modal-thumbnails-scroll-container"
                   style={{
                     display: 'flex',
                     alignItems: 'center',
                     gap: 8,
                     overflowX: 'auto',
-                    padding: '4px 2px',
+                    overflowY: 'hidden',
+                    padding: '4px 2px 6px',
+                    flex: '1 1 auto',
+                    minWidth: 0,
+                    maxWidth: '100%',
+                    scrollbarWidth: 'thin',
+                    WebkitOverflowScrolling: 'touch',
                   }}
                 >
                   {images.map((img, idx) => (
@@ -439,8 +459,8 @@ const ProductImageModal = ({
                       onClick={() => setActiveIndex(idx)}
                       aria-label={`Show image ${idx + 1}`}
                       style={{
-                        width: 50,
-                        height: 50,
+                        width: 'clamp(42px, 7vw, 50px)',
+                        height: 'clamp(42px, 7vw, 50px)',
                         borderRadius: 10,
                         overflow: 'hidden',
                         padding: 0,
@@ -467,19 +487,20 @@ const ProductImageModal = ({
                 </div>
               )}
 
-              {/* Action Column: View Full Details + Back Button */}
+              {/* Action Column: View Full Details + Back Button (Back button placed slightly lower) */}
               <div
                 style={{
                   display: 'flex',
                   flexDirection: 'column',
                   alignItems: 'flex-end',
-                  gap: 4,
+                  gap: 8,
                   marginLeft: 'auto',
+                  flexShrink: 0,
                 }}
               >
-                {product._id && (
+                {product && (
                   <Link
-                    to={`/product/${product._id}`}
+                    to={getProductUrl(product)}
                     onClick={onClose}
                     style={{
                       display: 'inline-flex',
@@ -511,7 +532,7 @@ const ProductImageModal = ({
                   </Link>
                 )}
 
-                {/* Back button below View Full Details */}
+                {/* Back button below View Full Details, positioned slightly lower */}
                 <button
                   type="button"
                   onClick={onClose}
@@ -522,7 +543,8 @@ const ProductImageModal = ({
                     color: 'var(--text-secondary)',
                     fontSize: '0.78rem',
                     fontWeight: 600,
-                    padding: '3px 8px',
+                    padding: '4px 10px',
+                    marginTop: 4,
                     background: 'transparent',
                     border: 'none',
                     cursor: 'pointer',
@@ -544,31 +566,30 @@ const ProductImageModal = ({
 
             <style>{`
               .product-image-modal-root {
-                justify-content: flex-start !important;
-                padding: 0 !important;
+                justify-content: center !important;
+                align-items: center !important;
+                padding: 12px 10px !important;
                 overflow-y: auto !important;
                 -webkit-overflow-scrolling: touch !important;
-                align-items: stretch !important;
               }
               .product-image-modal-card {
-                width: 100% !important;
-                max-width: 100% !important;
-                min-height: 100dvh !important;
-                height: 100dvh !important;
-                max-height: 100dvh !important;
+                width: auto !important;
+                max-width: min(94vw, 560px) !important;
+                min-height: auto !important;
+                height: auto !important;
+                max-height: 94dvh !important;
                 display: flex !important;
                 flex-direction: column !important;
-                justify-content: flex-start !important;
+                justify-content: center !important;
                 align-items: center !important;
-                margin: 0 auto !important;
-                padding: 8px 10px 6px !important;
-                padding-top: max(10px, env(safe-area-inset-top, 10px)) !important;
-                padding-bottom: max(8px, env(safe-area-inset-bottom, 8px)) !important;
+                margin: auto !important;
+                padding: 4px 6px !important;
                 box-sizing: border-box !important;
+                transform: translateY(-16px) !important;
               }
               .product-image-modal-header {
                 flex-shrink: 0 !important;
-                padding: 0 0 6px !important;
+                padding: 0 2px 6px !important;
                 width: 100% !important;
               }
               .product-image-modal-close-btn {
@@ -576,10 +597,11 @@ const ProductImageModal = ({
                 height: 36px !important;
               }
               .product-image-modal-stage {
-                flex: 1 1 auto !important;
-                width: 100% !important;
-                min-height: 0 !important;
-                max-height: calc(100dvh - 150px) !important;
+                flex: 0 1 auto !important;
+                width: auto !important;
+                max-width: 100% !important;
+                min-height: auto !important;
+                max-height: min(60vh, 520px) !important;
                 display: flex !important;
                 align-items: center !important;
                 justify-content: center !important;
@@ -590,15 +612,15 @@ const ProductImageModal = ({
               .product-image-modal-img {
                 width: auto !important;
                 height: auto !important;
-                max-width: 100% !important;
-                max-height: calc(100dvh - 155px) !important;
+                max-width: min(92vw, 540px) !important;
+                max-height: min(58vh, 500px) !important;
                 object-fit: contain !important;
                 border-radius: 14px !important;
                 box-shadow: 0 10px 40px rgba(0, 0, 0, 0.25) !important;
               }
               .product-image-modal-bottom {
                 flex-shrink: 0 !important;
-                padding-top: 6px !important;
+                padding-top: 8px !important;
                 padding-bottom: 2px !important;
                 width: 100% !important;
               }
@@ -608,6 +630,13 @@ const ProductImageModal = ({
               .modal-gallery-dots {
                 display: flex !important;
               }
+              .modal-thumbnails-scroll-container::-webkit-scrollbar {
+                height: 4px !important;
+              }
+              .modal-thumbnails-scroll-container::-webkit-scrollbar-thumb {
+                background: var(--border, rgba(0,0,0,0.25)) !important;
+                border-radius: 4px !important;
+              }
               @media (min-width: 769px) {
                 .product-image-modal-root {
                   justify-content: center !important;
@@ -615,33 +644,34 @@ const ProductImageModal = ({
                 }
                 .product-image-modal-card {
                   height: auto !important;
-                  max-height: 92vh !important;
-                  max-width: 920px !important;
+                  max-height: 94vh !important;
+                  max-width: 820px !important;
                   justify-content: center !important;
+                  transform: translateY(-20px) !important;
                 }
                 .product-image-modal-header {
-                  padding: 8px 12px 14px !important;
+                  padding: 0 4px 8px !important;
                 }
                 .product-image-modal-close-btn {
-                  width: 42px !important;
-                  height: 42px !important;
+                  width: 40px !important;
+                  height: 40px !important;
                 }
                 .product-image-modal-stage {
                   flex: 0 1 auto !important;
                   min-height: auto !important;
-                  max-height: 75vh !important;
+                  max-height: 70vh !important;
                   background: transparent !important;
                   box-shadow: none !important;
                 }
                 .product-image-modal-img {
                   height: auto !important;
                   width: auto !important;
-                  max-width: 90vw !important;
-                  max-height: 75vh !important;
+                  max-width: 80vw !important;
+                  max-height: 68vh !important;
                   box-shadow: 0 12px 48px rgba(0, 0, 0, 0.3) !important;
                 }
                 .product-image-modal-bottom {
-                  padding-top: 12px !important;
+                  padding-top: 10px !important;
                 }
                 .modal-gallery-nav-btn {
                   display: flex !important;

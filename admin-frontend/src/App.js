@@ -14,6 +14,8 @@ import Testimonials from './pages/Testimonials';
 import Banners from './pages/Banners';
 import ProductAnalytics from './pages/ProductAnalytics';
 import Orders from './pages/Orders';
+import Customers from './pages/Customers';
+import TrafficAnalytics from './pages/TrafficAnalytics';
 import PushNotifications from './pages/PushNotifications';
 import AdminLayout from './components/AdminLayout';
 
@@ -147,6 +149,8 @@ function App() {
             <Route path="/login" element={<Login />} />
             <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
             <Route path="/orders" element={<ProtectedRoute><Orders /></ProtectedRoute>} />
+            <Route path="/customers" element={<ProtectedRoute><Customers /></ProtectedRoute>} />
+            <Route path="/traffic" element={<ProtectedRoute><TrafficAnalytics /></ProtectedRoute>} />
             <Route path="/analytics" element={<ProtectedRoute><ProductAnalytics /></ProtectedRoute>} />
             <Route path="/products" element={<ProtectedRoute><Products /></ProtectedRoute>} />
             <Route path="/inventory" element={<ProtectedRoute><Inventory /></ProtectedRoute>} />

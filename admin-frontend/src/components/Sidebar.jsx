@@ -14,7 +14,9 @@ import {
   ShoppingBag,
   Image,
   Boxes,
-  BellRing
+  BellRing,
+  Users,
+  Activity
 } from 'lucide-react';
 
 const navGroups = [
@@ -23,6 +25,8 @@ const navGroups = [
     items: [
       { to: '/dashboard', label: 'Dashboard', Icon: LayoutDashboard },
       { to: '/orders', label: 'Orders & Requests', Icon: ShoppingBag },
+      { to: '/customers', label: 'Customers & LTV', Icon: Users },
+      { to: '/traffic', label: 'Page & Visit Traffic', Icon: Activity },
       { to: '/analytics', label: 'Product Analytics', Icon: BarChart3 },
     ]
   },

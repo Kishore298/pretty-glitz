@@ -4,11 +4,11 @@ import api from '../utils/api';
 import ProductCard from '../components/ProductCard';
 import ProductCardSkeleton from '../components/ProductCardSkeleton';
 import { motion, AnimatePresence } from 'framer-motion';
-import { ChevronRight, Filter, Sparkles } from 'lucide-react';
+import { ChevronRight, ChevronDown, Filter, Sparkles } from 'lucide-react';
 
 const CategoryPage = () => {
-  const { categoryName } = useParams();
-  const [searchParams, setSearchParams] = useSearchParams();
+  const { categoryName, subcategoryName } = useParams();
+  const [searchParams] = useSearchParams();
   const navigate = useNavigate();
 
   // Normalize legacy category routes to Designer Glass Bangles
@@ -20,7 +20,7 @@ const CategoryPage = () => {
   const [loading, setLoading] = useState(true);
   const [sortBy, setSortBy] = useState('newest'); // newest, price-asc, price-desc
 
-  const activeSubParam = searchParams.get('sub') || 'all';
+  const activeSubParam = subcategoryName || searchParams.get('sub') || 'all';
 
   useEffect(() => {
     if (isLegacyBangles) {
@@ -29,7 +29,7 @@ const CategoryPage = () => {
     }
     fetchData();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [categoryName]);
+  }, [categoryName, subcategoryName]);
 
   const fetchData = async () => {
     setLoading(true);
@@ -46,10 +46,50 @@ const CategoryPage = () => {
     setLoading(false);
   };
 
+  const getProductSizes = (p) => {
+    const sizes = [];
+    if (Array.isArray(p.sizes)) {
+      p.sizes.forEach((s) => {
+        const val = typeof s === 'object' ? s.size : s;
+        if (val) sizes.push(val);
+      });
+    }
+    if (Array.isArray(p.colorVariants)) {
+      p.colorVariants.forEach((cv) => {
+        if (Array.isArray(cv.sizes)) {
+          cv.sizes.forEach((s) => {
+            const val = typeof s === 'object' ? s.size : s;
+            if (val) sizes.push(val);
+          });
+        }
+      });
+    }
+    return sizes
+      .map((s) => {
+        const m = String(s).match(/(\d+(\.\d+)?)/);
+        return m ? parseFloat(m[1]) : null;
+      })
+      .filter((n) => n !== null);
+  };
+
   const getSortedProducts = (prods) => {
     return [...prods].sort((a, b) => {
       if (sortBy === 'price-asc') return a.price - b.price;
       if (sortBy === 'price-desc') return b.price - a.price;
+      if (sortBy === 'size-asc') {
+        const aSizes = getProductSizes(a);
+        const bSizes = getProductSizes(b);
+        const aMin = aSizes.length ? Math.min(...aSizes) : 999999;
+        const bMin = bSizes.length ? Math.min(...bSizes) : 999999;
+        if (aMin !== bMin) return aMin - bMin;
+      }
+      if (sortBy === 'size-desc') {
+        const aSizes = getProductSizes(a);
+        const bSizes = getProductSizes(b);
+        const aMax = aSizes.length ? Math.max(...aSizes) : -1;
+        const bMax = bSizes.length ? Math.max(...bSizes) : -1;
+        if (aMax !== bMax) return bMax - aMax;
+      }
       return new Date(b.createdAt) - new Date(a.createdAt); // newest
     });
   };
@@ -123,13 +163,15 @@ const CategoryPage = () => {
     ? products.filter((p) => productMatchesSubcategory(p, activeSubDoc))
     : products;
 
-  const handleSubSelect = (subId) => {
-    if (subId === 'all') {
-      searchParams.delete('sub');
-      setSearchParams(searchParams);
+  const handleSubSelect = (subIdOrName) => {
+    if (subIdOrName === 'all') {
+      navigate(`/category/${encodeURIComponent(normalizedCategory)}`);
     } else {
-      searchParams.set('sub', subId);
-      setSearchParams(searchParams);
+      const targetSub = resolvedSubcategories.find(
+        (s) => s._id?.toString() === subIdOrName?.toString() || s.name?.toLowerCase() === subIdOrName?.toString().toLowerCase()
+      );
+      const name = targetSub ? targetSub.name : subIdOrName;
+      navigate(`/category/${encodeURIComponent(normalizedCategory)}/${encodeURIComponent(name)}`);
     }
   };
 
@@ -140,69 +182,70 @@ const CategoryPage = () => {
         
         {/* Category Header */}
         <div className="category-header" style={{ 
-          display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between',
-          flexWrap: 'wrap', gap: 16, padding: '10px 0 16px', 
-          borderBottom: '1px solid var(--border)', marginBottom: 20
+          display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+          flexWrap: 'nowrap', gap: 12, padding: '8px 0 14px', 
+          borderBottom: '1px solid var(--border)', marginBottom: 18
         }}>
           {/* Left Side Breadcrumbs & Title */}
-          <motion.div initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }} style={{ flex: '1 1 min-content' }}>
+          <motion.div initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }} style={{ flex: '1 1 auto', minWidth: 0 }}>
             <div style={{ 
               display: 'flex', alignItems: 'center', gap: 6, 
-              fontSize: '0.72rem', color: 'var(--text-muted)', 
-              marginBottom: 8, fontWeight: 600, letterSpacing: '0.05em', textTransform: 'uppercase' 
+              fontSize: '0.7rem', color: 'var(--text-muted)', 
+              marginBottom: 3, fontWeight: 600, letterSpacing: '0.05em', textTransform: 'uppercase' 
             }}>
               <Link to="/" style={{ color: 'inherit', textDecoration: 'none', transition: 'color 0.2s' }} className="hover:text-prettyglitz">Home</Link>
-              <ChevronRight size={12} />
-              {activeSubDoc ? (
+              {activeSubDoc && (
                 <>
-                  <Link
-                    to={`/category/${encodeURIComponent(normalizedCategory)}`}
-                    onClick={(e) => {
-                      e.preventDefault();
-                      handleSubSelect('all');
-                    }}
-                    style={{ color: 'inherit', textDecoration: 'none' }}
-                    className="hover:text-prettyglitz"
-                  >
-                    {normalizedCategory}
-                  </Link>
-                  <ChevronRight size={12} />
+                  <ChevronRight size={11} />
                   <span style={{ color: 'var(--accent)' }}>{activeSubDoc.name}</span>
                 </>
-              ) : (
-                <span style={{ color: 'var(--text-secondary)' }}>{normalizedCategory}</span>
               )}
             </div>
 
             <h1 style={{
               fontFamily: '"Cormorant Garamond", Georgia, serif', fontWeight: 700,
-              fontSize: 'clamp(1.8rem, 5vw, 2.5rem)', color: 'var(--text)', margin: '0 0 4px', lineHeight: 1
+              fontSize: 'clamp(1.15rem, 3.2vw, 1.75rem)', color: 'var(--text)', margin: '0 0 2px', lineHeight: 1.15,
+              whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis'
             }}>
               {activeSubDoc ? `${normalizedCategory} — ${activeSubDoc.name}` : normalizedCategory}
             </h1>
-            <p style={{ color: 'var(--text-secondary)', fontSize: '0.82rem', margin: 0, fontWeight: 500 }}>
+            <p style={{ color: 'var(--text-secondary)', fontSize: '0.74rem', margin: 0, fontWeight: 500 }}>
               {displayedProducts.length} {displayedProducts.length === 1 ? 'Product' : 'Products'} Available
             </p>
           </motion.div>
 
-          {/* Right Side Sort */}
+          {/* Right Side Compact Sort Filter */}
           {!loading && displayedProducts.length > 0 && (
-            <motion.div initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} style={{ display: 'flex', alignItems: 'center', gap: 8, width: '100%', maxWidth: 280, marginLeft: 'auto' }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 5, color: 'var(--text-muted)', fontSize: '0.8rem', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.05em', whiteSpace: 'nowrap' }}>
-                <Filter size={14} color="var(--accent)" />
-                <span>Sort:</span>
-              </div>
-              <div style={{ flex: 1, minWidth: 0 }}>
+            <motion.div initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} style={{ flexShrink: 0 }}>
+              <div style={{ position: 'relative', display: 'inline-flex', alignItems: 'center' }}>
                 <select 
                   value={sortBy} 
                   onChange={e => setSortBy(e.target.value)}
-                  className="pg-select"
                   aria-label="Sort products"
+                  style={{
+                    appearance: 'none',
+                    WebkitAppearance: 'none',
+                    MozAppearance: 'none',
+                    height: 32,
+                    padding: '4px 26px 4px 10px',
+                    fontSize: '0.76rem',
+                    fontWeight: 600,
+                    borderRadius: 8,
+                    border: '1px solid var(--border)',
+                    background: 'var(--bg-secondary)',
+                    color: 'var(--text)',
+                    cursor: 'pointer',
+                    outline: 'none',
+                    boxShadow: '0 1px 3px rgba(0,0,0,0.05)',
+                  }}
                 >
-                  <option value="newest">✨ Newest Arrivals</option>
-                  <option value="price-asc">💵 Price: Low to High</option>
-                  <option value="price-desc">💎 Price: High to Low</option>
+                  <option value="newest">✨ Newest</option>
+                  <option value="price-asc">Price ⬆</option>
+                  <option value="price-desc">Price ⬇</option>
+                  <option value="size-asc">Size ⬆</option>
+                  <option value="size-desc">Size ⬇</option>
                 </select>
+                <ChevronDown size={13} style={{ position: 'absolute', right: 8, pointerEvents: 'none', color: 'var(--text-muted)' }} />
               </div>
             </motion.div>
           )}

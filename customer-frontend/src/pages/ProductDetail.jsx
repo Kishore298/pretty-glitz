@@ -25,6 +25,8 @@ import ProductDescriptionDisplay from '../components/ProductDescriptionDisplay';
 import BangleSizeChartModal from '../components/BangleSizeChartModal';
 import ProductImageModal from '../components/ProductImageModal';
 import ColorVariationSelector from '../components/ColorVariationSelector';
+import { sortSizesAscending } from '../utils/sizeHelper';
+import { slugify } from '../utils/urlHelper';
 import logoImg from '../assets/pretty-glitz-logo.png';
 
 const ProductDetail = () => {
@@ -80,8 +82,16 @@ const ProductDetail = () => {
 
   const fetchProduct = async () => {
     try {
-      const { data } = await api.get(`/products/${id}`);
+      const { data } = await api.get(`/products/${encodeURIComponent(id)}`);
       setProduct(data);
+
+      // If accessed via MongoDB ObjectId, smoothly update the URL to friendly product slug
+      if (data?.name && /^[0-9a-fA-F]{24}$/.test(id)) {
+        const slug = slugify(data.name);
+        if (slug) {
+          window.history.replaceState(null, '', `/product/${slug}`);
+        }
+      }
 
       // Handle Color Variants: Showcase image is default for designer bangles!
       // Do NOT pre-select color variant on initial load.
@@ -199,11 +209,13 @@ const ProductDetail = () => {
     }
   };
 
-  const activeSizes = (selectedColor && selectedColor.sizes?.length > 0)
-    ? selectedColor.sizes
-    : (product?.colorVariants?.[0]?.sizes?.length > 0
-      ? product.colorVariants[0].sizes
-      : (product?.sizes || []));
+  const activeSizes = sortSizesAscending(
+    (selectedColor && selectedColor.sizes?.length > 0)
+      ? selectedColor.sizes
+      : (product?.colorVariants?.[0]?.sizes?.length > 0
+        ? product.colorVariants[0].sizes
+        : (product?.sizes || []))
+  );
 
   // Resolved price (piece count price overrides product price)
   const resolvedPrice = selectedPieceCount ? selectedPieceCount.price : product?.price;
@@ -273,10 +285,12 @@ const ProductDetail = () => {
 
   // General-Purpose Product Sharing with Web Share API and silent AbortError handling
   const handleShare = async () => {
+    const slug = slugify(product?.name);
+    const friendlyUrl = slug ? `${window.location.origin}/product/${slug}` : window.location.href;
     const shareData = {
       title: `${product.name} | PrettyGlitz`,
       text: `Discover this handcrafted piece: ${product.name} on PrettyGlitz!`,
-      url: window.location.href,
+      url: friendlyUrl,
     };
 
     if (navigator.share) {
@@ -710,7 +724,7 @@ const ProductDetail = () => {
               {/* Bangle Size Selector with Live Stock Availability */}
               {activeSizes?.length > 0 && (
                 <div className="product-detail-section">
-                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 10 }}>
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 6 }}>
                     <span className="product-detail-label" style={{ margin: 0 }}>
                       Select Size
                     </span>
@@ -1030,12 +1044,12 @@ const ProductDetail = () => {
 
         {/* ── Cross-Category Discovery: More to Explore Across Collections ── */}
         {Object.keys(productsByCategory).length > 0 && (
-          <div className="product-related-section" style={{ marginTop: 64 }}>
-            <div className="product-related-header">
+          <div className="product-related-section" style={{ marginTop: 28, paddingTop: 24 }}>
+            <div className="product-related-header" style={{ marginBottom: 14 }}>
               <h2 className="product-related-title">
                 More to Explore Across Collections
               </h2>
-              <p className="product-related-subtitle">
+              <p className="product-related-subtitle" style={{ marginTop: 4, marginBottom: 0 }}>
                 Discover bespoke handcrafted jewellery across all our atelier collections
               </p>
             </div>
@@ -1046,8 +1060,8 @@ const ProductDetail = () => {
               alignItems: 'center',
               gap: 8,
               overflowX: 'auto',
-              paddingBottom: 16,
-              marginBottom: 32,
+              paddingBottom: 10,
+              marginBottom: 16,
               scrollbarWidth: 'none',
               msOverflowStyle: 'none',
             }}>
