@@ -40,9 +40,12 @@ const userSchema = new mongoose.Schema(
     name: { type: String },
     addresses: [
       {
-        addressLine: { type: String, required: true },
-        city:        { type: String, required: true },
-        pincode:     { type: String, required: true },
+        name:        { type: String, trim: true },
+        mobile:      { type: String, trim: true },
+        addressLine: { type: String, required: true, trim: true },
+        city:        { type: String, required: true, trim: true },
+        state:       { type: String, default: 'Tamil Nadu', trim: true },
+        pincode:     { type: String, required: true, trim: true },
         isDefault:   { type: Boolean, default: false },
       },
     ],

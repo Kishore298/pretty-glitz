@@ -40,6 +40,7 @@ app.use('/api/testimonials', require('./routes/testimonialRoutes'));
 
 // Routes — new customer features & orders
 app.use('/api/customer/auth', require('./routes/customerAuthRoutes'));
+app.use('/api/customer/addresses', require('./routes/customerAddressRoutes'));
 app.use('/api/customer/whatsapp-auth', require('./routes/whatsappAuthRoutes'));
 app.use('/api/cart',          require('./routes/cartRoutes'));
 app.use('/api/wishlist',      require('./routes/wishlistRoutes'));

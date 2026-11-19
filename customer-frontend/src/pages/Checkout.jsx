@@ -1,16 +1,20 @@
-import React, { useContext, useState, useRef, useEffect } from 'react';
+import React, { useContext, useState, useRef, useEffect, useCallback } from 'react';
 import { useNavigate, Navigate, Link } from 'react-router-dom';
 import { CartContext } from '../context/CartContext';
+import { AuthContext } from '../context/AuthContext';
 import { motion } from 'framer-motion';
 import { optimizeImageUrl } from '../utils/cloudinary';
 import logoImg from '../assets/pretty-glitz-logo.png';
-import { ChevronRight, ShieldCheck, CheckCircle2, BellRing, Truck, AlertCircle } from 'lucide-react';
+import { ChevronRight, ShieldCheck, CheckCircle2, BellRing, Truck, AlertCircle, MapPin, Plus, Check, LogIn } from 'lucide-react';
 import { getWhatsAppUrl, IS_WHATSAPP_CONFIGURED } from '../config/constants';
 import api from '../utils/api';
 import { linkOrderToCustomerFcm, requestCustomerNotificationPermission } from '../firebase';
+import AddressModal from '../components/AddressModal';
+import AddressCard from '../components/AddressCard';
 
 const Checkout = () => {
   const { cartItems, getCartTotal, clearCart, validateCartStock } = useContext(CartContext);
+  const { user } = useContext(AuthContext);
   const navigate = useNavigate();
 
   const [formData, setFormData] = useState({
@@ -18,9 +22,126 @@ const Checkout = () => {
     mobile: '',
     address: '',
     city: '',
+    state: 'Tamil Nadu',
     pincode: '',
-    notes: ''
+    notes: '',
   });
+
+  // Saved address selection & management state
+  const [addresses, setAddresses] = useState([]);
+  const [loadingAddresses, setLoadingAddresses] = useState(false);
+  const [selectedAddressId, setSelectedAddressId] = useState(null);
+  const [isAddressModalOpen, setIsAddressModalOpen] = useState(false);
+  const [editingAddress, setEditingAddress] = useState(null);
+  const [saveAddressToProfile, setSaveAddressToProfile] = useState(true);
+  const [setAsDefault, setSetAsDefault] = useState(false);
+
+  const fetchAddresses = useCallback(async () => {
+    if (!user) {
+      // Check for cached guest address in localStorage
+      try {
+        const cached = localStorage.getItem('pg_guest_address');
+        if (cached) {
+          const parsed = JSON.parse(cached);
+          if (parsed && typeof parsed === 'object') {
+            setFormData(prev => ({
+              ...prev,
+              name: parsed.name || prev.name,
+              mobile: parsed.mobile || prev.mobile,
+              address: parsed.address || parsed.addressLine || prev.address,
+              city: parsed.city || prev.city,
+              state: parsed.state || prev.state || 'Tamil Nadu',
+              pincode: parsed.pincode || prev.pincode,
+            }));
+          }
+        }
+      } catch {
+        // silent
+      }
+      return;
+    }
+
+    setLoadingAddresses(true);
+    try {
+      const res = await api.get('/customer/addresses');
+      if (res.data?.success && Array.isArray(res.data.addresses)) {
+        const list = res.data.addresses;
+        setAddresses(list);
+        if (list.length > 0) {
+          const defaultAddr = list.find(a => a.isDefault) || list[0];
+          setSelectedAddressId(defaultAddr._id);
+          setFormData(prev => ({
+            ...prev,
+            name: defaultAddr.name || prev.name || user.name || '',
+            mobile: defaultAddr.mobile || prev.mobile || user.mobile || '',
+            address: defaultAddr.addressLine || defaultAddr.address || '',
+            city: defaultAddr.city || '',
+            state: defaultAddr.state || 'Tamil Nadu',
+            pincode: defaultAddr.pincode || '',
+          }));
+        } else {
+          setFormData(prev => ({
+            ...prev,
+            name: prev.name || user.name || '',
+            mobile: prev.mobile || user.mobile || '',
+          }));
+        }
+      }
+    } catch (err) {
+      console.error('Error loading saved addresses:', err);
+    } finally {
+      setLoadingAddresses(false);
+    }
+  }, [user]);
+
+  useEffect(() => {
+    fetchAddresses();
+  }, [fetchAddresses]);
+
+  const handleSelectAddress = (addr) => {
+    setSelectedAddressId(addr._id);
+    setFormData(prev => ({
+      ...prev,
+      name: addr.name || prev.name,
+      mobile: addr.mobile || prev.mobile,
+      address: addr.addressLine || addr.address || '',
+      city: addr.city || '',
+      state: addr.state || 'Tamil Nadu',
+      pincode: addr.pincode || '',
+    }));
+  };
+
+  const handleSetDefaultAddress = async (addr) => {
+    try {
+      const res = await api.put(`/customer/addresses/${addr._id}/default`);
+      if (res.data?.success) {
+        setAddresses(res.data.addresses || []);
+      }
+    } catch (err) {
+      console.error('Failed to set default address', err);
+    }
+  };
+
+  const handleOpenEditAddress = (addr) => {
+    setEditingAddress(addr);
+    setIsAddressModalOpen(true);
+  };
+
+  const handleOpenAddAddress = () => {
+    setEditingAddress(null);
+    setIsAddressModalOpen(true);
+  };
+
+  const handleAddressSaved = (savedAddr, updatedList) => {
+    if (updatedList) {
+      setAddresses(updatedList);
+    } else {
+      fetchAddresses();
+    }
+    if (savedAddr) {
+      handleSelectAddress(savedAddr);
+    }
+  };
 
   const [redirecting, setRedirecting] = useState(false);
   const [submitting, setSubmitting] = useState(false);
@@ -416,45 +537,302 @@ const Checkout = () => {
               </div>
             )}
 
-            <form id="checkout-form" onSubmit={handlePlaceOrder} style={{ display: 'flex', flexDirection: 'column', gap: 32 }}>
-
-              <div style={{ background: 'var(--bg-card)', borderRadius: 20, border: `1px solid var(--border)`, padding: 32 }}>
-                <h2 style={{ fontSize: '1.1rem', fontWeight: 700, color: 'var(--text)', textTransform: 'uppercase', letterSpacing: '0.1em', margin: '0 0 24px', borderBottom: `1px solid var(--border)`, paddingBottom: 16 }}>Customer Details</h2>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  <div>
-                    <label style={{ display: 'block', fontSize: '0.75rem', fontWeight: 600, color: 'var(--text-secondary)', textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: 8 }}>Full Name</label>
-                    <input type="text" name="name" required value={formData.name} onChange={handleChange} style={inputStyle} onFocus={e => e.target.style.borderColor = 'var(--accent)'} onBlur={e => e.target.style.borderColor = 'var(--border-strong)'} />
-                  </div>
-                  <div>
-                    <label style={{ display: 'block', fontSize: '0.75rem', fontWeight: 600, color: 'var(--text-secondary)', textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: 8 }}>Mobile Number</label>
-                    <input type="tel" name="mobile" required value={formData.mobile} onChange={handleChange} placeholder="10-digit number" style={inputStyle} onFocus={e => e.target.style.borderColor = 'var(--accent)'} onBlur={e => e.target.style.borderColor = 'var(--border-strong)'} />
+            {/* Guest Sign-in Hint */}
+            {!user && (
+              <div
+                style={{
+                  background: 'rgba(201, 168, 76, 0.08)',
+                  border: '1px solid rgba(201, 168, 76, 0.25)',
+                  borderRadius: 14,
+                  padding: '14px 18px',
+                  marginBottom: 24,
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'space-between',
+                  flexWrap: 'wrap',
+                  gap: 12,
+                }}
+              >
+                <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                  <LogIn size={18} color="#C9A84C" />
+                  <div style={{ fontSize: '0.86rem', color: 'var(--text)' }}>
+                    Have an account with saved addresses?
                   </div>
                 </div>
+                <Link
+                  to="/login?redirect=/checkout"
+                  style={{
+                    padding: '6px 14px',
+                    borderRadius: 8,
+                    background: 'linear-gradient(135deg, #C4386C, #8A2BE2)',
+                    color: '#FFFFFF',
+                    fontSize: '0.78rem',
+                    fontWeight: 700,
+                    textDecoration: 'none',
+                  }}
+                >
+                  Log In with OTP
+                </Link>
               </div>
+            )}
 
-              <div style={{ background: 'var(--bg-card)', borderRadius: 20, border: `1px solid var(--border)`, padding: 32 }}>
-                <h2 style={{ fontSize: '1.1rem', fontWeight: 700, color: 'var(--text)', textTransform: 'uppercase', letterSpacing: '0.1em', margin: '0 0 24px', borderBottom: `1px solid var(--border)`, paddingBottom: 16 }}>Delivery Details</h2>
+            <form id="checkout-form" onSubmit={handlePlaceOrder} style={{ display: 'flex', flexDirection: 'column', gap: 28 }}>
+
+              {/* ── Scenario A: Customer has saved addresses ───────────────────────── */}
+              {user && addresses.length > 0 ? (
+                <div style={{ background: 'var(--bg-card)', borderRadius: 20, border: `1px solid var(--border)`, padding: '24px 28px' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 20, flexWrap: 'wrap', gap: 10, borderBottom: `1px solid var(--border)`, paddingBottom: 16 }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                      <div
+                        style={{
+                          width: 34,
+                          height: 34,
+                          borderRadius: 10,
+                          background: 'rgba(196, 56, 108, 0.12)',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          color: 'var(--accent)',
+                        }}
+                      >
+                        <MapPin size={18} />
+                      </div>
+                      <div>
+                        <h2 style={{ fontSize: '1.05rem', fontWeight: 700, color: 'var(--text)', margin: 0, textTransform: 'uppercase', letterSpacing: '0.08em' }}>
+                          Select Delivery Address
+                        </h2>
+                        <span style={{ fontSize: '0.76rem', color: 'var(--text-secondary)' }}>
+                          Delivering to selected address
+                        </span>
+                      </div>
+                    </div>
+
+                    <button
+                      type="button"
+                      onClick={handleOpenAddAddress}
+                      style={{
+                        display: 'inline-flex',
+                        alignItems: 'center',
+                        gap: 6,
+                        padding: '7px 14px',
+                        borderRadius: 8,
+                        background: 'var(--accent-gradient)',
+                        color: '#FFFFFF',
+                        border: 'none',
+                        fontSize: '0.8rem',
+                        fontWeight: 700,
+                        cursor: 'pointer',
+                        boxShadow: '0 3px 12px rgba(196, 56, 108, 0.25)',
+                      }}
+                    >
+                      <Plus size={14} /> Add New Address
+                    </button>
+                  </div>
+
+                  {/* List of saved addresses with radio selection */}
+                  {loadingAddresses ? (
+                    <div style={{ padding: '20px', textAlign: 'center', color: 'var(--text-secondary)', fontSize: '0.85rem' }}>
+                      Loading saved addresses...
+                    </div>
+                  ) : (
+                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))', gap: 14, marginBottom: 20 }}>
+                      {addresses.map((addr) => (
+                        <AddressCard
+                          key={addr._id}
+                          address={addr}
+                          selectable={true}
+                          isSelected={selectedAddressId === addr._id}
+                          onSelect={handleSelectAddress}
+                          onEdit={handleOpenEditAddress}
+                          onSetDefault={handleSetDefaultAddress}
+                        />
+                      ))}
+                    </div>
+                  )}
+
+                  {/* Selected Address Overview */}
+                  {selectedAddressId && (
+                    <div
+                      style={{
+                        padding: '14px 18px',
+                        borderRadius: 12,
+                        background: 'rgba(16, 185, 129, 0.08)',
+                        border: '1px solid rgba(16, 185, 129, 0.25)',
+                        fontSize: '0.86rem',
+                        color: 'var(--text)',
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: 10,
+                      }}
+                    >
+                      <Check size={18} color="#10B981" style={{ flexShrink: 0 }} />
+                      <div>
+                        <span style={{ fontWeight: 700 }}>Dispatch Target: </span>
+                        <span>{formData.name} (+91 {formData.mobile}) — {formData.address}, {formData.city} - {formData.pincode}</span>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Additional Notes */}
+                  <div style={{ marginTop: 20 }}>
+                    <label style={{ display: 'block', fontSize: '0.75rem', fontWeight: 600, color: 'var(--text-secondary)', textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: 8 }}>
+                      Additional Delivery Notes <span style={{ textTransform: 'none', fontWeight: 400, opacity: 0.7 }}>(Optional)</span>
+                    </label>
+                    <input
+                      type="text"
+                      name="notes"
+                      value={formData.notes}
+                      onChange={handleChange}
+                      placeholder="e.g. Ring doorbell, leave with security..."
+                      style={inputStyle}
+                      onFocus={(e) => (e.target.style.borderColor = 'var(--accent)')}
+                      onBlur={(e) => (e.target.style.borderColor = 'var(--border-strong)')}
+                    />
+                  </div>
+                </div>
+              ) : (
+                /* ── Scenario B: New customer / no saved addresses ─────────────────── */
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 24 }}>
-                  <div>
-                    <label style={{ display: 'block', fontSize: '0.75rem', fontWeight: 600, color: 'var(--text-secondary)', textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: 8 }}>Full Address</label>
-                    <textarea name="address" required rows="3" value={formData.address} onChange={handleChange} style={{ ...inputStyle, resize: 'vertical' }} onFocus={e => e.target.style.borderColor = 'var(--accent)'} onBlur={e => e.target.style.borderColor = 'var(--border-strong)'} />
-                  </div>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    <div>
-                      <label style={{ display: 'block', fontSize: '0.75rem', fontWeight: 600, color: 'var(--text-secondary)', textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: 8 }}>City</label>
-                      <input type="text" name="city" required value={formData.city} onChange={handleChange} style={inputStyle} onFocus={e => e.target.style.borderColor = 'var(--accent)'} onBlur={e => e.target.style.borderColor = 'var(--border-strong)'} />
+                  {/* Customer Information */}
+                  <div style={{ background: 'var(--bg-card)', borderRadius: 20, border: `1px solid var(--border)`, padding: '24px 28px' }}>
+                    <h2 style={{ fontSize: '1.05rem', fontWeight: 700, color: 'var(--text)', textTransform: 'uppercase', letterSpacing: '0.08em', margin: '0 0 20px', borderBottom: `1px solid var(--border)`, paddingBottom: 14 }}>
+                      Recipient Details
+                    </h2>
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+                      <div>
+                        <label style={{ display: 'block', fontSize: '0.74rem', fontWeight: 700, color: 'var(--text-secondary)', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 6 }}>Recipient Name *</label>
+                        <input
+                          type="text"
+                          name="name"
+                          required
+                          placeholder="e.g. Priya Lakshmi"
+                          value={formData.name}
+                          onChange={handleChange}
+                          style={inputStyle}
+                          onFocus={(e) => (e.target.style.borderColor = 'var(--accent)')}
+                          onBlur={(e) => (e.target.style.borderColor = 'var(--border-strong)')}
+                        />
+                      </div>
+                      <div>
+                        <label style={{ display: 'block', fontSize: '0.74rem', fontWeight: 700, color: 'var(--text-secondary)', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 6 }}>Mobile Number *</label>
+                        <input
+                          type="tel"
+                          name="mobile"
+                          required
+                          placeholder="10-digit mobile number"
+                          value={formData.mobile}
+                          onChange={handleChange}
+                          style={inputStyle}
+                          onFocus={(e) => (e.target.style.borderColor = 'var(--accent)')}
+                          onBlur={(e) => (e.target.style.borderColor = 'var(--border-strong)')}
+                        />
+                      </div>
                     </div>
-                    <div>
-                      <label style={{ display: 'block', fontSize: '0.75rem', fontWeight: 600, color: 'var(--text-secondary)', textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: 8 }}>Pincode</label>
-                      <input type="text" name="pincode" required value={formData.pincode} onChange={handleChange} style={inputStyle} onFocus={e => e.target.style.borderColor = 'var(--accent)'} onBlur={e => e.target.style.borderColor = 'var(--border-strong)'} />
-                    </div>
                   </div>
-                  <div>
-                    <label style={{ display: 'block', fontSize: '0.75rem', fontWeight: 600, color: 'var(--text-secondary)', textTransform: 'uppercase', letterSpacing: '0.1em', marginBottom: 8 }}>Additional Notes <span style={{ textTransform: 'none', fontWeight: 400, opacity: 0.7 }}>(Optional)</span></label>
-                    <input type="text" name="notes" value={formData.notes} onChange={handleChange} placeholder="Any specific instructions..." style={inputStyle} onFocus={e => e.target.style.borderColor = 'var(--accent)'} onBlur={e => e.target.style.borderColor = 'var(--border-strong)'} />
+
+                  {/* Delivery Address */}
+                  <div style={{ background: 'var(--bg-card)', borderRadius: 20, border: `1px solid var(--border)`, padding: '24px 28px' }}>
+                    <h2 style={{ fontSize: '1.05rem', fontWeight: 700, color: 'var(--text)', textTransform: 'uppercase', letterSpacing: '0.08em', margin: '0 0 20px', borderBottom: `1px solid var(--border)`, paddingBottom: 14 }}>
+                      Delivery Location
+                    </h2>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: 18 }}>
+                      <div>
+                        <label style={{ display: 'block', fontSize: '0.74rem', fontWeight: 700, color: 'var(--text-secondary)', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 6 }}>
+                          House / Flat / Street / Landmark *
+                        </label>
+                        <textarea
+                          name="address"
+                          required
+                          rows="3"
+                          placeholder="Flat/House No, Building, Street, Landmark"
+                          value={formData.address}
+                          onChange={handleChange}
+                          style={{ ...inputStyle, resize: 'vertical' }}
+                          onFocus={(e) => (e.target.style.borderColor = 'var(--accent)')}
+                          onBlur={(e) => (e.target.style.borderColor = 'var(--border-strong)')}
+                        />
+                      </div>
+
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+                        <div>
+                          <label style={{ display: 'block', fontSize: '0.74rem', fontWeight: 700, color: 'var(--text-secondary)', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 6 }}>City / Town *</label>
+                          <input
+                            type="text"
+                            name="city"
+                            required
+                            placeholder="e.g. Chennai"
+                            value={formData.city}
+                            onChange={handleChange}
+                            style={inputStyle}
+                            onFocus={(e) => (e.target.style.borderColor = 'var(--accent)')}
+                            onBlur={(e) => (e.target.style.borderColor = 'var(--border-strong)')}
+                          />
+                        </div>
+                        <div>
+                          <label style={{ display: 'block', fontSize: '0.74rem', fontWeight: 700, color: 'var(--text-secondary)', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 6 }}>PIN Code *</label>
+                          <input
+                            type="text"
+                            name="pincode"
+                            required
+                            maxLength="6"
+                            placeholder="6 digits"
+                            value={formData.pincode}
+                            onChange={handleChange}
+                            style={inputStyle}
+                            onFocus={(e) => (e.target.style.borderColor = 'var(--accent)')}
+                            onBlur={(e) => (e.target.style.borderColor = 'var(--border-strong)')}
+                          />
+                        </div>
+                      </div>
+
+                      {/* Profile address save checkbox (if authenticated) */}
+                      {user && (
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: 10, marginTop: 4 }}>
+                          <label style={{ display: 'flex', alignItems: 'center', gap: 10, cursor: 'pointer', userSelect: 'none' }}>
+                            <input
+                              type="checkbox"
+                              checked={saveAddressToProfile}
+                              onChange={(e) => setSaveAddressToProfile(e.target.checked)}
+                              style={{ width: 17, height: 17, accentColor: 'var(--accent)' }}
+                            />
+                            <span style={{ fontSize: '0.86rem', color: 'var(--text)', fontWeight: 600 }}>
+                              Save this address to my profile for future orders
+                            </span>
+                          </label>
+
+                          <label style={{ display: 'flex', alignItems: 'center', gap: 10, cursor: 'pointer', userSelect: 'none' }}>
+                            <input
+                              type="checkbox"
+                              checked={setAsDefault}
+                              onChange={(e) => setSetAsDefault(e.target.checked)}
+                              style={{ width: 17, height: 17, accentColor: 'var(--accent)' }}
+                            />
+                            <span style={{ fontSize: '0.86rem', color: 'var(--text)', fontWeight: 600 }}>
+                              Make this my default delivery address
+                            </span>
+                          </label>
+                        </div>
+                      )}
+
+                      <div>
+                        <label style={{ display: 'block', fontSize: '0.74rem', fontWeight: 700, color: 'var(--text-secondary)', textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: 6 }}>
+                          Special Instructions <span style={{ textTransform: 'none', fontWeight: 400, opacity: 0.7 }}>(Optional)</span>
+                        </label>
+                        <input
+                          type="text"
+                          name="notes"
+                          value={formData.notes}
+                          onChange={handleChange}
+                          placeholder="Any specific delivery instructions..."
+                          style={inputStyle}
+                          onFocus={(e) => (e.target.style.borderColor = 'var(--accent)')}
+                          onBlur={(e) => (e.target.style.borderColor = 'var(--border-strong)')}
+                        />
+                      </div>
+                    </div>
                   </div>
                 </div>
-              </div>
+              )}
 
             </form>
           </div>
@@ -529,6 +907,15 @@ const Checkout = () => {
 
         </div>
       </div>
+
+      {/* Address Add / Edit Modal */}
+      <AddressModal
+        isOpen={isAddressModalOpen}
+        onClose={() => setIsAddressModalOpen(false)}
+        initialData={editingAddress}
+        onSaved={handleAddressSaved}
+        isCustomerLoggedIn={Boolean(user)}
+      />
     </div>
   );
 };

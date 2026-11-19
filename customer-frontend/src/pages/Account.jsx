@@ -1,13 +1,15 @@
-import React, { useContext, useState, useEffect } from 'react';
+import React, { useContext, useState, useEffect, useCallback } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { User, Phone, Heart, ShoppingBag, LogOut, MessageCircle, ArrowRight, Package, Truck, ExternalLink, Copy, Check } from 'lucide-react';
+import { User, Phone, Heart, ShoppingBag, LogOut, MessageCircle, ArrowRight, Package, Truck, ExternalLink, Copy, Check, MapPin, Plus } from 'lucide-react';
 import { AuthContext } from '../context/AuthContext';
 import { CartContext } from '../context/CartContext';
 import { useWishlist } from '../context/WishlistContext';
 import { useTheme } from '../context/ThemeContext';
 import { getWhatsAppUrl, IS_WHATSAPP_CONFIGURED } from '../config/constants';
 import api from '../utils/api';
+import AddressModal from '../components/AddressModal';
+import AddressCard from '../components/AddressCard';
 
 const Account = () => {
   const { user, logout } = useContext(AuthContext);
@@ -19,6 +21,71 @@ const Account = () => {
   const [orders, setOrders] = useState([]);
   const [loadingOrders, setLoadingOrders] = useState(true);
   const [copiedId, setCopiedId] = useState(null);
+
+  // Address book state
+  const [addresses, setAddresses] = useState([]);
+  const [loadingAddresses, setLoadingAddresses] = useState(true);
+  const [isAddressModalOpen, setIsAddressModalOpen] = useState(false);
+  const [editingAddress, setEditingAddress] = useState(null);
+
+  const fetchAddresses = useCallback(async () => {
+    if (!user) return;
+    try {
+      const res = await api.get('/customer/addresses');
+      if (res.data?.success) {
+        setAddresses(res.data.addresses || []);
+      }
+    } catch (err) {
+      console.error('Failed to load addresses', err);
+    } finally {
+      setLoadingAddresses(false);
+    }
+  }, [user]);
+
+  useEffect(() => {
+    fetchAddresses();
+  }, [fetchAddresses]);
+
+  const handleOpenAddAddress = () => {
+    setEditingAddress(null);
+    setIsAddressModalOpen(true);
+  };
+
+  const handleOpenEditAddress = (addr) => {
+    setEditingAddress(addr);
+    setIsAddressModalOpen(true);
+  };
+
+  const handleSetDefaultAddress = async (addr) => {
+    try {
+      const res = await api.put(`/customer/addresses/${addr._id}/default`);
+      if (res.data?.success) {
+        setAddresses(res.data.addresses || []);
+      }
+    } catch (err) {
+      console.error('Failed to set default address', err);
+    }
+  };
+
+  const handleDeleteAddress = async (addr) => {
+    if (!window.confirm('Are you sure you want to delete this address?')) return;
+    try {
+      const res = await api.delete(`/customer/addresses/${addr._id}`);
+      if (res.data?.success) {
+        setAddresses(res.data.addresses || []);
+      }
+    } catch (err) {
+      console.error('Failed to delete address', err);
+    }
+  };
+
+  const handleAddressSaved = (savedAddr, updatedList) => {
+    if (updatedList) {
+      setAddresses(updatedList);
+    } else {
+      fetchAddresses();
+    }
+  };
 
   const handleCopyTracking = (trackingId) => {
     if (!trackingId) return;
@@ -274,6 +341,110 @@ const Account = () => {
           </div>
           <ArrowRight size={18} style={{ color: 'var(--text-muted)' }} />
         </Link>
+      </div>
+
+      {/* ── Saved Delivery Addresses Section ───────────────────────────── */}
+      <div style={{ marginBottom: 32 }}>
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 16, flexWrap: 'wrap', gap: 10 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+            <div
+              style={{
+                width: 34,
+                height: 34,
+                borderRadius: 10,
+                background: 'rgba(196, 56, 108, 0.12)',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                color: 'var(--accent)',
+              }}
+            >
+              <MapPin size={18} />
+            </div>
+            <div>
+              <h2 style={{ fontSize: '1.25rem', fontWeight: 700, margin: 0, color: 'var(--text)', fontFamily: "'Cormorant Garamond', Georgia, serif" }}>
+                Saved Delivery Addresses
+              </h2>
+              <span style={{ fontSize: '0.78rem', color: 'var(--text-secondary)' }}>
+                {addresses.length} address{addresses.length !== 1 ? 'es' : ''} on file
+              </span>
+            </div>
+          </div>
+
+          <button
+            type="button"
+            onClick={handleOpenAddAddress}
+            style={{
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: 6,
+              padding: '7px 14px',
+              borderRadius: 8,
+              background: 'var(--accent-gradient)',
+              color: '#FFFFFF',
+              border: 'none',
+              fontSize: '0.8rem',
+              fontWeight: 700,
+              cursor: 'pointer',
+              boxShadow: '0 3px 12px rgba(196, 56, 108, 0.25)',
+            }}
+          >
+            <Plus size={14} /> Add Address
+          </button>
+        </div>
+
+        {loadingAddresses ? (
+          <div style={{ padding: '24px', textAlign: 'center', color: 'var(--text-secondary)', background: isDark ? 'var(--bg-secondary)' : '#FFF', borderRadius: 16, border: '1px solid var(--border)' }}>
+            Loading addresses...
+          </div>
+        ) : addresses.length === 0 ? (
+          <div
+            style={{
+              padding: '28px 20px',
+              textAlign: 'center',
+              background: isDark ? 'var(--bg-secondary)' : '#FFF',
+              borderRadius: 16,
+              border: '1px solid var(--border)',
+            }}
+          >
+            <MapPin size={30} style={{ color: 'var(--text-muted)', margin: '0 auto 10px' }} />
+            <p style={{ margin: '0 0 4px', fontWeight: 600, color: 'var(--text)' }}>No delivery addresses saved yet</p>
+            <p style={{ margin: '0 0 14px', fontSize: '0.82rem', color: 'var(--text-secondary)' }}>
+              Save your doorstep address once to checkout faster on every order.
+            </p>
+            <button
+              type="button"
+              onClick={handleOpenAddAddress}
+              style={{
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: 6,
+                padding: '8px 18px',
+                borderRadius: 999,
+                background: 'var(--accent-gradient)',
+                color: '#FFF',
+                border: 'none',
+                fontSize: '0.82rem',
+                fontWeight: 600,
+                cursor: 'pointer',
+              }}
+            >
+              <Plus size={14} /> Add Your First Address
+            </button>
+          </div>
+        ) : (
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: 14 }}>
+            {addresses.map((addr) => (
+              <AddressCard
+                key={addr._id}
+                address={addr}
+                onEdit={handleOpenEditAddress}
+                onDelete={handleDeleteAddress}
+                onSetDefault={handleSetDefaultAddress}
+              />
+            ))}
+          </div>
+        )}
       </div>
 
       {/* My Orders & Delivery Tracking Section */}
@@ -553,6 +724,15 @@ const Account = () => {
           </a>
         </div>
       )}
+
+      {/* Address Management Modal */}
+      <AddressModal
+        isOpen={isAddressModalOpen}
+        onClose={() => setIsAddressModalOpen(false)}
+        initialData={editingAddress}
+        onSaved={handleAddressSaved}
+        isCustomerLoggedIn={Boolean(user)}
+      />
     </div>
   );
 };

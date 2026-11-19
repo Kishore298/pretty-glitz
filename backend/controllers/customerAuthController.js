@@ -19,6 +19,7 @@ const sanitizeUser = (user) => ({
   name: user.name || 'Customer',
   mobile: user.mobile,
   role: user.role,
+  addresses: user.addresses || [],
   createdAt: user.createdAt,
 });
 
