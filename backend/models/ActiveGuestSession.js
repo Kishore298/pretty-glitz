@@ -38,7 +38,6 @@ const activeGuestSessionSchema = new mongoose.Schema(
     lastActive: {
       type: Date,
       default: Date.now,
-      index: true,
     },
   },
   { timestamps: true }

@@ -318,7 +318,7 @@ const reorderProducts = async (req, res) => {
       return res.status(400).json({ message: 'Invalid payload: items must be an array' });
     }
     const updatePromises = items.map((item, index) =>
-      Product.findByIdAndUpdate(item.id, { order: index }, { new: true })
+      Product.findByIdAndUpdate(item.id, { order: index }, { returnDocument: 'after' })
     );
     await Promise.all(updatePromises);
     res.json({ message: 'Products reordered successfully' });
