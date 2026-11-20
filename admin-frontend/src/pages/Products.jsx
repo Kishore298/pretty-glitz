@@ -22,6 +22,7 @@ import PageWrapper from '../components/PageWrapper';
 import PageHeader from '../components/PageHeader';
 import EmptyState from '../components/EmptyState';
 import { SkeletonTable } from '../components/SkeletonLoader';
+import AdminDropdown from '../components/AdminDropdown';
 import toast from 'react-hot-toast';
 
 const Products = () => {
@@ -289,29 +290,17 @@ const Products = () => {
           </div>
 
           {/* Category Dropdown Filter */}
-          <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-            <Filter size={15} color="var(--accent-gold)" />
-            <select
-              value={selectedCategory}
-              onChange={(e) => setSelectedCategory(e.target.value)}
-              className="admin-input"
-              style={{
-                height: 42,
-                padding: '0 38px 0 14px',
-                fontSize: '0.84rem',
-                borderRadius: 12,
-                minWidth: 170,
-                cursor: 'pointer',
-              }}
-            >
-              <option value="all">All Categories</option>
-              {categories.map((c) => (
-                <option key={c._id} value={c.name}>
-                  {c.name}
-                </option>
-              ))}
-            </select>
-          </div>
+          <AdminDropdown
+            value={selectedCategory}
+            onChange={setSelectedCategory}
+            icon={<Filter size={14} color="var(--accent-gold)" />}
+            title="Filter by Category"
+            options={[
+              { value: 'all', label: 'All Categories' },
+              ...categories.map((c) => ({ value: c.name, label: c.name })),
+            ]}
+            style={{ minWidth: 190 }}
+          />
 
           {/* Quick Metrics Pills */}
           <div className="products-summary-pills" style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>

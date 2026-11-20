@@ -16,6 +16,7 @@ import {
 import { motion, AnimatePresence } from 'framer-motion';
 import { CartContext, resolveStock } from '../context/CartContext';
 import { useWishlist } from '../context/WishlistContext';
+import { useTheme } from '../context/ThemeContext';
 import { optimizeImageUrl } from '../utils/cloudinary';
 import { sortSizesAscending } from '../utils/sizeHelper';
 import { getProductUrl } from '../utils/urlHelper';
@@ -26,16 +27,12 @@ import ColorVariationSelector from './ColorVariationSelector';
 import logoImg from '../assets/pretty-glitz-logo.png';
 
 const CollectionProductDetailCard = ({ product, isLast = false }) => {
+  const { isDark } = useTheme();
   const { addToCart, updateQuantity, removeFromCart, getCartItemQuantity, isInCart } = useContext(CartContext);
   const { isInWishlist, toggleWishlist } = useWishlist();
 
-  // Color Variant Selection
-  const [selectedColor, setSelectedColor] = useState(() => {
-    if (product.colorVariants && product.colorVariants.length > 0) {
-      return product.colorVariants.find(c => c.isDefault) || product.colorVariants[0];
-    }
-    return null;
-  });
+  // Color Variant Selection (unselected by default so showcase main image is displayed first)
+  const [selectedColor, setSelectedColor] = useState(null);
 
   const [activeImg, setActiveImg] = useState(0);
   const [touchStartX, setTouchStartX] = useState(null);
@@ -69,10 +66,44 @@ const CollectionProductDetailCard = ({ product, isLast = false }) => {
     return null;
   });
 
-  // Images for currently selected variant
-  const images = (selectedColor && selectedColor.images?.length > 0)
-    ? selectedColor.images
-    : (product.images && product.images.length > 0 ? product.images : []);
+  // Combine overall product showcase images FIRST, followed by all color variant images
+  // so the main image is always #1 and color variant images follow next consistently
+  const images = React.useMemo(() => {
+    const list = [];
+    const seenUrls = new Set();
+
+    const addImg = (img, meta = {}) => {
+      if (!img) return;
+      const url = typeof img === 'string' ? img : img.url;
+      if (url && !seenUrls.has(url)) {
+        seenUrls.add(url);
+        list.push(typeof img === 'string' ? { url: img, ...meta } : { ...img, ...meta });
+      }
+    };
+
+    // 1. Add product showcase images FIRST (main image)
+    if (Array.isArray(product.images) && product.images.length > 0) {
+      product.images.forEach((img) => addImg(img, { isShowcase: true }));
+    } else if (product.image) {
+      addImg(product.image, { isShowcase: true });
+    }
+
+    // 2. Add images from all other color variants next
+    if (Array.isArray(product.colorVariants)) {
+      product.colorVariants.forEach((cVar) => {
+        if (Array.isArray(cVar.images)) {
+          cVar.images.forEach((img) => addImg(img, { colorVariant: cVar }));
+        }
+      });
+    }
+
+    // 3. Fallback / Selected color images if any remaining
+    if (selectedColor && Array.isArray(selectedColor.images)) {
+      selectedColor.images.forEach((img) => addImg(img, { colorVariant: selectedColor }));
+    }
+
+    return list.length > 0 ? list : (product.image ? [{ url: product.image, isShowcase: true }] : []);
+  }, [product, selectedColor]);
 
   const hasMultipleImages = images.length > 1;
 
@@ -94,11 +125,34 @@ const CollectionProductDetailCard = ({ product, isLast = false }) => {
 
   const handleSelectColor = (cVar) => {
     setSelectedColor(cVar);
-    setActiveImg(0); // Reset gallery to index 0 on colour switch
+    // Smoothly jump activeImg to this color variant's image
+    const cVarUrl = cVar.images?.[0]?.url || (typeof cVar.images?.[0] === 'string' ? cVar.images[0] : null);
+    if (cVarUrl) {
+      const targetIdx = images.findIndex((img) => (typeof img === 'string' ? img : img.url) === cVarUrl);
+      if (targetIdx !== -1) {
+        setActiveImg(targetIdx);
+      }
+    }
     if (selectedSize && cVar.sizes?.length > 0) {
-      const stillValid = cVar.sizes.find(s => s.size === selectedSize && s.inStock !== false);
+      const stillValid = cVar.sizes.find((s) => s.size === selectedSize && s.inStock !== false);
       if (!stillValid) {
         setSelectedSize(null);
+      }
+    }
+  };
+
+  const handleThumbnailClick = (idx) => {
+    setActiveImg(idx);
+    const clickedItem = images[idx];
+    const clickedUrl = typeof clickedItem === 'string' ? clickedItem : clickedItem?.url;
+    if (clickedItem?.colorVariant) {
+      setSelectedColor(clickedItem.colorVariant);
+    } else if (clickedUrl && Array.isArray(product.colorVariants)) {
+      const match = product.colorVariants.find(
+        (cv) => Array.isArray(cv.images) && cv.images.some((img) => (typeof img === 'string' ? img : img?.url) === clickedUrl)
+      );
+      if (match) {
+        setSelectedColor(match);
       }
     }
   };
@@ -137,6 +191,13 @@ const CollectionProductDetailCard = ({ product, isLast = false }) => {
     addToCart(product, selectedSize, 1, selectedPieceCount?.count ?? null, resolvedPrice, selectedColor);
     setAddedFeedback(true);
     setTimeout(() => setAddedFeedback(false), 2000);
+
+    // Smoothly expand specs accordion on next animation frame after cart state updates settle
+    if (!detailsOpen) {
+      setTimeout(() => {
+        setDetailsOpen(true);
+      }, 60);
+    }
   };
 
   const handleIncrease = (e) => {
@@ -362,7 +423,7 @@ const CollectionProductDetailCard = ({ product, isLast = false }) => {
                   <button
                     key={item._id || idx}
                     type="button"
-                    onClick={() => setActiveImg(idx)}
+                    onClick={() => handleThumbnailClick(idx)}
                     aria-label={`View photo ${idx + 1}`}
                     title={`Photo ${idx + 1}`}
                     style={{
@@ -380,13 +441,9 @@ const CollectionProductDetailCard = ({ product, isLast = false }) => {
                       boxShadow: isActive
                         ? '0 4px 12px rgba(196, 56, 108, 0.28)'
                         : 'none',
-                      opacity: isActive ? 1 : 0.72,
+                      opacity: 1,
                       transition: 'all 0.2s cubic-bezier(0.16, 1, 0.3, 1)',
-                      transform: isActive ? 'scale(1.02)' : 'none',
-                    }}
-                    onMouseEnter={(e) => (e.currentTarget.style.opacity = '1')}
-                    onMouseLeave={(e) => {
-                      if (!isActive) e.currentTarget.style.opacity = '0.72';
+                      transform: isActive ? 'scale(1.04)' : 'none',
                     }}
                   >
                     <img
@@ -467,7 +524,14 @@ const CollectionProductDetailCard = ({ product, isLast = false }) => {
                     background: inWishlist ? 'rgba(225,29,72,0.08)' : 'transparent',
                   }}
                 >
-                  <Heart size={16} style={{ fill: inWishlist ? '#E11D48' : 'transparent', stroke: inWishlist ? '#E11D48' : 'currentColor' }} />
+                  <Heart
+                    size={16}
+                    style={{
+                      fill: inWishlist ? '#E11D48' : 'rgba(255, 255, 255, 0.65)',
+                      stroke: inWishlist ? '#E11D48' : (isDark ? 'rgba(255, 255, 255, 0.75)' : 'rgba(35, 28, 33, 0.65)'),
+                      strokeWidth: 1.6,
+                    }}
+                  />
                 </button>
 
                 <button
@@ -761,13 +825,14 @@ const CollectionProductDetailCard = ({ product, isLast = false }) => {
                   </motion.div>
                 </button>
 
-                <AnimatePresence>
+                <AnimatePresence initial={false}>
                   {detailsOpen && (
                     <motion.div
+                      key="product-details-content"
                       initial={{ height: 0, opacity: 0 }}
                       animate={{ height: 'auto', opacity: 1 }}
                       exit={{ height: 0, opacity: 0 }}
-                      transition={{ duration: 0.25, ease: 'easeInOut' }}
+                      transition={{ duration: 0.32, ease: [0.16, 1, 0.3, 1] }}
                       style={{ overflow: 'hidden' }}
                     >
                       <div style={{ padding: '0 18px 18px', borderTop: '1px solid var(--border)' }}>

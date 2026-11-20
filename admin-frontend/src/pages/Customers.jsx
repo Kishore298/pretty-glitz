@@ -15,6 +15,7 @@ import {
 } from 'lucide-react';
 import api from '../utils/api';
 import PageHeader from '../components/PageHeader';
+import AdminDropdown from '../components/AdminDropdown';
 
 const Customers = () => {
   const [loading, setLoading] = useState(true);
@@ -316,26 +317,18 @@ const Customers = () => {
             High Value (≥ ₹2,000)
           </button>
 
-          {/* Sort By Select */}
-          <select
+          {/* Sort By Dropdown */}
+          <AdminDropdown
             value={sortBy}
-            onChange={(e) => setSortBy(e.target.value)}
-            style={{
-              background: 'rgba(255, 255, 255, 0.06)',
-              border: '1px solid rgba(255, 255, 255, 0.12)',
-              borderRadius: 8,
-              color: '#FAF9FC',
-              fontSize: '0.78rem',
-              fontWeight: 600,
-              padding: '6px 12px',
-              cursor: 'pointer',
-              outline: 'none',
-            }}
-          >
-            <option value="totalSpend">Sort by Highest Spend</option>
-            <option value="totalOrders">Sort by Order Count</option>
-            <option value="lastOrderDate">Sort by Most Recent</option>
-          </select>
+            onChange={setSortBy}
+            title="Sort Customers"
+            align="right"
+            options={[
+              { value: 'totalSpend', label: 'Highest Total Spend', icon: '💰' },
+              { value: 'totalOrders', label: 'Most Orders Placed', icon: '📦' },
+              { value: 'lastOrderDate', label: 'Most Recent Activity', icon: '🕒' },
+            ]}
+          />
         </div>
       </div>
 

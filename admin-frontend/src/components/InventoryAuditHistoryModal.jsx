@@ -1,8 +1,9 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { X, Search, History, Filter, ArrowRight, ShieldCheck, ShoppingCart, RefreshCw } from 'lucide-react';
+import { X, Search, History, ArrowRight } from 'lucide-react';
 import api from '../utils/api';
 import toast from 'react-hot-toast';
+import AdminDropdown from './AdminDropdown';
 
 const InventoryAuditHistoryModal = ({ isOpen, onClose, selectedProductId = null }) => {
   const [logs, setLogs] = useState([]);
@@ -169,39 +170,41 @@ const InventoryAuditHistoryModal = ({ isOpen, onClose, selectedProductId = null 
             </div>
 
             {/* Operation Filter */}
-            <select
+            <AdminDropdown
               value={operationFilter}
-              onChange={(e) => {
-                setOperationFilter(e.target.value);
+              onChange={(val) => {
+                setOperationFilter(val);
                 setPage(1);
               }}
-              className="admin-input"
-              style={{ height: 36, fontSize: '0.82rem', borderRadius: 10, minWidth: 150 }}
-            >
-              <option value="ALL">All Operations</option>
-              <option value="SET_STOCK">Set Stock</option>
-              <option value="ADJUST_STOCK">Adjust Stock</option>
-              <option value="ORDER_DEDUCTION">Order Checkout</option>
-              <option value="ORDER_CANCEL_RESTORE">Order Cancelled Restore</option>
-            </select>
+              options={[
+                { value: 'ALL', label: 'All Operations' },
+                { value: 'SET_STOCK', label: 'Set Stock' },
+                { value: 'ADJUST_STOCK', label: 'Adjust Stock' },
+                { value: 'ORDER_DEDUCTION', label: 'Order Checkout' },
+                { value: 'ORDER_CANCEL_RESTORE', label: 'Order Cancelled Restore' },
+              ]}
+              title="FILTER BY OPERATION"
+              style={{ minWidth: 160 }}
+            />
 
             {/* Source Filter */}
-            <select
+            <AdminDropdown
               value={sourceFilter}
-              onChange={(e) => {
-                setSourceFilter(e.target.value);
+              onChange={(val) => {
+                setSourceFilter(val);
                 setPage(1);
               }}
-              className="admin-input"
-              style={{ height: 36, fontSize: '0.82rem', borderRadius: 10, minWidth: 140 }}
-            >
-              <option value="ALL">All Sources</option>
-              <option value="MANUAL_ADMIN">Manual Admin</option>
-              <option value="DRAWER_ADMIN">Variant Drawer</option>
-              <option value="BULK_ADMIN">Bulk Dock</option>
-              <option value="CSV_IMPORT">CSV / Excel</option>
-              <option value="ORDER_DEDUCTION">Storefront Order</option>
-            </select>
+              options={[
+                { value: 'ALL', label: 'All Sources' },
+                { value: 'MANUAL_ADMIN', label: 'Manual Admin' },
+                { value: 'DRAWER_ADMIN', label: 'Variant Drawer' },
+                { value: 'BULK_ADMIN', label: 'Bulk Dock' },
+                { value: 'CSV_IMPORT', label: 'CSV / Excel' },
+                { value: 'ORDER_DEDUCTION', label: 'Storefront Order' },
+              ]}
+              title="FILTER BY SOURCE"
+              style={{ minWidth: 160 }}
+            />
           </div>
 
           {/* Logs Table / List */}

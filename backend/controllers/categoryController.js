@@ -77,9 +77,37 @@ const createCategory = async (req, res) => {
 const updateCategory = async (req, res) => {
   try {
     const { name, bannerImage } = req.body;
-    const category = await Category.findByIdAndUpdate(req.params.id, { name, bannerImage }, { returnDocument: 'after' });
-    res.json(category);
+    const existing = await Category.findById(req.params.id);
+    if (!existing) {
+      return res.status(404).json({ message: 'Category not found' });
+    }
+    const oldName = existing.name;
+
+    existing.name = name || existing.name;
+    if (bannerImage !== undefined) existing.bannerImage = bannerImage;
+    const updatedCategory = await existing.save();
+
+    // If the category name was updated, cascade to all associated products and subcategories
+    if (name && name.trim() && name.trim().toLowerCase() !== oldName.trim().toLowerCase()) {
+      const trimmedOld = oldName.trim();
+      const trimmedNew = name.trim();
+      const escapedOld = trimmedOld.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+      const oldRegex = new RegExp(`^${escapedOld}$`, 'i');
+
+      await Product.updateMany(
+        { category: { $regex: oldRegex } },
+        { $set: { category: trimmedNew } }
+      );
+
+      await Subcategory.updateMany(
+        { category: { $regex: oldRegex } },
+        { $set: { category: trimmedNew } }
+      );
+    }
+
+    res.json(updatedCategory);
   } catch (error) {
+    console.error('[categoryController] updateCategory error:', error);
     res.status(500).json({ message: 'Server error' });
   }
 };

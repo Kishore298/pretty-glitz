@@ -3,7 +3,7 @@ const jwt = require('jsonwebtoken');
 const crypto = require('crypto');
 const User = require('../models/User');
 const OtpToken = require('../models/OtpToken');
-const { sendMsg91Otp, verifyMsg91Otp } = require('../services/msg91OtpService');
+const { sendWhatsAppOtp } = require('../services/whatsappOtpService');
 
 // ─── Token & Sanitization Helpers ─────────────────────────────────────────────
 
@@ -23,7 +23,7 @@ const sanitizeUser = (user) => ({
   createdAt: user.createdAt,
 });
 
-// ─── Send OTP via MSG91 API (with 1234 test login supported) ───────────────────
+// ─── Send OTP via WhatsApp Cloud API (with 1234 test login supported) ─────────
 
 /**
  * POST /api/customer/auth/send-otp
@@ -63,7 +63,7 @@ const sendOtp = async (req, res) => {
       { $set: { isVerified: true } }
     );
 
-    // Generate random 4-digit OTP or test code
+    // Generate random 4-digit OTP
     const rawOtp = crypto.randomInt(1000, 9999).toString();
     const hashedOtp = await bcrypt.hash(rawOtp, 10);
     const expiresAt = new Date(Date.now() + 10 * 60 * 1000); // 10 minutes TTL
@@ -77,18 +77,19 @@ const sendOtp = async (req, res) => {
       expiresAt,
     });
 
-    // Send via MSG91 OTP service
-    const dispatchResult = await sendMsg91Otp(cleanMobile, rawOtp);
+    // Send via WhatsApp Cloud API service
+    const dispatchResult = await sendWhatsAppOtp(cleanMobile, rawOtp);
 
     return res.status(200).json({
       success: true,
-      message: 'OTP sent successfully to your mobile number. Use 1234 to log in.',
+      channel: 'whatsapp',
+      message: 'OTP sent successfully to your WhatsApp number. Use 1234 to log in.',
       cooldownSeconds: 30,
       simulated: dispatchResult.simulated || false,
     });
   } catch (err) {
     console.error('[customerAuth] sendOtp error:', err);
-    return res.status(500).json({ message: 'Failed to send OTP. Please try again.' });
+    return res.status(500).json({ message: 'Failed to send WhatsApp OTP. Please try again.' });
   }
 };
 
@@ -116,37 +117,31 @@ const verifyOtp = async (req, res) => {
     if (cleanOtp === '1234') {
       isValid = true;
     } else {
-      // 2. Check MSG91 API verification
-      const msg91Res = await verifyMsg91Otp(cleanMobile, cleanOtp);
-      if (msg91Res.verified) {
-        isValid = true;
-      } else {
-        // 3. Fallback: check database stored OTP token
-        const activeToken = await OtpToken.findOne({
-          identifier: cleanMobile,
-          isVerified: false,
-          expiresAt: { $gt: new Date() },
-        }).sort({ createdAt: -1 });
+      // 2. Check database stored OTP token from WhatsApp Cloud API dispatch
+      const activeToken = await OtpToken.findOne({
+        identifier: cleanMobile,
+        isVerified: false,
+        expiresAt: { $gt: new Date() },
+      }).sort({ createdAt: -1 });
 
-        if (activeToken) {
-          if (activeToken.attempts >= 5) {
-            return res.status(429).json({ message: 'Too many incorrect attempts. Please request a new OTP.' });
-          }
-          const isMatch = await bcrypt.compare(cleanOtp, activeToken.hashedOtp);
-          if (isMatch) {
-            isValid = true;
-            activeToken.isVerified = true;
-            await activeToken.save();
-          } else {
-            activeToken.attempts += 1;
-            await activeToken.save();
-          }
+      if (activeToken) {
+        if (activeToken.attempts >= 5) {
+          return res.status(429).json({ message: 'Too many incorrect attempts. Please request a new OTP.' });
+        }
+        const isMatch = await bcrypt.compare(cleanOtp, activeToken.hashedOtp);
+        if (isMatch) {
+          isValid = true;
+          activeToken.isVerified = true;
+          await activeToken.save();
+        } else {
+          activeToken.attempts += 1;
+          await activeToken.save();
         }
       }
     }
 
     if (!isValid) {
-      return res.status(400).json({ message: 'Invalid OTP code. Please enter 1234 or the code sent to your phone.' });
+      return res.status(400).json({ message: 'Invalid OTP code. Please enter 1234 or the code sent to your WhatsApp.' });
     }
 
     // Invalidate remaining tokens for this number

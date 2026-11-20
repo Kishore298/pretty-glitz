@@ -1,5 +1,4 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
-import { Link } from 'react-router-dom';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 import { optimizeImageUrl } from '../utils/cloudinary';
 import logoImg from '../assets/pretty-glitz-logo.png';
@@ -8,12 +7,11 @@ const HeroBannerCarousel = ({ banners = [], loading = false }) => {
   // Only display real, active banners from the database that have a valid image URL
   const activeSlides = Array.isArray(banners)
     ? banners.filter(
-        (b) => b && b.isActive !== false && (b.desktopImage?.url || b.mobileImage?.url)
-      )
+      (b) => b && b.isActive !== false && (b.desktopImage?.url || b.mobileImage?.url)
+    )
     : [];
 
   const [currentIndex, setCurrentIndex] = useState(0);
-  const [isPaused, setIsPaused] = useState(false);
 
   // Auto-clamp / reset currentIndex when activeSlides changes
   useEffect(() => {
@@ -39,7 +37,8 @@ const HeroBannerCarousel = ({ banners = [], loading = false }) => {
     setCurrentIndex((prev) => (prev - 1 + activeSlides.length) % activeSlides.length);
   }, [activeSlides.length]);
 
-  // Auto-scroll every 5 seconds (5000ms) only when multiple slides exist
+  // Auto-scroll removed per user request: only manual navigation (arrows / swipe)
+  /*
   useEffect(() => {
     if (activeSlides.length <= 1 || isPaused) return;
 
@@ -49,6 +48,7 @@ const HeroBannerCarousel = ({ banners = [], loading = false }) => {
 
     return () => clearInterval(timer);
   }, [activeSlides.length, isPaused, handleNext]);
+  */
 
   // If loading and awaiting dynamic banners, render a smooth placeholder instead of flashing static images
   if (loading && activeSlides.length === 0) {
@@ -83,7 +83,6 @@ const HeroBannerCarousel = ({ banners = [], loading = false }) => {
   const handleTouchStart = (e) => {
     touchStartX.current = e.touches[0].clientX;
     touchStartY.current = e.touches[0].clientY;
-    setIsPaused(true);
   };
 
   const handleTouchMove = (e) => {
@@ -100,15 +99,11 @@ const HeroBannerCarousel = ({ banners = [], loading = false }) => {
         handlePrev(); // swipe right -> prev
       }
     }
-    // Resume auto-scroll after a short delay
-    setTimeout(() => setIsPaused(false), 2000);
   };
 
   return (
     <section
       className="hero-banner-section"
-      onMouseEnter={() => setIsPaused(true)}
-      onMouseLeave={() => setIsPaused(false)}
       onTouchStart={handleTouchStart}
       onTouchMove={handleTouchMove}
       onTouchEnd={handleTouchEnd}
@@ -137,7 +132,6 @@ const HeroBannerCarousel = ({ banners = [], loading = false }) => {
           {activeSlides.map((slide, idx) => {
             const desktopUrl = slide.desktopImage?.url || slide.mobileImage?.url;
             const mobileUrl = slide.mobileImage?.url || slide.desktopImage?.url;
-            const targetLink = slide.linkTo || '/all-products';
 
             return (
               <div
@@ -150,10 +144,9 @@ const HeroBannerCarousel = ({ banners = [], loading = false }) => {
                   maxWidth: '100%',
                 }}
               >
-                <Link
-                  to={targetLink}
-                  className="hero-banner-link"
-                >
+                {/* Dynamic links commented out as of now per user instruction */}
+                {/* <Link to={targetLink} className="hero-banner-link"> */}
+                <div className="hero-banner-link" style={{ display: 'block', width: '100%', height: '100%' }}>
                   <picture className="hero-banner-picture">
                     <source
                       media="(max-width: 767px)"
@@ -176,7 +169,8 @@ const HeroBannerCarousel = ({ banners = [], loading = false }) => {
                       }}
                     />
                   </picture>
-                </Link>
+                </div>
+                {/* </Link> */}
               </div>
             );
           })}
@@ -227,7 +221,7 @@ const HeroBannerCarousel = ({ banners = [], loading = false }) => {
         </div>
       )}
 
-      {/* Centered Explore Collection Button Below Banner Carousel */}
+      {/* Centered Explore Collection Button: Scrolls smoothly to Categories / Collections section on Home page */}
       <div
         className="hero-banner-cta-wrapper"
         style={{
@@ -236,8 +230,16 @@ const HeroBannerCarousel = ({ banners = [], loading = false }) => {
           alignItems: 'center',
         }}
       >
-        <Link
-          to={activeSlides[currentIndex]?.linkTo || '/all-products'}
+        <a
+          href="#categories"
+          onClick={(e) => {
+            e.preventDefault();
+            const el = document.getElementById('categories');
+            if (el) {
+              el.scrollIntoView({ behavior: 'smooth' });
+              window.history.replaceState(null, '', '/#categories');
+            }
+          }}
           style={{
             display: 'inline-flex',
             alignItems: 'center',
@@ -251,6 +253,7 @@ const HeroBannerCarousel = ({ banners = [], loading = false }) => {
             textDecoration: 'none',
             letterSpacing: '0.04em',
             boxShadow: '0 6px 22px rgba(196, 56, 108, 0.32)',
+            cursor: 'pointer',
             transition: 'all 0.25s ease',
           }}
           onMouseEnter={(e) => {
@@ -262,9 +265,9 @@ const HeroBannerCarousel = ({ banners = [], loading = false }) => {
             e.currentTarget.style.boxShadow = '0 8px 26px rgba(196, 56, 108, 0.35)';
           }}
         >
-          <span>Explore Collection</span>
+          <span>Explore Collections</span>
           <span style={{ fontSize: '1.2rem', lineHeight: 1 }}>→</span>
-        </Link>
+        </a>
       </div>
     </section>
   );

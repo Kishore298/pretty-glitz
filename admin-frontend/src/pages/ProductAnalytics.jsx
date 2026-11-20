@@ -17,6 +17,7 @@ import { optimizeImageUrl } from '../utils/cloudinary';
 import PageWrapper from '../components/PageWrapper';
 import PageHeader from '../components/PageHeader';
 import EmptyState from '../components/EmptyState';
+import AdminDropdown from '../components/AdminDropdown';
 import toast from 'react-hot-toast';
 
 const ProductAnalytics = () => {
@@ -389,43 +390,29 @@ const ProductAnalytics = () => {
         </div>
 
         {/* Category Filter */}
-        <select
+        <AdminDropdown
           value={category}
-          onChange={(e) => setCategory(e.target.value)}
-          className="admin-input"
-          style={{
-            padding: '9px 38px 9px 14px',
-            borderRadius: 10,
-            fontSize: '0.85rem',
-            cursor: 'pointer',
-            width: 'auto',
-          }}
-        >
-          <option value="ALL">All Categories</option>
-          {categoriesList.map((cat, i) => (
-            <option key={i} value={cat}>
-              {cat}
-            </option>
-          ))}
-        </select>
+          onChange={(val) => setCategory(val)}
+          options={[
+            { value: 'ALL', label: 'All Categories' },
+            ...categoriesList.map((cat) => ({ value: cat, label: cat })),
+          ]}
+          title="CATEGORY"
+          style={{ minWidth: 160 }}
+        />
 
         {/* Stock Status Filter */}
-        <select
+        <AdminDropdown
           value={stockStatus}
-          onChange={(e) => setStockStatus(e.target.value)}
-          className="admin-input"
-          style={{
-            padding: '9px 38px 9px 14px',
-            borderRadius: 10,
-            fontSize: '0.85rem',
-            cursor: 'pointer',
-            width: 'auto',
-          }}
-        >
-          <option value="ALL">All Stock Status</option>
-          <option value="IN_STOCK">In Stock</option>
-          <option value="OUT_OF_STOCK">Out of Stock</option>
-        </select>
+          onChange={(val) => setStockStatus(val)}
+          options={[
+            { value: 'ALL', label: 'All Stock Status' },
+            { value: 'IN_STOCK', label: 'In Stock' },
+            { value: 'OUT_OF_STOCK', label: 'Out of Stock' },
+          ]}
+          title="STOCK STATUS"
+          style={{ minWidth: 155 }}
+        />
 
         {/* Demand Segment Filter */}
         <div className="analytics-demand-pills-row" style={{ display: 'flex', gap: 6 }}>
@@ -487,49 +474,37 @@ const ProductAnalytics = () => {
         </div>
 
         {/* Date Range Preset Filter */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-          <Calendar size={15} style={{ color: '#8E879B' }} />
-          <select
-            value={datePreset}
-            onChange={(e) => setDatePreset(e.target.value)}
-            className="admin-input"
-            style={{
-              padding: '9px 38px 9px 12px',
-              borderRadius: 10,
-              fontSize: '0.85rem',
-              cursor: 'pointer',
-              width: 'auto',
-            }}
-          >
-            <option value="ALL">All Time</option>
-            <option value="TODAY">Today</option>
-            <option value="7D">Last 7 Days</option>
-            <option value="30D">Last 30 Days</option>
-          </select>
-        </div>
+        <AdminDropdown
+          value={datePreset}
+          onChange={(val) => setDatePreset(val)}
+          icon={<Calendar size={14} color="#E5C378" />}
+          options={[
+            { value: 'ALL', label: 'All Time' },
+            { value: 'TODAY', label: 'Today' },
+            { value: '7D', label: 'Last 7 Days' },
+            { value: '30D', label: 'Last 30 Days' },
+          ]}
+          title="DATE RANGE"
+          style={{ minWidth: 140 }}
+        />
 
         {/* Sort selector & Order Toggle */}
         <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
-          <select
+          <AdminDropdown
             value={sortBy}
-            onChange={(e) => setSortBy(e.target.value)}
-            className="admin-input"
-            style={{
-              padding: '9px 38px 9px 14px',
-              borderRadius: 10,
-              fontSize: '0.85rem',
-              cursor: 'pointer',
-              width: 'auto',
-            }}
-          >
-            <option value="demandScore">Sort by: Demand Score</option>
-            <option value="activeWishlist">Sort by: Active Wishlist</option>
-            <option value="activeCart">Sort by: Active Carts</option>
-            <option value="lifetimeWishlist">Sort by: Lifetime Wishlist</option>
-            <option value="lifetimeCart">Sort by: Lifetime Carts</option>
-            <option value="price">Sort by: Price</option>
-            <option value="name">Sort by: Name</option>
-          </select>
+            onChange={(val) => setSortBy(val)}
+            options={[
+              { value: 'demandScore', label: 'Demand Score' },
+              { value: 'activeWishlist', label: 'Active Wishlist' },
+              { value: 'activeCart', label: 'Active Carts' },
+              { value: 'lifetimeWishlist', label: 'Lifetime Wishlist' },
+              { value: 'lifetimeCart', label: 'Lifetime Carts' },
+              { value: 'price', label: 'Price' },
+              { value: 'name', label: 'Name' },
+            ]}
+            title="SORT BY"
+            style={{ minWidth: 175 }}
+          />
 
           <button
             type="button"

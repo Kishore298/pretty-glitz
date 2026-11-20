@@ -19,6 +19,7 @@ import {
 import api from '../utils/api';
 import { useSocket } from '../context/SocketContext';
 import PageHeader from '../components/PageHeader';
+import AdminDropdown from '../components/AdminDropdown';
 
 const STATUS_CONFIG = {
   ALL: { label: 'All Orders', color: '#ACA6B8', bg: 'rgba(255, 255, 255, 0.05)', border: 'rgba(255, 255, 255, 0.12)' },
@@ -644,27 +645,21 @@ const Orders = () => {
                   <label style={{ fontSize: '0.8rem', color: '#ACA6B8', fontWeight: 600 }}>
                     Status:
                   </label>
-                  <select
+                  <AdminDropdown
                     value={selectedOrder.status}
                     disabled={statusUpdating}
-                    onChange={(e) => handleUpdateStatus(selectedOrder.orderId, e.target.value, trackingInput)}
-                    className="admin-input"
-                    style={{
-                      padding: '8px 36px 8px 14px',
-                      borderRadius: 10,
-                      fontWeight: 600,
-                      fontSize: '0.84rem',
-                      cursor: 'pointer',
-                      width: 'auto',
-                    }}
-                  >
-                    <option value="PENDING_WHATSAPP">Pending WhatsApp</option>
-                    <option value="CONFIRMED">Confirmed</option>
-                    <option value="PROCESSING">Processing</option>
-                    <option value="DISPATCHED">Dispatched</option>
-                    <option value="DELIVERED">Delivered</option>
-                    <option value="CANCELLED">Cancelled</option>
-                  </select>
+                    onChange={(val) => handleUpdateStatus(selectedOrder.orderId, val, trackingInput)}
+                    options={[
+                      { value: 'PENDING_WHATSAPP', label: 'Pending WhatsApp' },
+                      { value: 'CONFIRMED', label: 'Confirmed' },
+                      { value: 'PROCESSING', label: 'Processing' },
+                      { value: 'DISPATCHED', label: 'Dispatched' },
+                      { value: 'DELIVERED', label: 'Delivered' },
+                      { value: 'CANCELLED', label: 'Cancelled' },
+                    ]}
+                    title="ORDER STATUS"
+                    style={{ minWidth: 170 }}
+                  />
                 </div>
               </div>
 

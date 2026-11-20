@@ -43,8 +43,8 @@ const ProductImageModal = ({
 
   // Sync active index when opening or when initialIndex changes
   useEffect(() => {
-    if (isOpen) {
-      setActiveIndex(initialIndex || 0);
+    if (isOpen && typeof initialIndex === 'number' && initialIndex >= 0) {
+      setActiveIndex(initialIndex);
     }
   }, [isOpen, initialIndex]);
 
@@ -149,11 +149,11 @@ const ProductImageModal = ({
           }}
           onClick={onClose}
         >
-          {/* Modal Container with Fade and Scale & Slight Upward Lift */}
+          {/* Modal Container with Fade and Scale & Upward Lift */}
           <motion.div
             key="product-image-modal-card"
             initial={{ opacity: 0, scale: 0.94, y: 0 }}
-            animate={{ opacity: 1, scale: 1, y: -16 }}
+            animate={{ opacity: 1, scale: 1, y: -36 }}
             exit={{ opacity: 0, scale: 0.94, y: 0 }}
             transition={{ duration: 0.24, ease: [0.16, 1, 0.3, 1] }}
             className="product-image-modal-card"
@@ -421,6 +421,98 @@ const ProductImageModal = ({
               )}
             </div>
 
+            {/* Manual Image Navigation Buttons (← →) Below the Image */}
+            {images.length > 1 && (
+              <div
+                className="modal-manual-nav-bar"
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  gap: 14,
+                  paddingTop: 8,
+                  paddingBottom: 4,
+                  width: '100%',
+                }}
+              >
+                <button
+                  type="button"
+                  onClick={handlePrev}
+                  aria-label="Previous image"
+                  title="Previous image"
+                  className="modal-manual-arrow-btn"
+                  style={{
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    gap: 6,
+                    padding: '6px 14px',
+                    borderRadius: 999,
+                    background: isDark ? 'rgba(255, 255, 255, 0.08)' : 'rgba(26, 17, 24, 0.05)',
+                    border: '1px solid var(--border)',
+                    color: 'var(--text)',
+                    fontSize: '0.82rem',
+                    fontWeight: 600,
+                    cursor: 'pointer',
+                    transition: 'all 0.2s cubic-bezier(0.16, 1, 0.3, 1)',
+                  }}
+                  onMouseEnter={(e) => {
+                    e.currentTarget.style.background = 'var(--accent, #C4386C)';
+                    e.currentTarget.style.color = '#FFFFFF';
+                    e.currentTarget.style.borderColor = 'var(--accent, #C4386C)';
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.background = isDark ? 'rgba(255, 255, 255, 0.08)' : 'rgba(26, 17, 24, 0.05)';
+                    e.currentTarget.style.color = 'var(--text)';
+                    e.currentTarget.style.borderColor = 'var(--border)';
+                  }}
+                >
+                  <ChevronLeft size={16} strokeWidth={2.5} />
+                  <span>Prev</span>
+                </button>
+
+                <span style={{ fontSize: '0.78rem', fontWeight: 600, color: 'var(--text-muted)' }}>
+                  {activeIndex + 1} / {images.length}
+                </span>
+
+                <button
+                  type="button"
+                  onClick={handleNext}
+                  aria-label="Next image"
+                  title="Next image"
+                  className="modal-manual-arrow-btn"
+                  style={{
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    gap: 6,
+                    padding: '6px 14px',
+                    borderRadius: 999,
+                    background: isDark ? 'rgba(255, 255, 255, 0.08)' : 'rgba(26, 17, 24, 0.05)',
+                    border: '1px solid var(--border)',
+                    color: 'var(--text)',
+                    fontSize: '0.82rem',
+                    fontWeight: 600,
+                    cursor: 'pointer',
+                    transition: 'all 0.2s cubic-bezier(0.16, 1, 0.3, 1)',
+                  }}
+                  onMouseEnter={(e) => {
+                    e.currentTarget.style.background = 'var(--accent, #C4386C)';
+                    e.currentTarget.style.color = '#FFFFFF';
+                    e.currentTarget.style.borderColor = 'var(--accent, #C4386C)';
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.background = isDark ? 'rgba(255, 255, 255, 0.08)' : 'rgba(26, 17, 24, 0.05)';
+                    e.currentTarget.style.color = 'var(--text)';
+                    e.currentTarget.style.borderColor = 'var(--border)';
+                  }}
+                >
+                  <span>Next</span>
+                  <ChevronRight size={16} strokeWidth={2.5} />
+                </button>
+              </div>
+            )}
+
             {/* Bottom Thumbnails & Action Controls Row */}
             <div
               className="product-image-modal-bottom"
@@ -585,7 +677,7 @@ const ProductImageModal = ({
                 margin: auto !important;
                 padding: 4px 6px !important;
                 box-sizing: border-box !important;
-                transform: translateY(-16px) !important;
+                transform: translateY(-36px) !important;
               }
               .product-image-modal-header {
                 flex-shrink: 0 !important;
@@ -647,7 +739,7 @@ const ProductImageModal = ({
                   max-height: 94vh !important;
                   max-width: 820px !important;
                   justify-content: center !important;
-                  transform: translateY(-20px) !important;
+                  transform: translateY(-44px) !important;
                 }
                 .product-image-modal-header {
                   padding: 0 4px 8px !important;

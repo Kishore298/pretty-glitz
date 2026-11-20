@@ -1,7 +1,7 @@
 import React, { useContext } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Heart, ShoppingBag, ArrowRight } from 'lucide-react';
+import { Heart, ShoppingBag, ArrowRight, ArrowLeft } from 'lucide-react';
 import { useWishlist } from '../context/WishlistContext';
 import { useTheme } from '../context/ThemeContext';
 import { CartContext } from '../context/CartContext';
@@ -220,6 +220,7 @@ const WishlistItemRow = ({ product }) => {
 const Wishlist = () => {
   const { wishlist, getWishlistCount } = useWishlist();
   const { isDark } = useTheme();
+  const navigate = useNavigate();
   const count = getWishlistCount();
 
   return (
@@ -227,7 +228,7 @@ const Wishlist = () => {
       className="wishlist-page-container"
       style={{
         minHeight: '80vh',
-        paddingTop: 'calc(var(--nav-height, 76px) + 16px)',
+        paddingTop: 'calc(var(--nav-height, 76px) + 14px)',
         paddingBottom: 'calc(var(--bottom-nav-total-height, 60px) + 40px)',
         maxWidth: 1100,
         margin: '0 auto',
@@ -236,15 +237,49 @@ const Wishlist = () => {
       {/* Page Header */}
       <div style={{
         display: 'flex',
-        alignItems: 'baseline',
+        alignItems: 'center',
         justifyContent: 'space-between',
         flexWrap: 'wrap',
         gap: 12,
-        marginBottom: 24,
+        marginBottom: 20,
         borderBottom: `1px solid var(--border)`,
-        paddingBottom: 16,
+        paddingBottom: 14,
       }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+          {/* Back button */}
+          <button
+            type="button"
+            onClick={() => (window.history.length > 1 ? navigate(-1) : navigate('/'))}
+            aria-label="Go back"
+            title="Go back"
+            style={{
+              width: 38,
+              height: 38,
+              borderRadius: 10,
+              background: isDark ? 'rgba(255, 255, 255, 0.05)' : 'rgba(0, 0, 0, 0.035)',
+              border: '1px solid var(--border)',
+              color: 'var(--text)',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              cursor: 'pointer',
+              transition: 'all 0.18s ease',
+              flexShrink: 0,
+            }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.borderColor = 'var(--accent, #C4386C)';
+              e.currentTarget.style.color = 'var(--accent, #C4386C)';
+              e.currentTarget.style.transform = 'translateX(-2px)';
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.borderColor = 'var(--border)';
+              e.currentTarget.style.color = 'var(--text)';
+              e.currentTarget.style.transform = 'none';
+            }}
+          >
+            <ArrowLeft size={18} />
+          </button>
+
           <div style={{
             width: 40,
             height: 40,
@@ -255,6 +290,7 @@ const Wishlist = () => {
             alignItems: 'center',
             justifyContent: 'center',
             color: '#E11D48',
+            flexShrink: 0,
           }}>
             <Heart size={20} style={{ fill: '#E11D48' }} />
           </div>

@@ -12,6 +12,7 @@ import PageTracker from './components/PageTracker';
 
 // Lazy loaded pages for performance optimization
 const Home        = lazy(() => import('./pages/Home'));
+const Categories  = lazy(() => import('./pages/Categories'));
 const CategoryPage= lazy(() => import('./pages/CategoryPage'));
 const ProductDetail = lazy(() => import('./pages/ProductDetail'));
 const Search      = lazy(() => import('./pages/Search'));
@@ -85,7 +86,8 @@ function App() {
                       {/* ── Existing routes (UNCHANGED) ── */}
                       <Route path="/"                          element={<Home />} />
                       <Route path="/products"                 element={<AllProducts />} />
-                      <Route path="/categories"              element={<Navigate to="/#categories" replace />} />
+                      <Route path="/categories"              element={<Categories />} />
+                      <Route path="/collections"             element={<Categories />} />
                       <Route path="/category/:categoryName"                  element={<CategoryPage />} />
                       <Route path="/category/:categoryName/:subcategoryName" element={<CategoryPage />} />
                       <Route path="/product/:id"                             element={<ProductDetail />} />

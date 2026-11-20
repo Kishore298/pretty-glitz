@@ -15,6 +15,7 @@ import {
 } from 'lucide-react';
 import api from '../utils/api';
 import PageHeader from '../components/PageHeader';
+import AdminDropdown from '../components/AdminDropdown';
 
 const formatDuration = (totalSeconds) => {
   const s = Math.round(Number(totalSeconds) || 0);
@@ -411,36 +412,18 @@ const TrafficAnalytics = () => {
             </div>
 
             {/* Sort selector */}
-            <div
-              style={{
-                display: 'flex',
-                alignItems: 'center',
-                gap: 6,
-                background: '#1A1826',
-                border: '1px solid rgba(255,255,255,0.1)',
-                borderRadius: 10,
-                padding: '4px 10px',
-              }}
-            >
-              <ArrowUpDown size={14} color="#8E8A99" />
-              <select
-                value={sortBy}
-                onChange={(e) => setSortBy(e.target.value)}
-                style={{
-                  background: 'transparent',
-                  border: 'none',
-                  color: '#DDD7E5',
-                  fontSize: '0.82rem',
-                  fontWeight: 600,
-                  outline: 'none',
-                  cursor: 'pointer',
-                }}
-              >
-                <option value="uniqueVisitors" style={{ background: '#1A1826' }}>Sort by: Unique Devices</option>
-                <option value="totalViews" style={{ background: '#1A1826' }}>Sort by: Total Views</option>
-                <option value="avgDurationSeconds" style={{ background: '#1A1826' }}>Sort by: Avg Time Spent</option>
-              </select>
-            </div>
+            <AdminDropdown
+              value={sortBy}
+              onChange={setSortBy}
+              icon={<ArrowUpDown size={14} color="#E5C378" />}
+              title="Sort Pages By"
+              align="right"
+              options={[
+                { value: 'uniqueVisitors', label: 'Unique Devices', icon: '👥' },
+                { value: 'totalViews', label: 'Total Page Views', icon: '👁️' },
+                { value: 'avgDurationSeconds', label: 'Avg Time Spent', icon: '⏱️' },
+              ]}
+            />
           </div>
         </div>
 

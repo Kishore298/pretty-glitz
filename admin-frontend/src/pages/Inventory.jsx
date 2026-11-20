@@ -24,6 +24,7 @@ import {
 } from 'lucide-react';
 import PageWrapper from '../components/PageWrapper';
 import PageHeader from '../components/PageHeader';
+import AdminDropdown from '../components/AdminDropdown';
 import EmptyState from '../components/EmptyState';
 import { SkeletonTable } from '../components/SkeletonLoader';
 import InventoryVariantDrawer from '../components/InventoryVariantDrawer';
@@ -633,90 +634,61 @@ const Inventory = () => {
             }}
           >
             {/* Category Dropdown */}
-            <div style={{ display: 'flex', alignItems: 'center', gap: 8, flex: 1, minWidth: 0 }}>
-              <Filter size={15} color="var(--accent-gold)" style={{ flexShrink: 0 }} />
-              <select
+            <div style={{ flex: 1, minWidth: 160 }}>
+              <AdminDropdown
                 value={selectedCategory}
-                onChange={(e) => {
-                  setSelectedCategory(e.target.value);
+                onChange={(val) => {
+                  setSelectedCategory(val);
                   setSelectedSubcategory('');
                   setPage(1);
                 }}
-                className="admin-input"
-                style={{
-                  height: 40,
-                  padding: '0 32px 0 12px',
-                  fontSize: '0.84rem',
-                  borderRadius: 12,
-                  width: '100%',
-                  minWidth: 0,
-                  cursor: 'pointer',
-                }}
-              >
-                <option value="all">All Categories</option>
-                {categories.map((c) => (
-                  <option key={c._id} value={c.name}>
-                    {c.name}
-                  </option>
-                ))}
-              </select>
+                icon={<Filter size={14} color="var(--accent-gold)" />}
+                title="Filter by Category"
+                options={[
+                  { value: 'all', label: 'All Categories' },
+                  ...categories.map((c) => ({ value: c.name, label: c.name })),
+                ]}
+                style={{ width: '100%' }}
+              />
             </div>
 
             {/* Subcategory Dropdown (if active category has subcategories) */}
             {subcategories.filter((s) => s.category?.toLowerCase() === selectedCategory.toLowerCase()).length > 0 && (
-              <div style={{ display: 'flex', alignItems: 'center', flex: 1, minWidth: 0 }}>
-                <select
+              <div style={{ flex: 1, minWidth: 160 }}>
+                <AdminDropdown
                   value={selectedSubcategory}
-                  onChange={(e) => {
-                    setSelectedSubcategory(e.target.value);
+                  onChange={(val) => {
+                    setSelectedSubcategory(val);
                     setPage(1);
                   }}
-                  className="admin-input"
-                  style={{
-                    height: 40,
-                    padding: '0 32px 0 12px',
-                    fontSize: '0.84rem',
-                    borderRadius: 12,
-                    width: '100%',
-                    minWidth: 0,
-                    cursor: 'pointer',
-                  }}
-                >
-                  <option value="">All Subcategories</option>
-                  {subcategories
-                    .filter((s) => s.category?.toLowerCase() === selectedCategory.toLowerCase())
-                    .map((s) => (
-                      <option key={s._id} value={s._id}>
-                        {s.name}
-                      </option>
-                    ))}
-                </select>
+                  title="Filter Subcategory"
+                  placeholder="All Subcategories"
+                  options={[
+                    { value: '', label: 'All Subcategories' },
+                    ...subcategories
+                      .filter((s) => s.category?.toLowerCase() === selectedCategory.toLowerCase())
+                      .map((s) => ({ value: s._id, label: s.name })),
+                  ]}
+                  style={{ width: '100%' }}
+                />
               </div>
             )}
 
             {/* Threshold / Stock Alert Selector */}
-            <div style={{ display: 'flex', alignItems: 'center', gap: 6, flex: 1, minWidth: 0 }}>
-              <select
+            <div style={{ flex: 1, minWidth: 160 }}>
+              <AdminDropdown
                 value={threshold}
-                onChange={(e) => setThreshold(parseInt(e.target.value, 10))}
-                className="admin-input"
-                title="Low Stock Alert Threshold"
-                style={{
-                  height: 40,
-                  padding: '0 28px 0 10px',
-                  fontSize: '0.82rem',
-                  borderRadius: 12,
-                  width: '100%',
-                  minWidth: 0,
-                  cursor: 'pointer',
-                }}
-              >
-                <option value={3}>Alert: ≤ 3 units</option>
-                <option value={5}>Alert: ≤ 5 (Default)</option>
-                <option value={10}>Alert: ≤ 10 units</option>
-                <option value={15}>Alert: ≤ 15 units</option>
-                <option value={20}>Alert: ≤ 20 units</option>
-              </select>
+                onChange={(val) => setThreshold(parseInt(val, 10))}
+                title="Stock Alert Level"
+                options={[
+                  { value: 3, label: 'Alert: ≤ 3 units', icon: '⚠️' },
+                  { value: 5, label: 'Alert: ≤ 5 (Default)', icon: '⚠️' },
+                  { value: 10, label: 'Alert: ≤ 10 units', icon: '⚠️' },
+                  { value: 15, label: 'Alert: ≤ 15 units', icon: '⚠️' },
+                  { value: 20, label: 'Alert: ≤ 20 units', icon: '⚠️' },
+                ]}
+                style={{ width: '100%' }}
+              />
             </div>
           </div>
         </div>

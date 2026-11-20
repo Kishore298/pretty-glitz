@@ -1,10 +1,18 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import { useParams, useSearchParams, Link, useNavigate } from 'react-router-dom';
 import api from '../utils/api';
 import ProductCard from '../components/ProductCard';
 import ProductCardSkeleton from '../components/ProductCardSkeleton';
 import { motion, AnimatePresence } from 'framer-motion';
-import { ChevronRight, ChevronDown, Filter, Sparkles } from 'lucide-react';
+import { ChevronRight, ChevronDown, Filter, Sparkles, Check } from 'lucide-react';
+
+const SORT_OPTIONS = [
+  { value: 'newest', label: 'Newest Arrivals', shortLabel: '✨ Newest', icon: '✨' },
+  { value: 'price-asc', label: 'Price: Low to High', shortLabel: 'Price ⬆', icon: '↑' },
+  { value: 'price-desc', label: 'Price: High to Low', shortLabel: 'Price ⬇', icon: '↓' },
+  { value: 'size-asc', label: 'Size: Small to Large', shortLabel: 'Size ⬆', icon: '↑' },
+  { value: 'size-desc', label: 'Size: Large to Small', shortLabel: 'Size ⬇', icon: '↓' },
+];
 
 const CategoryPage = () => {
   const { categoryName, subcategoryName } = useParams();
@@ -19,9 +27,38 @@ const CategoryPage = () => {
   const [subcategories, setSubcategories] = useState([]);
   const [loading, setLoading] = useState(true);
   const [sortBy, setSortBy] = useState('newest'); // newest, price-asc, price-desc
+  const [sortOpen, setSortOpen] = useState(false);
+  const sortRef = useRef(null);
+  const [selectedSub, setSelectedSub] = useState(subcategoryName || searchParams.get('sub') || 'all');
 
-  const activeSubParam = subcategoryName || searchParams.get('sub') || 'all';
+  // Dismiss sort dropdown when clicking outside or pressing Escape
+  useEffect(() => {
+    const handleClickOutside = (e) => {
+      if (sortRef.current && !sortRef.current.contains(e.target)) {
+        setSortOpen(false);
+      }
+    };
+    const handleKeyDown = (e) => {
+      if (e.key === 'Escape') setSortOpen(false);
+    };
+    if (sortOpen) {
+      document.addEventListener('mousedown', handleClickOutside);
+      document.addEventListener('touchstart', handleClickOutside);
+      document.addEventListener('keydown', handleKeyDown);
+    }
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+      document.removeEventListener('touchstart', handleClickOutside);
+      document.removeEventListener('keydown', handleKeyDown);
+    };
+  }, [sortOpen]);
 
+  // Sync selectedSub when navigating via browser back/forward or direct route param changes
+  useEffect(() => {
+    setSelectedSub(subcategoryName || searchParams.get('sub') || 'all');
+  }, [subcategoryName, searchParams]);
+
+  // Only trigger network fetch when categoryName itself changes, avoiding jarring reloads when filtering subcategories
   useEffect(() => {
     if (isLegacyBangles) {
       navigate('/category/Designer%20Glass%20Bangles', { replace: true });
@@ -29,7 +66,9 @@ const CategoryPage = () => {
     }
     fetchData();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [categoryName, subcategoryName]);
+  }, [categoryName]);
+
+  const activeSubParam = selectedSub;
 
   const fetchData = async () => {
     setLoading(true);
@@ -165,39 +204,37 @@ const CategoryPage = () => {
 
   const handleSubSelect = (subIdOrName) => {
     if (subIdOrName === 'all') {
-      navigate(`/category/${encodeURIComponent(normalizedCategory)}`);
+      setSelectedSub('all');
+      window.history.replaceState(null, '', `/category/${encodeURIComponent(normalizedCategory)}`);
     } else {
       const targetSub = resolvedSubcategories.find(
         (s) => s._id?.toString() === subIdOrName?.toString() || s.name?.toLowerCase() === subIdOrName?.toString().toLowerCase()
       );
       const name = targetSub ? targetSub.name : subIdOrName;
-      navigate(`/category/${encodeURIComponent(normalizedCategory)}/${encodeURIComponent(name)}`);
+      setSelectedSub(name);
+      window.history.replaceState(null, '', `/category/${encodeURIComponent(normalizedCategory)}/${encodeURIComponent(name)}`);
     }
   };
 
   return (
-    <div style={{ minHeight: '100vh', paddingTop: 'calc(var(--nav-height, 76px) + 8px)', paddingBottom: 100 }}>
+    <div style={{ minHeight: '100vh', paddingTop: 'calc(var(--nav-height, 76px) + 4px)', paddingBottom: 60 }}>
       {/* Main Container */}
       <div className="section-padding" style={{ maxWidth: 1280, margin: '0 auto' }}>
-        
+
         {/* Category Header */}
-        <div className="category-header" style={{ 
+        <div className="category-header" style={{
           display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-          flexWrap: 'nowrap', gap: 12, padding: '8px 0 14px', 
-          borderBottom: '1px solid var(--border)', marginBottom: 18
+          flexWrap: 'nowrap', gap: 12, padding: '4px 0 10px',
+          borderBottom: '1px solid var(--border)', marginBottom: 12
         }}>
           {/* Left Side Breadcrumbs & Title */}
           <motion.div initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }} style={{ flex: '1 1 auto', minWidth: 0 }}>
-            <div style={{ 
-              display: 'flex', alignItems: 'center', gap: 6, 
-              fontSize: '0.7rem', color: 'var(--text-muted)', 
-              marginBottom: 3, fontWeight: 600, letterSpacing: '0.05em', textTransform: 'uppercase' 
-            }}>
-              <Link to="/" style={{ color: 'inherit', textDecoration: 'none', transition: 'color 0.2s' }} className="hover:text-prettyglitz">Home</Link>
+            <div className="category-breadcrumb-bar">
+              <Link to="/" className="hover:text-prettyglitz">Home</Link>
               {activeSubDoc && (
                 <>
-                  <ChevronRight size={11} />
-                  <span style={{ color: 'var(--accent)' }}>{activeSubDoc.name}</span>
+                  <ChevronRight size={11} className="separator" />
+                  <span style={{ color: 'var(--accent)', fontWeight: 600 }}>{activeSubDoc.name}</span>
                 </>
               )}
             </div>
@@ -214,38 +251,65 @@ const CategoryPage = () => {
             </p>
           </motion.div>
 
-          {/* Right Side Compact Sort Filter */}
+          {/* Right Side Compact Custom Sort Filter */}
           {!loading && displayedProducts.length > 0 && (
             <motion.div initial={{ opacity: 0, x: 20 }} animate={{ opacity: 1, x: 0 }} style={{ flexShrink: 0 }}>
-              <div style={{ position: 'relative', display: 'inline-flex', alignItems: 'center' }}>
-                <select 
-                  value={sortBy} 
-                  onChange={e => setSortBy(e.target.value)}
+              <div ref={sortRef} style={{ position: 'relative', display: 'inline-flex', alignItems: 'center' }}>
+                <button
+                  type="button"
+                  onClick={() => setSortOpen((prev) => !prev)}
                   aria-label="Sort products"
-                  style={{
-                    appearance: 'none',
-                    WebkitAppearance: 'none',
-                    MozAppearance: 'none',
-                    height: 32,
-                    padding: '4px 26px 4px 10px',
-                    fontSize: '0.76rem',
-                    fontWeight: 600,
-                    borderRadius: 8,
-                    border: '1px solid var(--border)',
-                    background: 'var(--bg-secondary)',
-                    color: 'var(--text)',
-                    cursor: 'pointer',
-                    outline: 'none',
-                    boxShadow: '0 1px 3px rgba(0,0,0,0.05)',
-                  }}
+                  aria-expanded={sortOpen}
+                  className={`pg-sort-trigger-btn ${sortOpen ? 'is-open' : ''}`}
                 >
-                  <option value="newest">✨ Newest</option>
-                  <option value="price-asc">Price ⬆</option>
-                  <option value="price-desc">Price ⬇</option>
-                  <option value="size-asc">Size ⬆</option>
-                  <option value="size-desc">Size ⬇</option>
-                </select>
-                <ChevronDown size={13} style={{ position: 'absolute', right: 8, pointerEvents: 'none', color: 'var(--text-muted)' }} />
+                  <span style={{ whiteSpace: 'nowrap' }}>
+                    {(SORT_OPTIONS.find((o) => o.value === sortBy) || SORT_OPTIONS[0]).shortLabel}
+                  </span>
+                  <ChevronDown
+                    size={13}
+                    style={{
+                      transform: sortOpen ? 'rotate(180deg)' : 'none',
+                      transition: 'transform 0.2s ease',
+                      color: 'var(--text-muted)',
+                    }}
+                  />
+                </button>
+
+                <AnimatePresence>
+                  {sortOpen && (
+                    <motion.div
+                      initial={{ opacity: 0, y: -4, scale: 0.97 }}
+                      animate={{ opacity: 1, y: 0, scale: 1 }}
+                      exit={{ opacity: 0, y: -4, scale: 0.97 }}
+                      transition={{ duration: 0.14, ease: 'easeOut' }}
+                      className="pg-sort-menu-dropdown"
+                    >
+                      <div style={{ padding: '3px 8px 5px', fontSize: '0.64rem', fontWeight: 700, letterSpacing: '0.06em', textTransform: 'uppercase', color: 'var(--text-muted)' }}>
+                        Sort Products
+                      </div>
+                      {SORT_OPTIONS.map((opt) => {
+                        const isSelected = sortBy === opt.value;
+                        return (
+                          <button
+                            key={opt.value}
+                            type="button"
+                            onClick={() => {
+                              setSortBy(opt.value);
+                              setSortOpen(false);
+                            }}
+                            className={`pg-sort-item-btn ${isSelected ? 'is-active' : ''}`}
+                          >
+                            <span style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+                              <span style={{ fontSize: '0.82rem', width: 14, textAlign: 'center' }}>{opt.icon}</span>
+                              <span>{opt.label}</span>
+                            </span>
+                            {isSelected && <Check size={13} style={{ color: 'var(--accent)', strokeWidth: 2.5 }} />}
+                          </button>
+                        );
+                      })}
+                    </motion.div>
+                  )}
+                </AnimatePresence>
               </div>
             </motion.div>
           )}
@@ -260,9 +324,11 @@ const CategoryPage = () => {
               alignItems: 'center',
               gap: 8,
               overflowX: 'auto',
-              paddingBottom: 16,
-              marginBottom: 28,
+              paddingBottom: 4,
+              marginBottom: 12,
               WebkitOverflowScrolling: 'touch',
+              scrollbarWidth: 'none',
+              msOverflowStyle: 'none',
             }}
           >
             <button
@@ -331,9 +397,9 @@ const CategoryPage = () => {
           </div>
         ) : displayedProducts.length === 0 ? (
           <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} style={{ textAlign: 'center', padding: '80px 0' }}>
-            <div style={{ 
-              width: 80, height: 80, borderRadius: '50%', background: 'var(--bg-secondary)', 
-              display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 24px' 
+            <div style={{
+              width: 80, height: 80, borderRadius: '50%', background: 'var(--bg-secondary)',
+              display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 24px'
             }}>
               <Filter size={32} style={{ color: 'var(--text-muted)' }} />
             </div>
@@ -357,7 +423,7 @@ const CategoryPage = () => {
           </motion.div>
         ) : !activeSubDoc && resolvedSubcategories.length > 0 ? (
           /* Main category view: grouped sections per subcategory + unassigned pieces */
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 48 }}>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
             {resolvedSubcategories.map((sub, sIdx) => {
               const subProducts = getSortedProducts(
                 products.filter((p) => productMatchesSubcategory(p, sub))
@@ -366,28 +432,18 @@ const CategoryPage = () => {
 
               return (
                 <motion.div key={sub._id || sub.name} initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: sIdx * 0.08 }}>
-                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 20, paddingBottom: 10, borderBottom: '1px solid var(--border)' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 10, paddingBottom: 6, borderBottom: '1px solid var(--border)' }}>
                     <h2 style={{
-                      fontSize: 'clamp(1.3rem, 2.5vw, 1.8rem)', fontWeight: 700, color: 'var(--text)',
+                      fontSize: 'clamp(1.15rem, 2.2vw, 1.45rem)', fontWeight: 700, color: 'var(--text)',
                       fontFamily: '"Cormorant Garamond", Georgia, serif', margin: 0,
-                      display: 'flex', alignItems: 'center', gap: 10
+                      display: 'flex', alignItems: 'center', gap: 8
                     }}>
-                      <Sparkles size={16} color="var(--accent)" />
+                      <Sparkles size={15} color="var(--accent)" />
                       {sub.name}
                       <span style={{ fontSize: '0.78rem', color: 'var(--text-muted)', fontWeight: 500 }}>
                         ({subProducts.length})
                       </span>
                     </h2>
-                    <button
-                      onClick={() => handleSubSelect(sub._id?.toString() || sub.name)}
-                      style={{
-                        background: 'none', border: 'none', cursor: 'pointer',
-                        color: 'var(--accent)', fontSize: '0.8rem', fontWeight: 600,
-                        display: 'flex', alignItems: 'center', gap: 4
-                      }}
-                    >
-                      View Only {sub.name} <ChevronRight size={14} />
-                    </button>
                   </div>
                   <div className="product-grid-4">
                     <AnimatePresence>
@@ -410,11 +466,11 @@ const CategoryPage = () => {
               if (unassigned.length === 0) return null;
               return (
                 <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}>
-                  <div style={{ marginBottom: 20, paddingBottom: 10, borderBottom: '1px solid var(--border)' }}>
+                  <div style={{ marginBottom: 10, paddingBottom: 6, borderBottom: '1px solid var(--border)' }}>
                     <h2 style={{
-                      fontSize: 'clamp(1.3rem, 2.5vw, 1.8rem)', fontWeight: 700, color: 'var(--text)',
+                      fontSize: 'clamp(1.15rem, 2.2vw, 1.45rem)', fontWeight: 700, color: 'var(--text)',
                       fontFamily: '"Cormorant Garamond", Georgia, serif', margin: 0,
-                      display: 'flex', alignItems: 'center', gap: 10
+                      display: 'flex', alignItems: 'center', gap: 8
                     }}>
                       Signature Collection
                       <span style={{ fontSize: '0.78rem', color: 'var(--text-muted)', fontWeight: 500 }}>
@@ -439,13 +495,13 @@ const CategoryPage = () => {
           /* Single Grid view (when specific subcategory is selected OR category has no subcategories) */
           <div>
             {activeSubDoc && (
-              <div style={{ marginBottom: 20, paddingBottom: 10, borderBottom: '1px solid var(--border)' }}>
+              <div style={{ marginBottom: 10, paddingBottom: 6, borderBottom: '1px solid var(--border)' }}>
                 <h2 style={{
-                  fontSize: 'clamp(1.3rem, 2.5vw, 1.8rem)', fontWeight: 700, color: 'var(--text)',
+                  fontSize: 'clamp(1.15rem, 2.2vw, 1.45rem)', fontWeight: 700, color: 'var(--text)',
                   fontFamily: '"Cormorant Garamond", Georgia, serif', margin: 0,
-                  display: 'flex', alignItems: 'center', gap: 10
+                  display: 'flex', alignItems: 'center', gap: 8
                 }}>
-                  <Sparkles size={16} color="var(--accent)" />
+                  <Sparkles size={15} color="var(--accent)" />
                   {activeSubDoc.name}
                   <span style={{ fontSize: '0.78rem', color: 'var(--text-muted)', fontWeight: 500 }}>
                     ({displayedProducts.length})

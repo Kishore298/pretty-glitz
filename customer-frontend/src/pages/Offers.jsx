@@ -49,15 +49,13 @@ const Offers = () => {
 
         <div className="section-padding" style={{ position: 'relative', zIndex: 2, textAlign: 'center', width: '100%' }}>
           <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}>
-            {/* Breadcrumb */}
-            <div style={{ 
-              display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, 
-              fontSize: '0.8rem', color: 'var(--text-muted)', 
-              marginBottom: 16, fontWeight: 600, letterSpacing: '0.1em', textTransform: 'uppercase' 
-            }}>
-              <Link to="/" style={{ color: 'inherit', textDecoration: 'none' }}>Home</Link>
-              <ChevronRight size={14} />
-              <span style={{ color: 'var(--accent)' }}>Offers</span>
+            {/* Breadcrumb Pill */}
+            <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 16 }}>
+              <div className="breadcrumb">
+                <Link to="/">Home</Link>
+                <ChevronRight size={11} className="separator" />
+                <span style={{ color: 'var(--accent)', fontWeight: 600 }}>Offers</span>
+              </div>
             </div>
 
             <h1 style={{

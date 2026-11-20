@@ -7,7 +7,7 @@ export const AuthContext = createContext();
 /**
  * AuthProvider
  *
- * Manages customer mobile OTP authentication (MSG91 / 1234 bypass).
+ * Manages customer mobile WhatsApp OTP authentication (WhatsApp Cloud API / 1234 test bypass).
  * Admin authentication is completely separate (/api/admin/auth) and unaffected.
  */
 export const AuthProvider = ({ children }) => {
@@ -42,7 +42,7 @@ export const AuthProvider = ({ children }) => {
   }, []);
 
   /**
-   * Send OTP to customer mobile via MSG91
+   * Send OTP to customer mobile via WhatsApp Cloud API
    */
   const sendOtp = useCallback(async (mobile) => {
     try {

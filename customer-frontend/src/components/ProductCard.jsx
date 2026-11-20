@@ -391,18 +391,17 @@ const ProductCard = ({ product, showVariants = false }) => {
             onMouseLeave={(e) => {
               e.currentTarget.style.transform = 'scale(1)';
               const heart = e.currentTarget.querySelector('svg');
-              if (heart && !inWishlist) heart.style.stroke = isDark ? '#FAF9FC' : 'var(--text-secondary, #2D232A)';
+              if (heart && !inWishlist) heart.style.stroke = isDark ? 'rgba(255, 255, 255, 0.75)' : 'rgba(35, 28, 33, 0.65)';
             }}
           >
             <Heart
               size={19}
               style={{
-                fill: inWishlist ? '#E11D48' : 'transparent',
-                stroke: inWishlist ? '#E11D48' : (isDark ? '#FAF9FC' : 'var(--text-secondary, #2D232A)'),
-                strokeWidth: 2,
+                fill: inWishlist ? '#E11D48' : 'rgba(255, 255, 255, 0.65)',
+                stroke: inWishlist ? '#E11D48' : (isDark ? 'rgba(255, 255, 255, 0.75)' : 'rgba(35, 28, 33, 0.65)'),
+                strokeWidth: 1.6,
                 transition: 'fill 0.2s ease, stroke 0.2s ease',
-                filter: 'none',
-                boxShadow: 'none',
+                filter: 'drop-shadow(0 1px 3px rgba(0,0,0,0.14))',
               }}
             />
           </button>
@@ -444,7 +443,7 @@ const ProductCard = ({ product, showVariants = false }) => {
                   background: 'var(--bg-secondary)',
                   flexShrink: 0,
                   transition: 'all 0.15s ease',
-                  opacity: activeImgIndex === idx ? 1 : 0.65,
+                  opacity: 1,
                 }}
                 aria-label={`View photo ${idx + 1}`}
               >

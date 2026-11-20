@@ -4,6 +4,7 @@ import api from '../utils/api';
 import { motion, AnimatePresence } from 'framer-motion';
 import { CartContext, resolveStock } from '../context/CartContext';
 import { useWishlist } from '../context/WishlistContext';
+import { useTheme } from '../context/ThemeContext';
 import { optimizeImageUrl } from '../utils/cloudinary';
 import {
   Check,
@@ -30,6 +31,7 @@ import { slugify } from '../utils/urlHelper';
 import logoImg from '../assets/pretty-glitz-logo.png';
 
 const ProductDetail = () => {
+  const { isDark } = useTheme();
   const { id } = useParams();
   const [product, setProduct] = useState(null);
   const [relatedProducts, setRelatedProducts] = useState([]);
@@ -185,11 +187,11 @@ const ProductDetail = () => {
     return list;
   }, [product]);
 
-  // Current active main image: showcase image by default, or color specific image after selection
+  // Current active main image: showcase main image ALWAYS by default, or color specific image after selection
   const currentMainImageUrl = activeCustomImage
-    || (selectedColor?.images?.[0]?.url)
     || (product?.images?.[0]?.url)
     || (product?.image)
+    || (selectedColor?.images?.[0]?.url)
     || logoImg;
 
   const handleThumbnailClick = (item) => {
@@ -343,15 +345,15 @@ const ProductDetail = () => {
     <div className="product-detail-page">
       <div className="product-detail-container">
 
-        {/* ── Breadcrumb (Category & Subcategory Only) ──────────────────────── */}
+        {/* ── Breadcrumb Pill (Category & Subcategory Only) ────────────────── */}
         <div className="product-detail-breadcrumb">
           <Link to="/">Home</Link>
-          <ChevronRight size={14} className="separator" />
+          <ChevronRight size={11} className="separator" />
           <Link to={`/category/${encodeURIComponent(product.category)}`}>{product.category}</Link>
           {product.subcategoryId && (
             <>
-              <ChevronRight size={14} className="separator" />
-              <Link to={`/category/${encodeURIComponent(product.category)}?sub=${encodeURIComponent(product.subcategoryId?._id || product.subcategoryId)}`}>
+              <ChevronRight size={11} className="separator" />
+              <Link to={`/category/${encodeURIComponent(product.category)}/${encodeURIComponent(product.subcategoryId.name || 'Collection')}`}>
                 {product.subcategoryId.name || 'Collection'}
               </Link>
             </>
@@ -578,13 +580,9 @@ const ProductDetail = () => {
                         boxShadow: isActive
                           ? '0 4px 12px rgba(196, 56, 108, 0.28)'
                           : 'none',
-                        opacity: isActive ? 1 : 0.72,
+                        opacity: 1,
                         transition: 'all 0.2s cubic-bezier(0.16, 1, 0.3, 1)',
-                        transform: isActive ? 'scale(1.02)' : 'none',
-                      }}
-                      onMouseEnter={(e) => (e.currentTarget.style.opacity = '1')}
-                      onMouseLeave={(e) => {
-                        if (!isActive) e.currentTarget.style.opacity = '0.72';
+                        transform: isActive ? 'scale(1.04)' : 'none',
                       }}
                     >
                       <img
@@ -655,7 +653,14 @@ const ProductDetail = () => {
                       background: inWishlist ? 'rgba(225,29,72,0.08)' : 'transparent',
                     }}
                   >
-                    <Heart size={16} style={{ fill: inWishlist ? '#E11D48' : 'transparent', stroke: inWishlist ? '#E11D48' : 'currentColor' }} />
+                  <Heart
+                    size={16}
+                    style={{
+                      fill: inWishlist ? '#E11D48' : 'rgba(255, 255, 255, 0.65)',
+                      stroke: inWishlist ? '#E11D48' : (isDark ? 'rgba(255, 255, 255, 0.75)' : 'rgba(35, 28, 33, 0.65)'),
+                      strokeWidth: 1.6,
+                    }}
+                  />
                   </button>
 
                   <button
@@ -1060,7 +1065,7 @@ const ProductDetail = () => {
               alignItems: 'center',
               gap: 8,
               overflowX: 'auto',
-              paddingBottom: 10,
+              padding: '4px 4px 10px 4px',
               marginBottom: 16,
               scrollbarWidth: 'none',
               msOverflowStyle: 'none',

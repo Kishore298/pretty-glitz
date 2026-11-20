@@ -11,6 +11,7 @@ import {
   CheckCircle,
   AlertCircle,
   KeyRound,
+  MessageCircle,
 } from 'lucide-react';
 import { AuthContext } from '../context/AuthContext';
 import { useTheme } from '../context/ThemeContext';
@@ -177,12 +178,12 @@ const Login = () => {
                 lineHeight: 1.15,
               }}
             >
-              {step === 'phone' ? 'Customer Login' : 'Verify Mobile Number'}
+              {step === 'phone' ? 'Customer Login' : 'Verify WhatsApp OTP'}
             </h1>
             <p style={{ color: 'var(--text-secondary)', fontSize: '0.86rem', margin: 0, lineHeight: 1.5 }}>
               {step === 'phone'
-                ? 'Enter your mobile number to receive a one-time login OTP'
-                : `Enter the code sent to +91 ${mobile.replace(/\D/g, '').slice(-10)}`}
+                ? 'Enter your mobile number to receive a one-time WhatsApp OTP'
+                : `Enter the code sent to your WhatsApp on +91 ${mobile.replace(/\D/g, '').slice(-10)}`}
             </p>
           </div>
 
@@ -353,7 +354,7 @@ const Login = () => {
                   }}
                 >
                   <Sparkles size={14} style={{ flexShrink: 0 }} />
-                  <span>Instant demo login: OTP <strong>1234</strong> is always accepted.</span>
+                  <span>Instant login: OTP <strong>1234</strong> is always accepted.</span>
                 </div>
 
                 <button
@@ -379,7 +380,8 @@ const Login = () => {
                     transition: 'all 0.2s ease',
                   }}
                 >
-                  <span>{loading ? 'Sending OTP...' : 'Send OTP'}</span>
+                  <MessageCircle size={17} />
+                  <span>{loading ? 'Sending WhatsApp OTP...' : 'Send WhatsApp OTP'}</span>
                   <ArrowRight size={16} />
                 </button>
               </motion.form>
@@ -447,7 +449,7 @@ const Login = () => {
                       marginBottom: 6,
                     }}
                   >
-                    Enter 4-Digit OTP
+                    Enter WhatsApp OTP
                   </label>
                   <input
                     type="text"
@@ -489,7 +491,7 @@ const Login = () => {
                       cursor: 'pointer',
                     }}
                   >
-                    ⚡ Auto-fill Demo OTP (1234)
+                    ⚡ Auto-fill Test OTP (1234)
                   </button>
                 </div>
 

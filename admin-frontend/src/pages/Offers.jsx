@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { Plus, Tag, ArrowRight, Sparkles, Percent, Pencil, Trash2, Search, X, Filter, Flame } from 'lucide-react';
+import { Plus, Tag, Search, X, Filter, Flame } from 'lucide-react';
 import api from '../utils/api';
 import AddEditProductModal from '../components/AddEditProductModal';
 import ConfirmModal from '../components/ConfirmModal';
@@ -8,6 +8,7 @@ import PageHeader from '../components/PageHeader';
 import EmptyState from '../components/EmptyState';
 import { SkeletonOfferCards } from '../components/SkeletonLoader';
 import AdminOfferCard from '../components/AdminOfferCard';
+import AdminDropdown from '../components/AdminDropdown';
 import toast from 'react-hot-toast';
 
 const Offers = () => {
@@ -300,28 +301,18 @@ const Offers = () => {
         </div>
 
         {/* Category Dropdown Filter */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
-          <Filter size={15} color="var(--accent-gold)" />
-          <select
+        <div style={{ display: 'flex', alignItems: 'center' }}>
+          <AdminDropdown
             value={selectedCategory}
-            onChange={(e) => setSelectedCategory(e.target.value)}
-            className="admin-input"
-            style={{
-              height: 40,
-              padding: '0 36px 0 14px',
-              fontSize: '0.84rem',
-              borderRadius: 12,
-              minWidth: 170,
-              cursor: 'pointer',
-            }}
-          >
-            <option value="all">All Categories</option>
-            {categories.map((c) => (
-              <option key={c._id} value={c.name}>
-                {c.name}
-              </option>
-            ))}
-          </select>
+            onChange={(val) => setSelectedCategory(val)}
+            icon={<Filter size={14} color="#E5C378" />}
+            options={[
+              { value: 'all', label: 'All Categories' },
+              ...categories.map((c) => ({ value: c.name, label: c.name })),
+            ]}
+            title="FILTER BY CATEGORY"
+            style={{ minWidth: 170 }}
+          />
         </div>
       </div>
 

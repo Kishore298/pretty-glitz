@@ -9,17 +9,6 @@ const BottomNav = () => {
   const { getCartCount } = useContext(CartContext);
   const cartCount = getCartCount();
 
-  const handleCategoriesClick = (e) => {
-    if (pathname === '/') {
-      const el = document.getElementById('categories');
-      if (el) {
-        e.preventDefault();
-        el.scrollIntoView({ behavior: 'smooth' });
-        window.history.replaceState(null, '', '/#categories');
-      }
-    }
-  };
-
   const handleTrendingClick = (e) => {
     if (pathname === '/') {
       const el = document.getElementById('bestsellers');
@@ -33,17 +22,17 @@ const BottomNav = () => {
 
   const isActive = (path) => {
     if (path === '/') return pathname === '/' && !window.location.hash;
-    if (path === '/#categories') return pathname === '/' && window.location.hash === '#categories';
+    if (path === '/categories') return pathname === '/categories' || pathname === '/collections';
     if (path === '/#bestsellers') return pathname === '/' && window.location.hash === '#bestsellers';
     return pathname.startsWith(path);
   };
 
   const items = [
-    { path: '/',             label: 'Home',       icon: Home },
-    { path: '/#categories',   label: 'Categories', icon: LayoutGrid, onClick: handleCategoriesClick },
-    { path: '/#bestsellers', label: 'Trending',   icon: TrendingUp, onClick: handleTrendingClick },
-    { path: '/offers',       label: 'Offers',     emoji: '✨' },
-    { path: '/cart',         label: 'Cart',       icon: ShoppingBag, badge: cartCount },
+    { path: '/',             label: 'Home',        icon: Home },
+    { path: '/categories',   label: 'Collections', icon: LayoutGrid },
+    { path: '/#bestsellers', label: 'Trending',    icon: TrendingUp, onClick: handleTrendingClick },
+    { path: '/offers',       label: 'Offers',      emoji: '✨' },
+    { path: '/cart',         label: 'Cart',        icon: ShoppingBag, badge: cartCount },
   ];
 
   return (
