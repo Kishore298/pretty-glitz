@@ -38,7 +38,7 @@ const markAsRead = async (req, res) => {
     const notif = await Notification.findByIdAndUpdate(
       id,
       { read: true },
-      { returnDocument: 'after' }
+      { new: true }
     );
 
     if (!notif) {
@@ -133,7 +133,7 @@ const saveFcmToken = async (req, res) => {
         deviceInfo: agent,
         lastUsedAt: new Date(),
       },
-      { upsert: true, returnDocument: 'after' }
+      { upsert: true, new: true }
     );
 
     return res.status(201).json({
@@ -187,7 +187,7 @@ const saveCustomerFcmToken = async (req, res) => {
         $set: updateDoc,
         ...pushUpdates,
       },
-      { upsert: true, returnDocument: 'after' }
+      { upsert: true, new: true }
     );
 
     return res.status(201).json({
@@ -342,7 +342,7 @@ const subscribePush = async (req, res) => {
         userAgent,
         lastActiveAt: new Date(),
       },
-      { upsert: true, returnDocument: 'after' }
+      { upsert: true, new: true }
     );
 
     return res.status(201).json({

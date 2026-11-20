@@ -57,7 +57,7 @@ const updateBanner = async (req, res) => {
     if (updateData.desktopImage !== undefined) {
       updateData.desktopImage = normalizeImage(updateData.desktopImage);
     }
-    const banner = await Banner.findByIdAndUpdate(req.params.id, updateData, { returnDocument: 'after' });
+    const banner = await Banner.findByIdAndUpdate(req.params.id, updateData, { new: true });
     if (!banner) return res.status(404).json({ message: 'Banner not found' });
     res.json(banner);
   } catch (error) {

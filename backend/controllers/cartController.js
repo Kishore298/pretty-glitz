@@ -212,7 +212,7 @@ const addItem = async (req, res) => {
           'items.$.size': effectiveSize || null,
         },
       },
-      { returnDocument: 'after' }
+      { new: true }
     ).populate('items.product', 'name price images inStock inStockCount category subcategoryId pieceCounts sizes isActive colorVariants');
 
     if (!updated) {
@@ -234,7 +234,7 @@ const addItem = async (req, res) => {
             },
           },
         },
-        { returnDocument: 'after', upsert: true }
+        { new: true, upsert: true }
       ).populate('items.product', 'name price images inStock inStockCount category subcategoryId pieceCounts sizes isActive colorVariants');
     }
 
@@ -259,7 +259,7 @@ const updateItem = async (req, res) => {
       const updated = await Cart.findOneAndUpdate(
         { userId: req.user.userId },
         { $pull: { items: { variantKey } } },
-        { returnDocument: 'after' }
+        { new: true }
       ).populate('items.product', 'name price images inStock inStockCount category subcategoryId pieceCounts sizes isActive colorVariants');
       return res.status(200).json({ cart: updated });
     }
@@ -280,7 +280,7 @@ const updateItem = async (req, res) => {
     const updated = await Cart.findOneAndUpdate(
       { userId: req.user.userId, 'items.variantKey': variantKey },
       { $set: { 'items.$.quantity': finalQty } },
-      { returnDocument: 'after' }
+      { new: true }
     ).populate('items.product', 'name price images inStock inStockCount category subcategoryId pieceCounts sizes isActive colorVariants');
 
     return res.status(200).json({ cart: updated });
@@ -298,7 +298,7 @@ const removeItem = async (req, res) => {
     const updated = await Cart.findOneAndUpdate(
       { userId: req.user.userId },
       { $pull: { items: { variantKey } } },
-      { returnDocument: 'after' }
+      { new: true }
     ).populate('items.product', 'name price images inStock category');
     return res.status(200).json({ cart: updated || { items: [] } });
   } catch (err) {
@@ -440,7 +440,7 @@ const clearCart = async (req, res) => {
     await Cart.findOneAndUpdate(
       { userId: req.user.userId },
       { $set: { items: [] } },
-      { returnDocument: 'after' }
+      { new: true }
     );
     return res.status(200).json({ message: 'Cart cleared.' });
   } catch (err) {
