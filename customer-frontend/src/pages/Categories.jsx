@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import api from '../utils/api';
 import { motion } from 'framer-motion';
-import { ChevronRight, ArrowRight } from 'lucide-react';
+import { ArrowRight } from 'lucide-react';
 import { optimizeImageUrl } from '../utils/cloudinary';
 import { useTheme } from '../context/ThemeContext';
 import logoImg from '../assets/pretty-glitz-logo.png';
@@ -33,9 +33,8 @@ const Categories = () => {
 
   return (
     <div
+      className="categories-page"
       style={{
-        minHeight: '100vh',
-        paddingTop: 'calc(var(--nav-height, 76px) + 16px)',
         paddingBottom: 60,
         background: isDark
           ? 'radial-gradient(ellipse at 50% 0%, rgba(196, 56, 108, 0.08) 0%, rgba(10, 10, 16, 0) 70%)'
@@ -43,13 +42,9 @@ const Categories = () => {
       }}
     >
       <div className="section-padding" style={{ maxWidth: 1280, margin: '0 auto' }}>
-        {/* Breadcrumb Pill */}
-        <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 20 }}>
-          <div className="breadcrumb">
-            <Link to="/">Home</Link>
-            <ChevronRight size={11} className="separator" />
-            <span style={{ color: 'var(--accent)', fontWeight: 600 }}>Collections</span>
-          </div>
+        {/* Breadcrumb Bar */}
+        <div className="breadcrumb">
+          <Link to="/">Home</Link>
         </div>
 
         {/* Header */}

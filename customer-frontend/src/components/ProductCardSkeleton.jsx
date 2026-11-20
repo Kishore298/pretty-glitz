@@ -11,10 +11,10 @@ const ProductCardSkeleton = () => {
         background: isDark ? 'var(--bg-secondary)' : '#FFFFFF',
         border: '1px solid var(--border)',
         borderRadius: 14,
-        padding: 8,
+        padding: 7,
         display: 'flex',
         flexDirection: 'column',
-        height: '100%',
+        height: 'auto',
         boxSizing: 'border-box',
         overflow: 'hidden',
       }}
@@ -27,7 +27,7 @@ const ProductCardSkeleton = () => {
           aspectRatio: '1 / 1',
           borderRadius: 10,
           overflow: 'hidden',
-          marginBottom: 6,
+          marginBottom: 4,
         }}
       >
         <div className="skeleton" style={{ width: '100%', height: '100%', borderRadius: 10 }} />
@@ -38,17 +38,13 @@ const ProductCardSkeleton = () => {
         {/* Category line */}
         <div
           className="skeleton"
-          style={{ height: 9, width: 45, marginBottom: 4, borderRadius: 4 }}
+          style={{ height: 8, width: 45, marginBottom: 2, borderRadius: 4 }}
         />
 
-        {/* Title placeholder (2 clamped lines) */}
+        {/* Title placeholder (compact) */}
         <div
           className="skeleton"
-          style={{ height: 14, width: '85%', marginBottom: 4, borderRadius: 4 }}
-        />
-        <div
-          className="skeleton"
-          style={{ height: 14, width: '50%', marginBottom: 8, borderRadius: 4 }}
+          style={{ height: 13, width: '85%', marginBottom: 2, borderRadius: 4 }}
         />
 
         {/* Price & action row on the same line */}
@@ -58,8 +54,8 @@ const ProductCardSkeleton = () => {
             alignItems: 'center',
             justifyContent: 'space-between',
             width: '100%',
-            marginTop: 'auto',
-            paddingTop: 4,
+            marginTop: 2,
+            paddingTop: 0,
           }}
         >
           <div className="skeleton" style={{ height: 16, width: 60, borderRadius: 4 }} />

@@ -2,7 +2,7 @@ import React, { useContext, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { CartContext, resolveStock } from '../context/CartContext';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Trash2, ArrowRight, ArrowLeft, ChevronRight, Lock, AlertCircle } from 'lucide-react';
+import { Trash2, ArrowRight, ArrowLeft, Lock, AlertCircle } from 'lucide-react';
 import { optimizeImageUrl } from '../utils/cloudinary';
 import { getProductUrl } from '../utils/urlHelper';
 import logoImg from '../assets/pretty-glitz-logo.png';
@@ -61,14 +61,12 @@ const Cart = () => {
   }
 
   return (
-    <div style={{ minHeight: '100vh', paddingTop: 'calc(var(--nav-height, 76px) + 12px)', paddingBottom: 'calc(var(--bottom-nav-total-height, 60px) + 32px)' }}>
+    <div className="cart-page" style={{ paddingBottom: 'calc(var(--bottom-nav-total-height, 60px) + 32px)' }}>
       <div className="app-page-container" style={{ maxWidth: 1280, margin: '0 auto' }}>
         
         {/* Breadcrumb Pill */}
-        <div className="breadcrumb" style={{ marginBottom: 12 }}>
+        <div className="breadcrumb">
           <Link to="/">Home</Link>
-          <ChevronRight size={11} className="separator" />
-          <span style={{ color: 'var(--text)', fontWeight: 600 }}>Shopping Bag</span>
         </div>
 
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', marginBottom: 16, borderBottom: `1px solid var(--border)`, paddingBottom: 12 }}>

@@ -9,6 +9,7 @@ import {
   AlertCircle,
 } from 'lucide-react';
 import QuickAddColorsModal from './QuickAddColorsModal';
+import AdminDropdown from './AdminDropdown';
 import {
   BANGLE_COLOR_FAMILIES,
   ALL_BANGLE_COLORS,
@@ -685,7 +686,7 @@ const BangleVariationManager = ({
                       alignItems: 'center',
                       gap: 10,
                       flex: '1 1 240px',
-                      minWidth: 0,
+                      minWidth: 200,
                     }}
                   >
                     {/* Swatch color picker input */}
@@ -708,71 +709,42 @@ const BangleVariationManager = ({
                       title="Adjust swatch color hex"
                     />
 
-                    {/* Grouped Preset Dropdown */}
-                    <select
-                      value={isPreset ? cVar.colorName : '__custom__'}
-                      onChange={(e) => handlePresetColorSelect(cIdx, e.target.value)}
-                      className="admin-input"
-                      style={{
-                        height: 36,
-                        fontSize: '0.84rem',
-                        fontWeight: 600,
-                        flex: cVar.isCustom || !isPreset ? '0 0 auto' : 1,
-                        minWidth: 160,
-                        cursor: 'pointer',
-                      }}
-                    >
-                      <option value="" disabled>
-                        -- Select Preset Colour --
-                      </option>
-                      {BANGLE_COLOR_FAMILIES.map((family) => (
-                        <optgroup key={family.family} label={`── ${family.family} ──`}>
-                          {family.colors.map((c) => (
-                            <option key={c.name} value={c.name}>
-                              {c.name}
-                            </option>
-                          ))}
-                        </optgroup>
-                      ))}
-                      <option value="__custom__">🎨 Custom Colour (Manual Entry)</option>
-                    </select>
-
-                    {/* If Custom Colour or not in preset list, show text input */}
-                    {(cVar.isCustom || !isPreset) && (
-                      <input
-                        type="text"
-                        value={cVar.colorName}
-                        onChange={(e) =>
-                          handleVariantFieldChange(cIdx, 'colorName', e.target.value)
-                        }
-                        placeholder="Enter custom colour name..."
-                        required
-                        className="admin-input"
-                        style={{
-                          flex: 1,
-                          height: 36,
-                          fontSize: '0.84rem',
-                          minWidth: 130,
-                        }}
+                    {/* Grouped Preset Dropdown using AdminDropdown */}
+                    <div style={{ flex: 1, minWidth: 180 }}>
+                      <AdminDropdown
+                        value={isPreset ? cVar.colorName : '__custom__'}
+                        onChange={(val) => handlePresetColorSelect(cIdx, val)}
+                        placeholder="-- Select Preset Colour --"
+                        options={[
+                          ...BANGLE_COLOR_FAMILIES.flatMap((family) =>
+                            family.colors.map((c) => ({
+                              value: c.name,
+                              label: `${c.name} (${family.family})`,
+                            }))
+                          ),
+                          { value: '__custom__', label: 'Custom Colour (Manual Entry)' },
+                        ]}
+                        style={{ width: '100%' }}
                       />
-                    )}
+                    </div>
                   </div>
 
-                  {/* Right: Default Radio, Stock Summary Badge, Duplicate & Delete Buttons */}
+                  {/* Right: Actions Group (Default Radio, Stock Badge, Duplicate, Delete) */}
                   <div
                     style={{
                       display: 'flex',
                       alignItems: 'center',
-                      gap: 10,
-                      flexWrap: 'wrap',
+                      gap: 8,
+                      flexShrink: 0,
+                      flexWrap: 'nowrap',
                       justifyContent: 'flex-end',
-                      maxWidth: '100%',
+                      marginLeft: 'auto',
                     }}
                   >
                     {/* Default Colour Radio */}
                     <label
                       style={{
-                        display: 'flex',
+                        display: 'inline-flex',
                         alignItems: 'center',
                         gap: 6,
                         cursor: 'pointer',
@@ -781,6 +753,12 @@ const BangleVariationManager = ({
                           ? 'var(--accent-gold, #C9A84C)'
                           : 'var(--text-muted, #9CA3AF)',
                         fontWeight: cVar.isDefault ? 700 : 500,
+                        whiteSpace: 'nowrap',
+                        flexShrink: 0,
+                        padding: '4px 8px',
+                        borderRadius: 6,
+                        background: cVar.isDefault ? 'rgba(201, 168, 76, 0.12)' : 'transparent',
+                        border: cVar.isDefault ? '1px solid rgba(201, 168, 76, 0.25)' : '1px solid transparent',
                       }}
                       title="Set as the default colour shown first to customers"
                     >
@@ -798,7 +776,7 @@ const BangleVariationManager = ({
                       style={{
                         fontSize: '0.74rem',
                         fontWeight: 600,
-                        padding: '3px 8px',
+                        padding: '4px 8px',
                         borderRadius: 6,
                         background: hasInStockSize
                           ? 'rgba(16, 185, 129, 0.12)'
@@ -807,6 +785,8 @@ const BangleVariationManager = ({
                           ? '1px solid rgba(16, 185, 129, 0.3)'
                           : '1px solid rgba(239, 68, 68, 0.3)',
                         color: hasInStockSize ? '#10B981' : '#EF4444',
+                        whiteSpace: 'nowrap',
+                        flexShrink: 0,
                       }}
                       title={
                         hasInStockSize
@@ -834,6 +814,7 @@ const BangleVariationManager = ({
                         gap: 5,
                         fontSize: '0.74rem',
                         fontWeight: 600,
+                        whiteSpace: 'nowrap',
                         flexShrink: 0,
                         transition: 'all 0.15s ease',
                       }}
@@ -875,6 +856,30 @@ const BangleVariationManager = ({
                   </div>
                 </div>
 
+                {/* If Custom Colour or not in preset list, show text input on dedicated neat line */}
+                {(cVar.isCustom || !isPreset) && (
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginTop: -4 }}>
+                    <span style={{ fontSize: '0.74rem', color: 'var(--text-muted)', fontWeight: 600, whiteSpace: 'nowrap' }}>
+                      Custom Name:
+                    </span>
+                    <input
+                      type="text"
+                      value={cVar.colorName}
+                      onChange={(e) =>
+                        handleVariantFieldChange(cIdx, 'colorName', e.target.value)
+                      }
+                      placeholder="Enter custom colour name (e.g. Royal Rani Pink)..."
+                      required
+                      className="admin-input"
+                      style={{
+                        flex: 1,
+                        height: 36,
+                        fontSize: '0.84rem',
+                      }}
+                    />
+                  </div>
+                )}
+
                 {/* ─── Photos Section for this Colour ─── */}
                 <div>
                   <div
@@ -891,6 +896,9 @@ const BangleVariationManager = ({
                   >
                     <span>
                       Photos for {cVar.colorName || 'Colour'} ({cVar.images?.length || 0})
+                    </span>
+                    <span style={{ fontSize: '0.67rem', color: 'var(--accent-gold, #C9A84C)', fontWeight: 500, textTransform: 'none' }}>
+                      • Standard: 1200×1200 (1:1) or 1080×1350 (4:5)
                     </span>
                     {(!cVar.images || cVar.images.length === 0) && (
                       <span style={{ color: '#F59E0B', fontSize: '0.68rem', fontWeight: 500 }}>

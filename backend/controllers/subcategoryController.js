@@ -42,7 +42,7 @@ const deleteSubcategory = async (req, res) => {
 
 const updateSubcategory = async (req, res) => {
   try {
-    const updated = await Subcategory.findByIdAndUpdate(req.params.id, req.body, { new: true });
+    const updated = await Subcategory.findByIdAndUpdate(req.params.id, req.body, { returnDocument: 'after' });
     res.json(updated);
   } catch (error) {
     res.status(500).json({ message: 'Server error' });

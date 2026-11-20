@@ -4,7 +4,7 @@ import api from '../utils/api';
 import ProductCard from '../components/ProductCard';
 import ProductCardSkeleton from '../components/ProductCardSkeleton';
 import { motion, AnimatePresence } from 'framer-motion';
-import { ChevronDown, ChevronUp, ChevronRight } from 'lucide-react';
+import { ChevronDown, ChevronUp } from 'lucide-react';
 
 const CategoryAccordion = ({ category, products, subcategories }) => {
   const [isOpen, setIsOpen] = useState(true); // Open by default
@@ -137,13 +137,9 @@ const AllProducts = () => {
 
         <div className="section-padding" style={{ position: 'relative', zIndex: 2, textAlign: 'center', width: '100%' }}>
           <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}>
-            {/* Breadcrumb Pill */}
-            <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 16 }}>
-              <div className="breadcrumb">
-                <Link to="/">Home</Link>
-                <ChevronRight size={11} className="separator" />
-                <span style={{ color: 'var(--accent)', fontWeight: 600 }}>All Products</span>
-              </div>
+            {/* Breadcrumb Bar */}
+            <div className="breadcrumb">
+              <Link to="/">Home</Link>
             </div>
 
             <h1 style={{

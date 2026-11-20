@@ -62,17 +62,19 @@ const Sidebar = ({ isOpen, setIsOpen }) => {
       className={`admin-sidebar ${isOpen ? 'open' : ''}`}
       style={{
         width: '284px',
-        minHeight: '100vh',
+        height: '100vh',
+        maxHeight: '100vh',
         background: 'var(--sidebar-bg, #0F0E17)',
         borderRight: '1px solid var(--card-border, rgba(201, 168, 76, 0.12))',
         display: 'flex',
         flexDirection: 'column',
         flexShrink: 0,
+        overflow: 'hidden',
         zIndex: isOpen ? 1050 : 50,
       }}
     >
       {/* Brand Header */}
-      <div style={{ padding: '22px 18px 16px' }}>
+      <div style={{ padding: '22px 18px 16px', flexShrink: 0 }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
           <img
             src="/pretty-glitz-logo.png"
@@ -161,7 +163,7 @@ const Sidebar = ({ isOpen, setIsOpen }) => {
       </div>
 
       {/* Navigation Groups */}
-      <nav style={{ flex: 1, padding: '10px 14px', overflowY: 'auto' }}>
+      <nav style={{ flex: 1, minHeight: 0, padding: '10px 14px', overflowY: 'auto' }}>
         {navGroups.map((group) => (
           <div key={group.label} style={{ marginBottom: 20 }}>
             <p
@@ -240,6 +242,7 @@ const Sidebar = ({ isOpen, setIsOpen }) => {
           padding: '16px',
           borderTop: '1px solid var(--card-border, rgba(201, 168, 76, 0.12))',
           background: 'rgba(0, 0, 0, 0.2)',
+          flexShrink: 0,
         }}
       >
         <div

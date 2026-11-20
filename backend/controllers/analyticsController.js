@@ -759,7 +759,7 @@ const recordPageVisit = async (req, res) => {
           visitDate,
         },
       },
-      { upsert: true, new: true, setDefaultsOnInsert: true }
+      { upsert: true, returnDocument: 'after', setDefaultsOnInsert: true }
     );
 
     return res.status(200).json({ success: true });

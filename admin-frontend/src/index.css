@@ -68,14 +68,21 @@
   --font-body: 'Inter', system-ui, -apple-system, sans-serif;
 }
 
-body {
+html,
+body,
+#root {
+  height: 100%;
   margin: 0;
+  padding: 0;
+  background: var(--panel-bg);
+  overflow: hidden;
+}
+
+body {
   font-family: var(--font-body);
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
-  background: var(--panel-bg);
   color: var(--text-primary);
-  overflow-x: hidden;
 }
 
 /* =============================================

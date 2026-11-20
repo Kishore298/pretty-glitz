@@ -12,8 +12,11 @@ import {
   AlertCircle
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
+import toast from 'react-hot-toast';
 import api from '../utils/api';
 import BangleVariationManager from './BangleVariationManager';
+import AdminDropdown from './AdminDropdown';
+import { fastPrepareImageForUpload } from '../utils/imageDimensionHelper';
 
 const field = (label, children, hint) => (
   <div>
@@ -21,7 +24,7 @@ const field = (label, children, hint) => (
       {label}
     </label>
     {children}
-    {hint && <p style={{ fontSize: '0.74rem', color: 'var(--text-muted)', marginTop: 4, marginBottom: 0 }}>{hint}</p>}
+    {hint && <p className="form-note-hint" style={{ fontSize: '0.74rem', color: 'var(--text-muted)', marginTop: 4, marginBottom: 0 }}>{hint}</p>}
   </div>
 );
 
@@ -151,13 +154,14 @@ const AddEditProductModal = ({ isOpen, onClose, productId, onSuccess, isOfferPre
     }));
 
   const handleColorImageUpload = async (cIdx, e) => {
-    const file = e.target.files[0];
-    if (!file) return;
-
-    const form = new FormData();
-    form.append('image', file);
+    const rawFile = e.target.files[0];
+    if (!rawFile) return;
 
     try {
+      const { file, dim } = await fastPrepareImageForUpload(rawFile);
+      const form = new FormData();
+      form.append('image', file);
+
       const { data } = await api.post('/upload', form, {
         headers: { 'Content-Type': 'multipart/form-data' },
       });
@@ -169,22 +173,32 @@ const AddEditProductModal = ({ isOpen, onClose, productId, onSuccess, isOfferPre
         };
         return { ...prev, colorVariants: cv };
       });
+      if (dim?.isStandard) {
+        toast.success(`Variant photo: ${dim.width}×${dim.height}px (${dim.label})`);
+      } else if (dim) {
+        toast(`Photo: ${dim.width}×${dim.height}px. Studio standard is 1080×1350 (4:5) or 1200×1200.`, {
+          icon: '📐',
+          duration: 3500,
+        });
+      }
     } catch (err) {
       setError('Failed to upload image for colour variant.');
+      toast.error('Failed to upload image for colour variant.');
     } finally {
       e.target.value = null;
     }
   };
 
   const handleImageUpload = async (e) => {
-    const file = e.target.files[0];
-    if (!file) return;
+    const rawFile = e.target.files[0];
+    if (!rawFile) return;
 
     setUploadingImage(true);
-    const form = new FormData();
-    form.append('image', file);
-
     try {
+      const { file, dim } = await fastPrepareImageForUpload(rawFile);
+      const form = new FormData();
+      form.append('image', file);
+
       const { data } = await api.post('/upload', form, {
         headers: { 'Content-Type': 'multipart/form-data' },
       });
@@ -192,8 +206,17 @@ const AddEditProductModal = ({ isOpen, onClose, productId, onSuccess, isOfferPre
         ...prev,
         images: [...(prev.images || []), { url: data.url }],
       }));
+      if (dim?.isStandard) {
+        toast.success(`Photo: ${dim.width}×${dim.height}px (${dim.label})`);
+      } else if (dim) {
+        toast(`Photo: ${dim.width}×${dim.height}px. Studio standard is 1080×1350 (4:5) or 1200×1200.`, {
+          icon: '📐',
+          duration: 3500,
+        });
+      }
     } catch (err) {
       setError('Failed to upload image. Please try again.');
+      toast.error('Failed to upload image. Please try again.');
     } finally {
       setUploadingImage(false);
       e.target.value = null;
@@ -434,13 +457,13 @@ const AddEditProductModal = ({ isOpen, onClose, productId, onSuccess, isOfferPre
                     )}
                     {field(
                       'Main Category *',
-                      <select name="category" value={formData.category} onChange={handleChange} className="admin-input">
-                        {categories.map((c) => (
-                          <option key={c._id} value={c.name}>
-                            {c.name}
-                          </option>
-                        ))}
-                      </select>
+                      <AdminDropdown
+                        value={formData.category}
+                        onChange={(val) => setFormData((prev) => ({ ...prev, category: val }))}
+                        placeholder="Select Category..."
+                        options={categories.map((c) => ({ value: c.name, label: c.name }))}
+                        style={{ width: '100%' }}
+                      />
                     )}
                   </div>
 
@@ -458,7 +481,7 @@ const AddEditProductModal = ({ isOpen, onClose, productId, onSuccess, isOfferPre
                           className="admin-input"
                           style={{ resize: 'vertical' }}
                         />
-                        <span style={{ fontSize: '0.72rem', color: 'var(--text-muted)', marginTop: 4, display: 'block', lineHeight: 1.35 }}>
+                        <span className="form-note-hint" style={{ fontSize: '0.72rem', color: 'var(--text-muted)', marginTop: 4, display: 'block', lineHeight: 1.35 }}>
                           Tip: Use separate lines, bullets (•), or "Key: Value" format (e.g. Material: Gold Plated) to automatically format specifications on the customer site.
                         </span>
                       </div>
@@ -470,31 +493,28 @@ const AddEditProductModal = ({ isOpen, onClose, productId, onSuccess, isOfferPre
                         (formData.category || '').toLowerCase() === 'artificial flowers') &&
                         field(
                           'Subcategory / Type',
-                          <select
-                            name="subcategoryId"
+                          <AdminDropdown
                             value={formData.subcategoryId || ''}
-                            onChange={handleChange}
-                            className="admin-input"
-                          >
-                            <option value="">-- Choose Subcategory --</option>
-                            {subcategories
-                              .filter((s) => {
-                                if (!formData.category) return false;
-                                const sCat = (typeof s.category === 'object' ? s.category?.name : s.category) || '';
-                                if (/^(designer\s+)?glass\s+bangles$/i.test(formData.category)) {
-                                  return /^(designer\s+)?glass\s+bangles$/i.test(sCat);
-                                }
-                                if ((formData.category || '').toLowerCase() === 'artificial flowers') {
-                                  return /^artificial\s+flowers$/i.test(sCat);
-                                }
-                                return false;
-                              })
-                              .map((s) => (
-                                <option key={s._id} value={s._id}>
-                                  {s.name}
-                                </option>
-                              ))}
-                          </select>
+                            onChange={(val) => setFormData((prev) => ({ ...prev, subcategoryId: val }))}
+                            placeholder="-- Choose Subcategory --"
+                            options={[
+                              { value: '', label: '-- Choose Subcategory --' },
+                              ...subcategories
+                                .filter((s) => {
+                                  if (!formData.category) return false;
+                                  const sCat = (typeof s.category === 'object' ? s.category?.name : s.category) || '';
+                                  if (/^(designer\s+)?glass\s+bangles$/i.test(formData.category)) {
+                                    return /^(designer\s+)?glass\s+bangles$/i.test(sCat);
+                                  }
+                                  if ((formData.category || '').toLowerCase() === 'artificial flowers') {
+                                    return /^artificial\s+flowers$/i.test(sCat);
+                                  }
+                                  return false;
+                                })
+                                .map((s) => ({ value: s._id, label: s.name })),
+                            ]}
+                            style={{ width: '100%' }}
+                          />
                         )}
 
                       {formData.category?.toLowerCase() === 'gift box combo' &&
@@ -551,20 +571,21 @@ const AddEditProductModal = ({ isOpen, onClose, productId, onSuccess, isOfferPre
                           className="admin-input"
                           title="Quantity / Count (e.g. 1, 2, 4, 12)"
                         />
-                        <select
-                          name="packagingType"
+                        <AdminDropdown
                           value={formData.packagingType || ''}
-                          onChange={handleChange}
-                          className="admin-input"
-                        >
-                          <option value="">-- Unit --</option>
-                          <option value="Set">Set</option>
-                          <option value="Dozen">Dozen</option>
-                          <option value="Pieces">Pieces</option>
-                          <option value="Pair">Pair</option>
-                          <option value="Pack">Pack</option>
-                          <option value="Box">Box</option>
-                        </select>
+                          onChange={(val) => setFormData((prev) => ({ ...prev, packagingType: val }))}
+                          placeholder="-- Unit --"
+                          options={[
+                            { value: '', label: '-- Unit --' },
+                            { value: 'Set', label: 'Set' },
+                            { value: 'Dozen', label: 'Dozen' },
+                            { value: 'Pieces', label: 'Pieces' },
+                            { value: 'Pair', label: 'Pair' },
+                            { value: 'Pack', label: 'Pack' },
+                            { value: 'Box', label: 'Box' },
+                          ]}
+                          style={{ width: '100%' }}
+                        />
                       </div>,
                       formData.packagingType
                         ? `Display preview: ₹${formData.price || '380'}${formData.originalPrice ? ` ₹${formData.originalPrice}` : ''} (${(() => {
@@ -701,13 +722,39 @@ const AddEditProductModal = ({ isOpen, onClose, productId, onSuccess, isOfferPre
 
               {/* Product Gallery Images */}
               <div style={sectionStyle}>
-                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 14 }}>
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 }}>
                   <span style={{ fontSize: '0.74rem', color: 'var(--accent-gold)', fontWeight: 700, letterSpacing: '0.08em', textTransform: 'uppercase' }}>
                     3. Showcase Photography Gallery
                   </span>
-                  <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>
+                  <span className="form-note-hint" style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>
                     First photo is primary card image
                   </span>
+                </div>
+
+                {/* Option A Studio Photography Guidelines Banner */}
+                <div
+                  className="form-note-hint form-image-standard-banner"
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: 10,
+                    padding: '9px 13px',
+                    borderRadius: 10,
+                    background: 'rgba(201, 168, 76, 0.08)',
+                    border: '1px solid rgba(201, 168, 76, 0.22)',
+                    marginBottom: 14,
+                    fontSize: '0.74rem',
+                    color: 'var(--accent-gold, #C9A84C)',
+                    lineHeight: 1.45,
+                  }}
+                >
+                  <span style={{ fontSize: '1.05rem', flexShrink: 0 }}>📐</span>
+                  <div>
+                    <strong style={{ color: '#FAF9FC' }}>Studio Image Standard:</strong>{' '}
+                    <span style={{ color: 'var(--text-secondary, #D1D5DB)' }}>
+                      Standardize studio photography to <strong style={{ color: '#FAF9FC' }}>1080×1350 px</strong> (4:5 Portrait) or <strong style={{ color: '#FAF9FC' }}>1200×1200 px</strong> (1:1 Square) for razor-sharp product cards, uniform grids, and zero letterboxing.
+                    </span>
+                  </div>
                 </div>
 
                 <div style={{ display: 'flex', flexWrap: 'wrap', gap: 14, alignItems: 'center' }}>
@@ -718,7 +765,7 @@ const AddEditProductModal = ({ isOpen, onClose, productId, onSuccess, isOfferPre
                         position: 'relative',
                         width: 94,
                         height: 94,
-                        borderRadius: 12,
+                        borderRadius: 10,
                         overflow: 'hidden',
                         border: idx === 0 ? '2px solid var(--accent-gold)' : '1px solid var(--card-border)',
                         boxShadow: '0 4px 12px rgba(0,0,0,0.3)',
@@ -781,7 +828,7 @@ const AddEditProductModal = ({ isOpen, onClose, productId, onSuccess, isOfferPre
                       justifyContent: 'center',
                       width: 94,
                       height: 94,
-                      borderRadius: 12,
+                      borderRadius: 10,
                       border: '1px dashed rgba(201, 168, 76, 0.4)',
                       cursor: uploadingImage ? 'not-allowed' : 'pointer',
                       background: 'rgba(201, 168, 76, 0.04)',
@@ -829,7 +876,16 @@ const AddEditProductModal = ({ isOpen, onClose, productId, onSuccess, isOfferPre
                     )}
                   </label>
                 </div>
-                <style>{`@keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }`}</style>
+                <style>{`
+                  @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+                  @media (max-width: 648px) {
+                    .form-note-hint,
+                    .form-image-standard-banner,
+                    .form-section-note {
+                      display: none !important;
+                    }
+                  }
+                `}</style>
               </div>
 
               {/* Status & Display Badges Settings */}

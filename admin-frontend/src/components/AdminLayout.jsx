@@ -61,9 +61,13 @@ const AdminLayout = ({ children }) => {
 
   return (
     <div
+      className="admin-root-layout"
       style={{
         display: 'flex',
-        minHeight: '100vh',
+        height: '100vh',
+        maxHeight: '100vh',
+        width: '100vw',
+        maxWidth: '100vw',
         background: 'var(--panel-bg, #0A0A0F)',
         color: 'var(--text-primary, #FAF9FC)',
         overflow: 'hidden',
@@ -94,7 +98,9 @@ const AdminLayout = ({ children }) => {
           display: 'flex',
           flexDirection: 'column',
           minWidth: 0,
-          height: '100vh',
+          minHeight: 0,
+          height: '100%',
+          maxHeight: '100vh',
           overflow: 'hidden',
         }}
       >
@@ -730,6 +736,7 @@ const AdminLayout = ({ children }) => {
           className="admin-content-area"
           style={{
             flex: 1,
+            minHeight: 0,
             overflowY: 'auto',
             padding: '36px 40px',
             display: 'flex',

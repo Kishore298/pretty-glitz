@@ -129,7 +129,7 @@ const ProductCard = ({ product, showVariants = false }) => {
           border: '1px solid',
           borderColor: isHovered ? 'var(--accent-gold)' : 'var(--border)',
           borderRadius: 14,
-          padding: 8,
+          padding: 7,
           display: 'flex',
           flexDirection: 'column',
           transition: 'transform 0.25s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.25s ease, border-color 0.25s ease',
@@ -137,7 +137,7 @@ const ProductCard = ({ product, showVariants = false }) => {
             ? (isDark ? '0 10px 24px -4px rgba(0,0,0,0.6), 0 0 0 1px rgba(212,175,55,0.2)' : '0 10px 24px -4px rgba(26,17,24,0.1), 0 0 0 1px rgba(184,134,11,0.15)')
             : (isDark ? '0 2px 6px rgba(0,0,0,0.3)' : '0 2px 6px rgba(26,17,24,0.03)'),
           transform: isHovered ? 'translateY(-3px)' : 'none',
-          height: '100%',
+          height: 'auto',
         }}
       >
         {/* Image Container with Mobile Touch Swipe & Detail Page Navigation */}
@@ -152,7 +152,7 @@ const ProductCard = ({ product, showVariants = false }) => {
             background: isDark ? '#161622' : '#F7F5F2',
             borderRadius: 10,
             overflow: 'hidden',
-            marginBottom: hasMultipleImages ? 4 : 6,
+            marginBottom: hasMultipleImages ? 3 : 4,
             transition: 'background 0.35s ease',
             touchAction: hasMultipleImages ? 'pan-y' : 'auto',
             cursor: 'pointer',
@@ -475,7 +475,7 @@ const ProductCard = ({ product, showVariants = false }) => {
           <span style={{
             fontSize: '0.64rem',
             color: isHovered ? 'var(--accent)' : 'var(--text-muted)',
-            marginBottom: 2,
+            marginBottom: 1,
             textTransform: 'uppercase',
             fontWeight: 700,
             letterSpacing: '0.08em',
@@ -492,9 +492,9 @@ const ProductCard = ({ product, showVariants = false }) => {
             fontFamily: '"Cormorant Garamond", Georgia, serif',
             fontSize: '1.02rem',
             fontWeight: 600,
-            lineHeight: 1.25,
+            lineHeight: 1.18,
             color: isHovered ? 'var(--accent)' : 'var(--text)',
-            margin: '0 0 6px',
+            margin: '0 0 2px',
             display: 'block',
             overflow: 'visible',
             wordBreak: 'break-word',
@@ -511,7 +511,7 @@ const ProductCard = ({ product, showVariants = false }) => {
               flexWrap: 'wrap',
               gap: 4,
               alignItems: 'center',
-              margin: '3px 0 6px',
+              margin: '2px 0 3px',
               width: '100%',
             }}>
               {product.sizes?.length > 0 && (
@@ -575,10 +575,10 @@ const ProductCard = ({ product, showVariants = false }) => {
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'space-between',
-            marginTop: 'auto',
+            marginTop: 2,
             width: '100%',
             gap: 6,
-            paddingTop: 4,
+            paddingTop: 0,
           }}>
             <div className="product-card-prices">
               <span className="product-card-price-current">

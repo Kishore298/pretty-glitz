@@ -4,7 +4,7 @@ import api from '../utils/api';
 import ProductCard from '../components/ProductCard';
 import ProductCardSkeleton from '../components/ProductCardSkeleton';
 import { motion } from 'framer-motion';
-import { ChevronRight } from 'lucide-react';
+
 
 const Offers = () => {
   const [products, setProducts] = useState([]);
@@ -49,13 +49,9 @@ const Offers = () => {
 
         <div className="section-padding" style={{ position: 'relative', zIndex: 2, textAlign: 'center', width: '100%' }}>
           <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}>
-            {/* Breadcrumb Pill */}
-            <div style={{ display: 'flex', justifyContent: 'center', marginBottom: 16 }}>
-              <div className="breadcrumb">
-                <Link to="/">Home</Link>
-                <ChevronRight size={11} className="separator" />
-                <span style={{ color: 'var(--accent)', fontWeight: 600 }}>Offers</span>
-              </div>
+            {/* Breadcrumb Bar */}
+            <div className="breadcrumb">
+              <Link to="/">Home</Link>
             </div>
 
             <h1 style={{
@@ -96,6 +92,7 @@ const Offers = () => {
                 initial={{ opacity: 0, y: 30 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ delay: i * 0.05, duration: 0.5 }}
+                style={{ height: 'auto', alignSelf: 'start' }}
               >
                 <ProductCard product={p} />
               </motion.div>

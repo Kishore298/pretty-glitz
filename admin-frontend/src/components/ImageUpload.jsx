@@ -3,30 +3,38 @@ import { Upload, X, Loader2 } from 'lucide-react';
 import api from '../utils/api';
 import toast from 'react-hot-toast';
 import { optimizeImageUrl } from '../utils/cloudinary';
+import { fastPrepareImageForUpload } from '../utils/imageDimensionHelper';
 
 const ImageUpload = ({ value, onChange, placeholder = 'Upload High-Res Image' }) => {
   const [loading, setLoading] = useState(false);
   const [isDragOver, setIsDragOver] = useState(false);
   const fileInputRef = useRef(null);
 
-  const uploadFile = async (file) => {
-    if (!file) return;
+  const uploadFile = async (rawFile) => {
+    if (!rawFile) return;
 
-    if (file.size > 8 * 1024 * 1024) {
-      toast.error('File size exceeds 8MB limit');
+    if (rawFile.size > 15 * 1024 * 1024) {
+      toast.error('File size exceeds 15MB limit');
       return;
     }
 
-    const formData = new FormData();
-    formData.append('image', file);
-
     setLoading(true);
     try {
+      const { file, dim } = await fastPrepareImageForUpload(rawFile);
+      const formData = new FormData();
+      formData.append('image', file);
+
       const { data } = await api.post('/upload', formData, {
         headers: { 'Content-Type': 'multipart/form-data' },
       });
       onChange(data.url);
-      toast.success('Image uploaded successfully');
+      if (dim?.isStandard) {
+        toast.success(`Image uploaded: ${dim.width}×${dim.height}px (${dim.label} Standard)`);
+      } else if (dim) {
+        toast.success(`Image uploaded: ${dim.width}×${dim.height}px`);
+      } else {
+        toast.success('Image uploaded successfully');
+      }
     } catch (err) {
       console.error(err);
       toast.error('Failed to upload image. Please try again.');
@@ -211,7 +219,7 @@ const ImageUpload = ({ value, onChange, placeholder = 'Upload High-Res Image' })
                   {placeholder}
                 </div>
                 <div style={{ fontSize: '0.74rem', color: 'var(--text-muted)', marginTop: 4 }}>
-                  Drag & drop or browse image (JPEG, PNG, WebP up to 8MB)
+                  Drag & drop or browse image • Recommended: 1200×1200 (1:1) or 1080×1350 (4:5)
                 </div>
               </div>
             </>

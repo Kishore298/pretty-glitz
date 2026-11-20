@@ -231,6 +231,7 @@ section,
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 12px;
+  align-items: start;
 }
 
 @media (min-width: 768px) {
@@ -238,6 +239,7 @@ section,
   .products-grid {
     grid-template-columns: repeat(3, 1fr);
     gap: 20px;
+    align-items: start;
   }
 }
 
@@ -246,7 +248,15 @@ section,
   .products-grid {
     grid-template-columns: repeat(4, 1fr);
     gap: 24px;
+    align-items: start;
   }
+}
+
+.product-grid-4 > *,
+.products-grid > *,
+.collection-grid > * {
+  align-self: start;
+  height: auto !important;
 }
 
 /* ─── Collection Grid ──────────────────────────────────── */
@@ -254,6 +264,7 @@ section,
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 12px;
+  align-items: start;
 }
 
 @media (min-width: 768px) {
@@ -458,26 +469,27 @@ section,
 .product-detail-breadcrumb,
 .category-breadcrumb-bar,
 .pg-breadcrumb-pill {
-  display: inline-flex !important;
+  display: flex !important;
   align-items: center !important;
   gap: 6px !important;
   font-size: 0.74rem !important;
   font-weight: 500 !important;
   color: var(--text-muted, #7A7279) !important;
-  background: rgba(0, 0, 0, 0.024) !important;
-  border: 1px solid rgba(0, 0, 0, 0.055) !important;
-  border-radius: 999px !important;
-  padding: 2.5px 11px !important;
+  background: rgba(0, 0, 0, 0.012) !important;
+  border: 1px solid rgba(0, 0, 0, 0.035) !important;
+  border-radius: 8px !important;
+  padding: 7px 14px !important;
   letter-spacing: 0.01em !important;
   text-transform: none !important;
-  width: fit-content !important;
-  max-width: 100% !important;
+  width: 100% !important;
+  box-sizing: border-box !important;
   flex-wrap: nowrap !important;
   overflow-x: auto !important;
   scrollbar-width: none !important;
   -webkit-overflow-scrolling: touch !important;
   box-shadow: none !important;
-  margin-bottom: 12px;
+  margin-top: 0 !important;
+  margin-bottom: 12px !important;
 }
 
 .breadcrumb::-webkit-scrollbar,
@@ -491,8 +503,8 @@ section,
 [data-theme="dark"] .product-detail-breadcrumb,
 [data-theme="dark"] .category-breadcrumb-bar,
 [data-theme="dark"] .pg-breadcrumb-pill {
-  background: rgba(255, 255, 255, 0.038) !important;
-  border-color: rgba(255, 255, 255, 0.08) !important;
+  background: rgba(255, 255, 255, 0.018) !important;
+  border-color: rgba(255, 255, 255, 0.045) !important;
   color: rgba(255, 255, 255, 0.6) !important;
 }
 
@@ -529,9 +541,30 @@ section,
   .category-breadcrumb-bar,
   .pg-breadcrumb-pill {
     font-size: 0.68rem !important;
-    padding: 2px 9px !important;
+    padding: 6px 10px !important;
     gap: 4px !important;
+    border-radius: 6px !important;
+    margin-top: 0 !important;
     margin-bottom: 10px !important;
+  }
+}
+
+/* ─── Breadcrumb Page Containers (Equal Spacing Above & Below) ─── */
+.category-page,
+.cart-page,
+.categories-page,
+.checkout-page {
+  min-height: 100vh;
+  padding-top: calc(var(--nav-height, 76px) + 12px) !important;
+  box-sizing: border-box;
+}
+
+@media (max-width: 768px) {
+  .category-page,
+  .cart-page,
+  .categories-page,
+  .checkout-page {
+    padding-top: calc(var(--nav-height, 68px) + 10px) !important;
   }
 }
 
@@ -855,9 +888,9 @@ section,
   padding-bottom: 90px;
 }
 
-@media (max-width: 640px) {
+@media (max-width: 768px) {
   .product-detail-page {
-    padding-top: calc(var(--nav-height, 68px) + 8px);
+    padding-top: calc(var(--nav-height, 68px) + 10px);
   }
 }
 
@@ -871,7 +904,7 @@ section,
   display: flex;
   flex-direction: column;
   gap: 24px;
-  margin-top: 12px;
+  margin-top: 0 !important;
 }
 
 @media (min-width: 1024px) {
@@ -950,6 +983,13 @@ section,
   min-height: unset !important;
   margin: 0 auto;
   border-radius: 18px;
+}
+
+.product-gallery-main img,
+.product-detail-gallery-main img,
+.collection-product-gallery-main img {
+  object-fit: cover !important;
+  object-position: center center !important;
 }
 
 /* Complete Your Look Companion Image: Smaller in height than main product, full width */
@@ -1423,7 +1463,7 @@ section,
 /* ── Mobile Compact Tweaks (<= 768px) ───────────────────── */
 @media (max-width: 768px) {
   .product-detail-page {
-    padding-top: calc(var(--nav-height, 68px) + 4px);
+    padding-top: calc(var(--nav-height, 68px) + 10px) !important;
     padding-bottom: 50px;
   }
 
@@ -1433,13 +1473,12 @@ section,
 
   .product-detail-breadcrumb {
     font-size: 0.7rem;
-    margin-bottom: 6px;
     gap: 4px;
   }
 
   .product-detail-layout {
     gap: 10px;
-    margin-top: 2px;
+    margin-top: 0 !important;
   }
 
   .product-gallery-wrapper {
@@ -1951,16 +1990,29 @@ section,
 }
 
 /* ─── Product Card Responsive & Dynamic Height ──────────────── */
+.product-card {
+  height: auto !important;
+  min-height: 0 !important;
+}
+
 .product-card-title {
   font-family: "Cormorant Garamond", Georgia, serif;
   font-size: 1.02rem;
   font-weight: 600;
-  line-height: 1.25;
-  margin: 0 0 6px;
+  line-height: 1.18;
+  margin: 0 0 2px !important;
   display: block;
   overflow: visible;
   word-break: break-word;
   width: 100%;
+}
+
+@media (max-width: 768px) {
+  .product-card-title {
+    font-size: 0.96rem;
+    line-height: 1.16;
+    margin: 0 0 2px !important;
+  }
 }
 
 .product-card-prices {
@@ -1971,6 +2023,7 @@ section,
   flex-wrap: nowrap !important;
   flex-shrink: 0 !important;
   min-width: 0;
+  line-height: 1 !important;
 }
 
 .product-card-price-current {

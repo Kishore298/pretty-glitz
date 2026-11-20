@@ -217,28 +217,29 @@ const CategoryPage = () => {
   };
 
   return (
-    <div style={{ minHeight: '100vh', paddingTop: 'calc(var(--nav-height, 76px) + 4px)', paddingBottom: 60 }}>
+    <div className="category-page" style={{ paddingBottom: 60 }}>
       {/* Main Container */}
       <div className="section-padding" style={{ maxWidth: 1280, margin: '0 auto' }}>
+
+        {/* Breadcrumb Bar */}
+        <div className="category-breadcrumb-bar">
+          <Link to="/">Home</Link>
+          {activeSubDoc && (
+            <>
+              <ChevronRight size={11} className="separator" />
+              <Link to={`/category/${encodeURIComponent(normalizedCategory)}`}>{normalizedCategory}</Link>
+            </>
+          )}
+        </div>
 
         {/* Category Header */}
         <div className="category-header" style={{
           display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-          flexWrap: 'nowrap', gap: 12, padding: '4px 0 10px',
+          flexWrap: 'nowrap', gap: 12, padding: '0 0 10px',
           borderBottom: '1px solid var(--border)', marginBottom: 12
         }}>
-          {/* Left Side Breadcrumbs & Title */}
+          {/* Left Side Title */}
           <motion.div initial={{ opacity: 0, x: -20 }} animate={{ opacity: 1, x: 0 }} style={{ flex: '1 1 auto', minWidth: 0 }}>
-            <div className="category-breadcrumb-bar">
-              <Link to="/" className="hover:text-prettyglitz">Home</Link>
-              {activeSubDoc && (
-                <>
-                  <ChevronRight size={11} className="separator" />
-                  <span style={{ color: 'var(--accent)', fontWeight: 600 }}>{activeSubDoc.name}</span>
-                </>
-              )}
-            </div>
-
             <h1 style={{
               fontFamily: '"Cormorant Garamond", Georgia, serif', fontWeight: 700,
               fontSize: 'clamp(1.15rem, 3.2vw, 1.75rem)', color: 'var(--text)', margin: '0 0 2px', lineHeight: 1.15,

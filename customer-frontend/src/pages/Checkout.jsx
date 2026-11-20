@@ -457,7 +457,7 @@ const Checkout = () => {
   }
 
   return (
-    <div style={{ minHeight: '100vh', paddingTop: 'calc(var(--nav-height, 76px) + 16px)', paddingBottom: 100 }}>
+    <div className="checkout-page" style={{ paddingBottom: 100 }}>
       <div className="app-page-container" style={{ maxWidth: 1280, margin: '0 auto' }}>
 
         {/* Breadcrumb Pill */}
@@ -465,8 +465,6 @@ const Checkout = () => {
           <Link to="/">Home</Link>
           <ChevronRight size={11} className="separator" />
           <Link to="/cart">Cart</Link>
-          <ChevronRight size={11} className="separator" />
-          <span style={{ color: 'var(--text)', fontWeight: 600 }}>Checkout</span>
         </div>
 
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', marginBottom: 40, borderBottom: `1px solid var(--border)`, paddingBottom: 16 }}>
