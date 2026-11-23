@@ -61,6 +61,9 @@ export const CartProvider = ({ children }) => {
     const productId = toProductId(product);
     const colorVariantId = typeof colorVariant === 'object' ? colorVariant?._id : colorVariant;
     const colorName = typeof colorVariant === 'object' ? colorVariant?.colorName : null;
+    const colorVariantImage = (typeof colorVariant === 'object' && colorVariant?.images?.[0]?.url)
+      ? colorVariant.images[0].url
+      : (product?.colorVariants?.find(cv => cv._id?.toString() === colorVariantId?.toString())?.images?.[0]?.url || null);
     const sizeVariantId = typeof size === 'object' ? size?._id : null;
     const sizeValue = typeof size === 'object' ? size?.size : size;
 
@@ -82,7 +85,7 @@ export const CartProvider = ({ children }) => {
         }
         targetQty = newQty;
         const updated = [...prev];
-        updated[idx] = { ...updated[idx], quantity: newQty };
+        updated[idx] = { ...updated[idx], quantity: newQty, colorVariantImage: colorVariantImage || updated[idx].colorVariantImage };
         return updated;
       }
 
@@ -96,6 +99,7 @@ export const CartProvider = ({ children }) => {
         variantKey,
         colorVariantId: colorVariantId || null,
         colorName: colorName || null,
+        colorVariantImage: colorVariantImage || null,
         sizeVariantId: sizeVariantId || null,
         size: sizeValue,
         quantity: targetQty,
@@ -379,15 +383,20 @@ export const useCart = () => useContext(CartContext);
  * Normalises variantKey so all cart operations remain consistent.
  */
 function _mapServerItems(serverItems) {
-  return (serverItems || []).map(item => ({
-    product:        item.product,
-    variantKey:     item.variantKey,
-    colorVariantId: item.colorVariantId || null,
-    colorName:      item.colorName || null,
-    sizeVariantId:  item.sizeVariantId || null,
-    size:           item.size,
-    pieceCount:     item.pieceCount,
-    quantity:       item.quantity,
-    price:          item.price,
-  }));
+  return (serverItems || []).map(item => {
+    const cVar = item.product?.colorVariants?.find(cv => cv._id?.toString() === item.colorVariantId?.toString());
+    const colorVariantImage = cVar?.images?.[0]?.url || item.colorVariantImage || null;
+    return {
+      product:        item.product,
+      variantKey:     item.variantKey,
+      colorVariantId: item.colorVariantId || null,
+      colorName:      item.colorName || null,
+      colorVariantImage,
+      sizeVariantId:  item.sizeVariantId || null,
+      size:           item.size,
+      pieceCount:     item.pieceCount,
+      quantity:       item.quantity,
+      price:          item.price,
+    };
+  });
 }

@@ -8,15 +8,8 @@ const express = require('express');
 const cors = require('cors');
 const helmet = require('helmet');
 const connectDB = require('./config/db');
-const { initSocket } = require('./config/socket');
-
-const adminAuthRoutes = require('./routes/adminAuthRoutes');
-
 const app = express();
 const server = http.createServer(app);
-
-// Initialize Socket.IO with HTTP server
-initSocket(server);
 
 // Middleware
 app.use(express.json());

@@ -1,8 +1,13 @@
 const express = require('express');
 const router = express.Router();
-const { protectAdmin } = require('../middleware/authMiddleware');
+const { protectAdmin, protectCustomer } = require('../middleware/authMiddleware');
 const {
   getNotifications,
+  getUnreadCount,
+  getCustomerUnreadCount,
+  getCustomerNotifications,
+  markCustomerNotificationRead,
+  markAllCustomerNotificationsRead,
   markAsRead,
   markAllAsRead,
   deleteNotification,
@@ -26,7 +31,14 @@ router.get('/firebase-config', getFirebaseConfig);
 router.post('/customer-fcm-token', saveCustomerFcmToken);
 router.post('/customer-fcm-token/delete', deleteCustomerFcmToken);
 
+// Protected Customer Notification polling & action endpoints
+router.get('/customer/unread-count', protectCustomer, getCustomerUnreadCount);
+router.get('/customer', protectCustomer, getCustomerNotifications);
+router.patch('/customer/read-all', protectCustomer, markAllCustomerNotificationsRead);
+router.patch('/customer/:id/read', protectCustomer, markCustomerNotificationRead);
+
 // Protected Admin Notification endpoints
+router.get('/unread-count', protectAdmin, getUnreadCount);
 router.get('/', protectAdmin, getNotifications);
 router.patch('/read-all', protectAdmin, markAllAsRead);
 router.patch('/mark-all-read', protectAdmin, markAllAsRead);

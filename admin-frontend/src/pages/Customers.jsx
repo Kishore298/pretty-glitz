@@ -12,10 +12,34 @@ import {
   ChevronRight,
   X,
   MessageCircle,
+  Sparkles,
+  Send,
+  ExternalLink,
+  CheckCircle2,
 } from 'lucide-react';
 import api from '../utils/api';
 import PageHeader from '../components/PageHeader';
 import AdminDropdown from '../components/AdminDropdown';
+import ConfirmModal from '../components/ConfirmModal';
+
+const OFFER_TEMPLATES = [
+  {
+    title: 'Festive 20% Off',
+    text: 'Festive Special: Enjoy an exclusive 20% OFF on our complete handcrafted designer glass bangle collection! Use code FESTIVE20 during checkout. Valid for this week only.',
+  },
+  {
+    title: 'Free Luxury Gift Box',
+    text: 'Privilege Treat: Get a complimentary premium velvet gift packaging box with your next handcrafted jewellery order over ₹999. Reply here to claim your offer.',
+  },
+  {
+    title: 'New VIP Collection',
+    text: 'VIP Early Access: Our brand new Bridal & Occasion Glass Bangle sets have arrived! Reply to this message to see exclusive designs before public release.',
+  },
+  {
+    title: 'Free Express Shipping',
+    text: 'Special Customer Benefit: Enjoy Free ST Courier Express Delivery on your next order, no minimum order value required! Reply with your favourite pieces.',
+  },
+];
 
 const Customers = () => {
   const [loading, setLoading] = useState(true);
@@ -37,6 +61,65 @@ const Customers = () => {
   const [loadingOrders, setLoadingOrders] = useState(false);
   const [customerOrders, setCustomerOrders] = useState([]);
   const [expandedOrderId, setExpandedOrderId] = useState(null);
+
+  // Custom WhatsApp Offer Modal State
+  const [offerModalOpen, setOfferModalOpen] = useState(false);
+  const [targetPhone, setTargetPhone] = useState('');
+  const [targetName, setTargetName] = useState('');
+  const [offerMessageText, setOfferMessageText] = useState(OFFER_TEMPLATES[0].text);
+  const [sendingOffer, setSendingOffer] = useState(false);
+  const [showOfferConfirm, setShowOfferConfirm] = useState(false);
+  const [lastSentResult, setLastSentResult] = useState(null);
+
+  const openOfferModal = (cust = null) => {
+    if (cust) {
+      setTargetPhone(cust.phone || '');
+      setTargetName(cust.name || '');
+    } else {
+      setTargetPhone('');
+      setTargetName('');
+    }
+    setLastSentResult(null);
+    setOfferModalOpen(true);
+  };
+
+  const handleSendOffer = async () => {
+    const cleanPhone = String(targetPhone).replace(/\D/g, '').slice(-10);
+    if (!/^[6-9]\d{9}$/.test(cleanPhone)) {
+      toast.error('Please enter a valid 10-digit Indian phone number (starting with 6-9).');
+      return;
+    }
+    if (!offerMessageText.trim() || offerMessageText.trim().length < 5) {
+      toast.error('Offer message must be at least 5 characters long.');
+      return;
+    }
+
+    setSendingOffer(true);
+    try {
+      const res = await api.post('/admin/customers/send-whatsapp-offer', {
+        customerPhone: cleanPhone,
+        customerName: targetName.trim(),
+        offerMessage: offerMessageText.trim(),
+      });
+
+      if (res.data?.success) {
+        toast.success(res.data.message || 'Custom WhatsApp offer sent successfully!');
+        setLastSentResult({
+          phone: cleanPhone,
+          name: targetName.trim(),
+          waLink: res.data.waLink,
+          simulated: res.data.simulated,
+        });
+        setShowOfferConfirm(false);
+      }
+    } catch (err) {
+      console.error('Failed to send customer WhatsApp offer:', err);
+      toast.error(err.response?.data?.message || 'Failed to dispatch offer message.');
+      setShowOfferConfirm(false);
+    } finally {
+      setSendingOffer(false);
+    }
+  };
 
   const fetchCustomers = useCallback(async () => {
     setLoading(true);
@@ -96,26 +179,52 @@ const Customers = () => {
         subtitle="Track customer order history, lifetime value (LTV), repeat rates, and engagement."
         icon={Users}
       >
-        <button
-          onClick={fetchCustomers}
-          disabled={loading}
-          style={{
-            display: 'inline-flex',
-            alignItems: 'center',
-            gap: 8,
-            padding: '9px 18px',
-            borderRadius: 10,
-            background: 'rgba(255, 255, 255, 0.06)',
-            border: '1px solid rgba(255, 255, 255, 0.12)',
-            color: '#FFFFFF',
-            fontSize: '0.86rem',
-            fontWeight: 600,
-            cursor: loading ? 'not-allowed' : 'pointer',
-          }}
-        >
-          <RefreshCw size={15} className={loading ? 'animate-spin' : ''} />
-          Refresh
-        </button>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+          <button
+            onClick={() => openOfferModal(null)}
+            style={{
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: 8,
+              padding: '9px 18px',
+              borderRadius: 10,
+              background: 'linear-gradient(135deg, var(--accent-pink, #EC168C), var(--accent-purple, #9B3DFF))',
+              border: 'none',
+              color: '#FFFFFF',
+              fontSize: '0.86rem',
+              fontWeight: 700,
+              cursor: 'pointer',
+              boxShadow: '0 4px 16px rgba(236, 22, 140, 0.35)',
+              transition: 'transform 0.15s ease',
+            }}
+            onMouseEnter={(e) => (e.currentTarget.style.transform = 'translateY(-1px)')}
+            onMouseLeave={(e) => (e.currentTarget.style.transform = 'none')}
+          >
+            <Sparkles size={16} />
+            <span>Send WhatsApp Offer</span>
+          </button>
+
+          <button
+            onClick={fetchCustomers}
+            disabled={loading}
+            style={{
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: 8,
+              padding: '9px 18px',
+              borderRadius: 10,
+              background: 'rgba(255, 255, 255, 0.06)',
+              border: '1px solid rgba(255, 255, 255, 0.12)',
+              color: '#FFFFFF',
+              fontSize: '0.86rem',
+              fontWeight: 600,
+              cursor: loading ? 'not-allowed' : 'pointer',
+            }}
+          >
+            <RefreshCw size={15} className={loading ? 'animate-spin' : ''} />
+            Refresh
+          </button>
+        </div>
       </PageHeader>
 
       {/* KPI Stats Cards */}
@@ -463,28 +572,53 @@ const Customers = () => {
 
                     {/* Action */}
                     <td style={{ padding: '14px 18px', textAlign: 'right' }}>
-                      <button
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          handleOpenCustomer(cust);
-                        }}
-                        style={{
-                          padding: '6px 14px',
-                          borderRadius: 8,
-                          background: 'rgba(196, 56, 108, 0.15)',
-                          border: '1px solid rgba(196, 56, 108, 0.3)',
-                          color: '#EC4899',
-                          fontWeight: 700,
-                          fontSize: '0.78rem',
-                          cursor: 'pointer',
-                          display: 'inline-flex',
-                          alignItems: 'center',
-                          gap: 6,
-                        }}
-                      >
-                        <span>History</span>
-                        <ChevronRight size={13} />
-                      </button>
+                      <div style={{ display: 'inline-flex', alignItems: 'center', gap: 8, justifyContent: 'flex-end' }}>
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            openOfferModal(cust);
+                          }}
+                          title="Send custom WhatsApp offer"
+                          style={{
+                            padding: '6px 12px',
+                            borderRadius: 8,
+                            background: 'rgba(37, 211, 102, 0.12)',
+                            border: '1px solid rgba(37, 211, 102, 0.35)',
+                            color: '#25D366',
+                            fontWeight: 700,
+                            fontSize: '0.76rem',
+                            cursor: 'pointer',
+                            display: 'inline-flex',
+                            alignItems: 'center',
+                            gap: 5,
+                          }}
+                        >
+                          <Sparkles size={12} />
+                          <span>Offer</span>
+                        </button>
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleOpenCustomer(cust);
+                          }}
+                          style={{
+                            padding: '6px 14px',
+                            borderRadius: 8,
+                            background: 'rgba(196, 56, 108, 0.15)',
+                            border: '1px solid rgba(196, 56, 108, 0.3)',
+                            color: '#EC4899',
+                            fontWeight: 700,
+                            fontSize: '0.78rem',
+                            cursor: 'pointer',
+                            display: 'inline-flex',
+                            alignItems: 'center',
+                            gap: 6,
+                          }}
+                        >
+                          <span>History</span>
+                          <ChevronRight size={13} />
+                        </button>
+                      </div>
                     </td>
                   </tr>
                 ))
@@ -554,6 +688,25 @@ const Customers = () => {
               </div>
 
               <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                <button
+                  type="button"
+                  onClick={() => openOfferModal(selectedCustomer)}
+                  style={{
+                    padding: '8px 12px',
+                    borderRadius: 8,
+                    background: 'linear-gradient(135deg, rgba(236, 22, 140, 0.2), rgba(138, 43, 226, 0.2))',
+                    border: '1px solid rgba(236, 22, 140, 0.4)',
+                    color: '#F472B6',
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    gap: 6,
+                    fontSize: '0.78rem',
+                    fontWeight: 700,
+                    cursor: 'pointer',
+                  }}
+                >
+                  <Sparkles size={14} /> Send Offer
+                </button>
                 <a
                   href={`https://wa.me/91${selectedCustomer.phone}`}
                   target="_blank"
@@ -790,6 +943,382 @@ const Customers = () => {
           </div>
         </div>
       )}
+
+      {/* Custom WhatsApp Offer Modal */}
+      {offerModalOpen && (
+        <div
+          style={{
+            position: 'fixed',
+            inset: 0,
+            zIndex: 99999,
+            background: 'rgba(0, 0, 0, 0.78)',
+            backdropFilter: 'blur(8px)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            padding: 20,
+          }}
+          onClick={() => !sendingOffer && setOfferModalOpen(false)}
+        >
+          <div
+            style={{
+              width: '100%',
+              maxWidth: 580,
+              maxHeight: '90vh',
+              background: '#151420',
+              border: '1px solid rgba(201, 168, 76, 0.35)',
+              borderRadius: 20,
+              boxShadow: '0 24px 60px rgba(0, 0, 0, 0.85)',
+              overflowY: 'auto',
+              display: 'flex',
+              flexDirection: 'column',
+            }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* Modal Header */}
+            <div
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+                padding: '20px 24px',
+                borderBottom: '1px solid rgba(255, 255, 255, 0.08)',
+                background: 'linear-gradient(135deg, rgba(201, 168, 76, 0.1), rgba(236, 22, 140, 0.08))',
+              }}
+            >
+              <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                <div
+                  style={{
+                    width: 38,
+                    height: 38,
+                    borderRadius: 10,
+                    background: 'linear-gradient(135deg, #EC168C, #8A2BE2)',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    color: '#fff',
+                  }}
+                >
+                  <Sparkles size={20} />
+                </div>
+                <div>
+                  <h3 style={{ margin: 0, fontSize: '1.15rem', fontWeight: 800, color: '#FAF9FC' }}>
+                    Send Custom WhatsApp Offer
+                  </h3>
+                  <div style={{ fontSize: '0.76rem', color: '#ACA6B8', marginTop: 2 }}>
+                    Direct personalized WhatsApp broadcast to customer
+                  </div>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => setOfferModalOpen(false)}
+                style={{
+                  width: 32,
+                  height: 32,
+                  borderRadius: '50%',
+                  background: 'rgba(255, 255, 255, 0.08)',
+                  border: 'none',
+                  color: '#ACA6B8',
+                  cursor: 'pointer',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                }}
+              >
+                <X size={16} />
+              </button>
+            </div>
+
+            {/* Modal Body */}
+            <div style={{ padding: '22px 24px', display: 'flex', flexDirection: 'column', gap: 18 }}>
+              {/* Recipient Selection */}
+              <div>
+                <label style={{ display: 'block', fontSize: '0.78rem', fontWeight: 700, color: 'var(--accent-gold, #C9A84C)', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 8 }}>
+                  1. Target Customer
+                </label>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                  <select
+                    className="admin-input"
+                    value={targetPhone}
+                    onChange={(e) => {
+                      const sel = customers.find((c) => c.phone === e.target.value);
+                      if (sel) {
+                        setTargetPhone(sel.phone);
+                        setTargetName(sel.name);
+                      } else {
+                        setTargetPhone(e.target.value);
+                      }
+                    }}
+                    style={{ height: 40, fontSize: '0.84rem' }}
+                  >
+                    <option value="">-- Choose from registered/ordering customers --</option>
+                    {customers.map((c) => (
+                      <option key={c.phone} value={c.phone}>
+                        {c.name} (+91 {c.phone}) • {c.totalOrders} {c.totalOrders === 1 ? 'order' : 'orders'} {c.city ? `(${c.city})` : ''}
+                      </option>
+                    ))}
+                  </select>
+
+                  <div style={{ display: 'grid', gridTemplateColumns: '1.2fr 1fr', gap: 10 }}>
+                    <div>
+                      <div style={{ fontSize: '0.72rem', color: '#ACA6B8', marginBottom: 4 }}>Phone (10 digits)</div>
+                      <div style={{ position: 'relative' }}>
+                        <span style={{ position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)', fontSize: '0.82rem', color: '#ACA6B8', fontWeight: 600 }}>
+                          +91
+                        </span>
+                        <input
+                          type="text"
+                          maxLength={10}
+                          value={targetPhone}
+                          onChange={(e) => setTargetPhone(e.target.value.replace(/\D/g, '').slice(0, 10))}
+                          placeholder="9876543210"
+                          className="admin-input"
+                          style={{ paddingLeft: 42, height: 38, fontSize: '0.84rem', width: '100%', boxSizing: 'border-box' }}
+                        />
+                      </div>
+                    </div>
+                    <div>
+                      <div style={{ fontSize: '0.72rem', color: '#ACA6B8', marginBottom: 4 }}>Customer Name</div>
+                      <input
+                        type="text"
+                        value={targetName}
+                        onChange={(e) => setTargetName(e.target.value)}
+                        placeholder="e.g. Priya Sharma"
+                        className="admin-input"
+                        style={{ height: 38, fontSize: '0.84rem', width: '100%', boxSizing: 'border-box' }}
+                      />
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Template Buttons */}
+              <div>
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8 }}>
+                  <label style={{ fontSize: '0.78rem', fontWeight: 700, color: 'var(--accent-gold, #C9A84C)', textTransform: 'uppercase', letterSpacing: '0.06em' }}>
+                    2. Quick Offer Templates
+                  </label>
+                  <span style={{ fontSize: '0.72rem', color: '#ACA6B8' }}>Click to apply</span>
+                </div>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: 8 }}>
+                  {OFFER_TEMPLATES.map((tmpl, idx) => (
+                    <button
+                      key={idx}
+                      type="button"
+                      onClick={() => setOfferMessageText(tmpl.text)}
+                      style={{
+                        padding: '8px 12px',
+                        borderRadius: 8,
+                        background: 'rgba(255, 255, 255, 0.04)',
+                        border: '1px solid rgba(255, 255, 255, 0.1)',
+                        color: '#FAF9FC',
+                        fontSize: '0.76rem',
+                        fontWeight: 600,
+                        textAlign: 'left',
+                        cursor: 'pointer',
+                        transition: 'all 0.15s ease',
+                      }}
+                      onMouseEnter={(e) => {
+                        e.currentTarget.style.background = 'rgba(236, 22, 140, 0.15)';
+                        e.currentTarget.style.borderColor = 'rgba(236, 22, 140, 0.35)';
+                      }}
+                      onMouseLeave={(e) => {
+                        e.currentTarget.style.background = 'rgba(255, 255, 255, 0.04)';
+                        e.currentTarget.style.borderColor = 'rgba(255, 255, 255, 0.1)';
+                      }}
+                    >
+                      <div style={{ color: '#F472B6', fontWeight: 700, marginBottom: 2 }}>{tmpl.title}</div>
+                      <div style={{ fontSize: '0.7rem', color: '#ACA6B8', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                        {tmpl.text}
+                      </div>
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* Offer Message Textarea */}
+              <div>
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8 }}>
+                  <label style={{ fontSize: '0.78rem', fontWeight: 700, color: 'var(--accent-gold, #C9A84C)', textTransform: 'uppercase', letterSpacing: '0.06em' }}>
+                    3. Offer Message Text
+                  </label>
+                  <span style={{ fontSize: '0.72rem', color: '#ACA6B8' }}>
+                    {offerMessageText.length} characters
+                  </span>
+                </div>
+                <textarea
+                  rows={4}
+                  value={offerMessageText}
+                  onChange={(e) => setOfferMessageText(e.target.value)}
+                  placeholder="Type your exclusive customer offer or discount message..."
+                  className="admin-input"
+                  style={{ width: '100%', boxSizing: 'border-box', resize: 'vertical', fontSize: '0.84rem', lineHeight: '1.45', padding: '10px 12px' }}
+                />
+              </div>
+
+              {/* WhatsApp Live Preview Bubble */}
+              <div>
+                <label style={{ display: 'block', fontSize: '0.78rem', fontWeight: 700, color: 'var(--accent-gold, #C9A84C)', textTransform: 'uppercase', letterSpacing: '0.06em', marginBottom: 8 }}>
+                  4. WhatsApp Live Preview
+                </label>
+                <div
+                  style={{
+                    background: '#0B141A',
+                    border: '1px solid rgba(37, 211, 102, 0.3)',
+                    borderRadius: 14,
+                    padding: '14px 16px',
+                    position: 'relative',
+                  }}
+                >
+                  <div
+                    style={{
+                      background: '#005C4B',
+                      color: '#E9EDEF',
+                      borderRadius: '12px 12px 12px 2px',
+                      padding: '12px 14px',
+                      fontSize: '0.8rem',
+                      lineHeight: '1.5',
+                      whiteSpace: 'pre-wrap',
+                      maxWidth: '92%',
+                      boxShadow: '0 2px 6px rgba(0,0,0,0.3)',
+                    }}
+                  >
+                    <div style={{ fontWeight: 700, color: '#FFD700', marginBottom: 6 }}>
+                      ✨ PrettyGlitz Special Offer ✨
+                    </div>
+                    {targetName ? <div>Dear <strong>{targetName}</strong>,<br /><br /></div> : null}
+                    <div>{offerMessageText || 'Your customized offer text will appear here...'}</div>
+                    <div style={{ marginTop: 10, fontSize: '0.72rem', color: '#A0D8D0', borderTop: '1px solid rgba(255,255,255,0.15)', paddingTop: 6 }}>
+                      For support, contact: +91 70107 37706
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* Success Result Link if sent */}
+              {lastSentResult && (
+                <div
+                  style={{
+                    padding: '12px 16px',
+                    borderRadius: 10,
+                    background: 'rgba(37, 211, 102, 0.15)',
+                    border: '1px solid rgba(37, 211, 102, 0.4)',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'space-between',
+                    gap: 12,
+                  }}
+                >
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 8, color: '#25D366', fontSize: '0.82rem', fontWeight: 600 }}>
+                    <CheckCircle2 size={16} />
+                    <span>Offer sent successfully to +91 {lastSentResult.phone}!</span>
+                  </div>
+                  {lastSentResult.waLink && (
+                    <a
+                      href={lastSentResult.waLink}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      style={{
+                        padding: '6px 12px',
+                        borderRadius: 6,
+                        background: '#25D366',
+                        color: '#FFFFFF',
+                        fontSize: '0.74rem',
+                        fontWeight: 700,
+                        textDecoration: 'none',
+                        display: 'inline-flex',
+                        alignItems: 'center',
+                        gap: 4,
+                      }}
+                    >
+                      <span>Open in WhatsApp</span>
+                      <ExternalLink size={12} />
+                    </a>
+                  )}
+                </div>
+              )}
+            </div>
+
+            {/* Modal Footer */}
+            <div
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'flex-end',
+                gap: 12,
+                padding: '16px 24px',
+                borderTop: '1px solid rgba(255, 255, 255, 0.08)',
+                background: 'rgba(255, 255, 255, 0.02)',
+              }}
+            >
+              <button
+                type="button"
+                onClick={() => setOfferModalOpen(false)}
+                style={{
+                  padding: '9px 18px',
+                  borderRadius: 10,
+                  background: 'rgba(255, 255, 255, 0.06)',
+                  border: '1px solid rgba(255, 255, 255, 0.12)',
+                  color: '#FAF9FC',
+                  fontSize: '0.84rem',
+                  fontWeight: 600,
+                  cursor: 'pointer',
+                }}
+              >
+                Close
+              </button>
+
+              <button
+                type="button"
+                disabled={sendingOffer}
+                onClick={() => {
+                  const cleanPhone = String(targetPhone).replace(/\D/g, '').slice(-10);
+                  if (!/^[6-9]\d{9}$/.test(cleanPhone)) {
+                    toast.error('Please enter a valid 10-digit Indian phone number.');
+                    return;
+                  }
+                  if (!offerMessageText.trim() || offerMessageText.trim().length < 5) {
+                    toast.error('Offer message must be at least 5 characters long.');
+                    return;
+                  }
+                  setShowOfferConfirm(true);
+                }}
+                style={{
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: 8,
+                  padding: '9px 20px',
+                  borderRadius: 10,
+                  background: 'linear-gradient(135deg, #25D366, #128C7E)',
+                  border: 'none',
+                  color: '#FFFFFF',
+                  fontSize: '0.86rem',
+                  fontWeight: 700,
+                  cursor: sendingOffer ? 'not-allowed' : 'pointer',
+                  opacity: sendingOffer ? 0.6 : 1,
+                  boxShadow: '0 4px 16px rgba(37, 211, 102, 0.35)',
+                }}
+              >
+                <Send size={15} />
+                <span>{sendingOffer ? 'Sending...' : 'Review & Send Offer'}</span>
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Confirmation Modal before Dispatching Offer */}
+      <ConfirmModal
+        isOpen={showOfferConfirm}
+        onClose={() => setShowOfferConfirm(false)}
+        onConfirm={handleSendOffer}
+        title="Confirm WhatsApp Offer Dispatch"
+        message={`Are you sure you want to dispatch this custom WhatsApp offer to ${targetName ? targetName : 'the customer'} (+91 ${targetPhone})? This will send a real-time message with support contact info included.`}
+        confirmText={sendingOffer ? 'Sending...' : 'Dispatch Offer'}
+        type="info"
+        loading={sendingOffer}
+      />
     </div>
   );
 };

@@ -1,10 +1,11 @@
 import React, { useContext, useState, useEffect, useCallback } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { User, Phone, Heart, ShoppingBag, LogOut, MessageCircle, ArrowRight, Package, Truck, ExternalLink, Copy, Check, MapPin, Plus } from 'lucide-react';
+import { User, Phone, Heart, ShoppingBag, LogOut, MessageCircle, ArrowRight, Package, Truck, ExternalLink, Copy, Check, MapPin, Plus, Bell, CheckCheck } from 'lucide-react';
 import { AuthContext } from '../context/AuthContext';
 import { CartContext } from '../context/CartContext';
 import { useWishlist } from '../context/WishlistContext';
+import { useNotifications } from '../context/NotificationContext';
 import { useTheme } from '../context/ThemeContext';
 import { getWhatsAppUrl, IS_WHATSAPP_CONFIGURED } from '../config/constants';
 import api from '../utils/api';
@@ -17,6 +18,7 @@ const Account = () => {
   const { getWishlistCount } = useWishlist();
   const { isDark } = useTheme();
   const navigate = useNavigate();
+  const { notifications, unreadCount: notifCount, markAsRead, markAllAsRead } = useNotifications();
 
   const [orders, setOrders] = useState([]);
   const [loadingOrders, setLoadingOrders] = useState(true);
@@ -342,6 +344,132 @@ const Account = () => {
           <ArrowRight size={18} style={{ color: 'var(--text-muted)' }} />
         </Link>
       </div>
+
+      {/* ── Live Updates & Notifications (HTTP Polling) ───────────────── */}
+      {notifications.length > 0 && (
+        <motion.div
+          initial={{ opacity: 0, y: 12 }}
+          animate={{ opacity: 1, y: 0 }}
+          style={{
+            background: isDark ? 'var(--bg-secondary, #14141C)' : '#FFFFFF',
+            border: `1px solid var(--border)`,
+            borderRadius: 16,
+            padding: '20px 22px',
+            marginBottom: 24,
+            boxShadow: isDark ? '0 8px 24px rgba(0,0,0,0.3)' : '0 8px 24px rgba(26,17,24,0.04)',
+          }}
+        >
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 14, flexWrap: 'wrap', gap: 10 }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+              <div
+                style={{
+                  width: 34,
+                  height: 34,
+                  borderRadius: 10,
+                  background: 'rgba(196, 56, 108, 0.12)',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  color: 'var(--accent)',
+                }}
+              >
+                <Bell size={18} />
+              </div>
+              <div>
+                <h3 style={{ fontSize: '1.05rem', fontWeight: 700, margin: 0, color: 'var(--text)' }}>
+                  Order Updates & Notifications
+                </h3>
+                <span style={{ fontSize: '0.74rem', color: 'var(--text-secondary)' }}>
+                  Live delivery tracking and status alerts
+                </span>
+              </div>
+              {notifCount > 0 && (
+                <span
+                  style={{
+                    background: 'var(--accent, #C4386C)',
+                    color: '#fff',
+                    fontSize: '0.7rem',
+                    fontWeight: 700,
+                    padding: '2px 8px',
+                    borderRadius: 999,
+                  }}
+                >
+                  {notifCount} new
+                </span>
+              )}
+            </div>
+
+            {notifCount > 0 && (
+              <button
+                type="button"
+                onClick={markAllAsRead}
+                style={{
+                  background: 'none',
+                  border: 'none',
+                  color: 'var(--accent, #C4386C)',
+                  fontSize: '0.76rem',
+                  fontWeight: 600,
+                  cursor: 'pointer',
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: 4,
+                  padding: '4px 8px',
+                }}
+              >
+                <CheckCheck size={14} />
+                <span>Mark all as read</span>
+              </button>
+            )}
+          </div>
+
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+            {notifications.slice(0, 5).map((notif) => (
+              <div
+                key={notif._id}
+                onClick={() => {
+                  if (!notif.read) markAsRead(notif._id);
+                }}
+                style={{
+                  padding: '10px 14px',
+                  borderRadius: 10,
+                  background: notif.read
+                    ? (isDark ? 'rgba(255,255,255,0.02)' : 'rgba(0,0,0,0.02)')
+                    : (isDark ? 'rgba(196,56,108,0.1)' : 'rgba(196,56,108,0.05)'),
+                  border: `1px solid ${notif.read ? 'var(--border)' : 'rgba(196,56,108,0.25)'}`,
+                  display: 'flex',
+                  alignItems: 'flex-start',
+                  justifyContent: 'space-between',
+                  gap: 12,
+                  cursor: 'pointer',
+                  transition: 'background 0.15s ease',
+                }}
+              >
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                    <span style={{ fontSize: '0.84rem', fontWeight: 700, color: 'var(--text)' }}>
+                      {notif.title}
+                    </span>
+                    {!notif.read && (
+                      <span style={{ width: 6, height: 6, borderRadius: '50%', background: '#C4386C', flexShrink: 0 }} />
+                    )}
+                  </div>
+                  <div style={{ fontSize: '0.78rem', color: 'var(--text-secondary)', marginTop: 2, lineHeight: 1.4 }}>
+                    {notif.message}
+                  </div>
+                  <div style={{ fontSize: '0.68rem', color: 'var(--text-muted)', marginTop: 4 }}>
+                    {new Date(notif.createdAt).toLocaleString('en-IN', {
+                      day: 'numeric',
+                      month: 'short',
+                      hour: '2-digit',
+                      minute: '2-digit',
+                    })}
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        </motion.div>
+      )}
 
       {/* ── Saved Delivery Addresses Section ───────────────────────────── */}
       <div style={{ marginBottom: 32 }}>

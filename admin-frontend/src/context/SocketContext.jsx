@@ -1,5 +1,4 @@
 import React, { createContext, useContext, useEffect, useState, useRef, useCallback } from 'react';
-import { io } from 'socket.io-client';
 import toast from 'react-hot-toast';
 import api from '../utils/api';
 import { AuthContext } from './AuthContext';
@@ -21,7 +20,7 @@ function urlBase64ToUint8Array(base64String) {
 
 export const SocketProvider = ({ children }) => {
   const { admin } = useContext(AuthContext);
-  const [socket, setSocket] = useState(null);
+  const [socket] = useState(null);
   const [isConnected, setIsConnected] = useState(false);
   const [notifications, setNotifications] = useState([]);
   const [unreadCount, setUnreadCount] = useState(0);
@@ -313,167 +312,188 @@ export const SocketProvider = ({ children }) => {
     }
   }, [admin, fetchNotifications]);
 
-  // Connect Socket.IO
+  const lastKnownNotifIdRef = useRef(null);
+  const isPollingRef = useRef(false);
+
+  // Core HTTP Polling Handler
+  const pollNotifications = useCallback(async () => {
+    if (!admin || isPollingRef.current) return;
+    if (typeof document !== 'undefined' && document.visibilityState === 'hidden') {
+      return; // Pause polling when tab is inactive to save resources
+    }
+
+    isPollingRef.current = true;
+    try {
+      // 1. Lightweight count check
+      const res = await api.get('/notifications/unread-count');
+      if (res.data) {
+        const { unreadCount: serverUnread, latestNotificationId, latestNotification } = res.data;
+
+        // If unread count or latest notification changed, fetch recent notifications
+        if (latestNotificationId && latestNotificationId !== lastKnownNotifIdRef.current) {
+          const isInitial = lastKnownNotifIdRef.current === null;
+          lastKnownNotifIdRef.current = latestNotificationId;
+
+          // Fetch full recent notifications
+          const fullRes = await api.get('/notifications?limit=25');
+          if (fullRes.data && fullRes.data.notifications) {
+            setNotifications(fullRes.data.notifications);
+            setUnreadCount(fullRes.data.unreadCount || serverUnread || 0);
+          }
+
+          // Trigger audible chime and toast alert if it's a new incoming order (not on initial page load)
+          if (!isInitial && latestNotification) {
+            if (latestNotification.type === 'NEW_ORDER_REQUEST' || latestNotification.orderId) {
+              playChime();
+              setLatestOrderAlert(latestNotification.data || { orderId: latestNotification.orderId });
+
+              // Dispatch window event so Orders page auto-refreshes seamlessly
+              window.dispatchEvent(
+                new CustomEvent('pg:order_event', {
+                  detail: { type: 'new_order_request', data: latestNotification },
+                })
+              );
+
+              toast.custom(
+                (t) => (
+                  <div
+                    onClick={() => {
+                      toast.dismiss(t.id);
+                      window.location.href = `/orders?id=${latestNotification.orderId || ''}`;
+                    }}
+                    style={{
+                      background: 'linear-gradient(135deg, #1C1929, #251D3A)',
+                      border: '1px solid rgba(201, 168, 76, 0.4)',
+                      boxShadow: '0 12px 32px rgba(0,0,0,0.6), 0 0 20px rgba(236, 22, 140, 0.25)',
+                      borderRadius: '14px',
+                      padding: '14px 18px',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '14px',
+                      cursor: 'pointer',
+                      color: '#FAF9FC',
+                      fontFamily: 'Inter, sans-serif',
+                      minWidth: '320px',
+                      maxWidth: '420px',
+                      animation: t.visible ? 'custom-enter 0.3s ease' : 'custom-leave 0.2s ease',
+                    }}
+                  >
+                    <div
+                      style={{
+                        width: '42px',
+                        height: '42px',
+                        borderRadius: '10px',
+                        background: 'linear-gradient(135deg, #EC168C, #8A2BE2)',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        fontSize: '1.25rem',
+                        flexShrink: 0,
+                      }}
+                    >
+                      🛍️
+                    </div>
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      <div
+                        style={{
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'space-between',
+                          marginBottom: 2,
+                        }}
+                      >
+                        <span
+                          style={{
+                            fontWeight: 700,
+                            fontSize: '0.92rem',
+                            color: '#C9A84C',
+                            letterSpacing: '0.02em',
+                          }}
+                        >
+                          New Order Request!
+                        </span>
+                        <span
+                          style={{
+                            fontSize: '0.72rem',
+                            background: 'rgba(236, 22, 140, 0.2)',
+                            color: '#EC168C',
+                            padding: '2px 6px',
+                            borderRadius: '6px',
+                            fontWeight: 600,
+                          }}
+                        >
+                          LIVE
+                        </span>
+                      </div>
+                      <div
+                        style={{
+                          fontSize: '0.82rem',
+                          color: '#FAF9FC',
+                          fontWeight: 600,
+                          whiteSpace: 'nowrap',
+                          overflow: 'hidden',
+                          textOverflow: 'ellipsis',
+                        }}
+                      >
+                        {latestNotification.title}
+                      </div>
+                      <div style={{ fontSize: '0.76rem', color: '#ACA6B8', marginTop: 2 }}>
+                        {latestNotification.message}
+                      </div>
+                    </div>
+                  </div>
+                ),
+                { duration: 6000, position: 'top-right' }
+              );
+            } else if (latestNotification.type === 'ORDER_UPDATE') {
+              window.dispatchEvent(
+                new CustomEvent('pg:order_event', {
+                  detail: { type: 'order_status_updated', data: latestNotification },
+                })
+              );
+            }
+          }
+        } else {
+          // If unread counts differ without new ID (e.g. read status changed)
+          setUnreadCount(serverUnread);
+        }
+      }
+      setIsConnected(true);
+    } catch (err) {
+      console.warn('[Polling] Check warning:', err.message);
+    } finally {
+      isPollingRef.current = false;
+    }
+  }, [admin, playChime]);
+
+  // Set up periodic HTTP polling (every 18 seconds) with tab visibility handling
   useEffect(() => {
     if (!admin) {
-      setSocket((prev) => {
-        if (prev) prev.disconnect();
-        return null;
-      });
       setIsConnected(false);
+      lastKnownNotifIdRef.current = null;
       return;
     }
 
-    const token = localStorage.getItem('adminToken') || localStorage.getItem('token');
-    const socketBase =
-      process.env.REACT_APP_SOCKET_URL ||
-      (process.env.REACT_APP_API_URL
-        ? process.env.REACT_APP_API_URL.replace(/\/api\/?$/, '')
-        : 'http://localhost:5000');
+    // Initial immediate poll
+    pollNotifications();
 
-    const s = io(socketBase, {
-      auth: { token },
-      transports: ['websocket', 'polling'],
-      reconnectionAttempts: 10,
-      reconnectionDelay: 2000,
-    });
+    const intervalId = setInterval(pollNotifications, 18000);
 
-    s.on('connect', () => {
-      setIsConnected(true);
-      console.log('[Socket.IO] Connected to server as admin.');
-    });
-
-    s.on('disconnect', () => {
-      setIsConnected(false);
-      console.log('[Socket.IO] Disconnected from server.');
-    });
-
-    // Real-Time Event: New Order Request
-    s.on('new_order_request', (data) => {
-      console.log('[Socket.IO] Real-time order alert received:', data);
-      setLatestOrderAlert(data);
-      playChime();
-
-      // Update notifications list immediately
-      const newNotifItem = {
-        _id: `temp_${Date.now()}`,
-        type: 'NEW_ORDER_REQUEST',
-        title: `New Order: ${data.orderId}`,
-        message: `${data.customerName} placed a ₹${data.orderAmount} order (${data.itemsCount || data.items?.length || 1} items)`,
-        orderId: data.orderId,
-        data,
-        read: false,
-        createdAt: new Date().toISOString(),
-      };
-      setNotifications((prev) => [newNotifItem, ...prev]);
-      setUnreadCount((prev) => prev + 1);
-
-      // Show toast notification in console
-      toast.custom(
-        (t) => (
-          <div
-            onClick={() => {
-              toast.dismiss(t.id);
-              window.location.href = `/orders?id=${data.orderId}`;
-            }}
-            style={{
-              background: 'linear-gradient(135deg, #1C1929, #251D3A)',
-              border: '1px solid rgba(201, 168, 76, 0.4)',
-              boxShadow: '0 12px 32px rgba(0,0,0,0.6), 0 0 20px rgba(236, 22, 140, 0.25)',
-              borderRadius: '14px',
-              padding: '14px 18px',
-              display: 'flex',
-              alignItems: 'center',
-              gap: '14px',
-              cursor: 'pointer',
-              color: '#FAF9FC',
-              fontFamily: 'Inter, sans-serif',
-              minWidth: '320px',
-              maxWidth: '420px',
-              animation: t.visible ? 'custom-enter 0.3s ease' : 'custom-leave 0.2s ease',
-            }}
-          >
-            <div
-              style={{
-                width: '42px',
-                height: '42px',
-                borderRadius: '10px',
-                background: 'linear-gradient(135deg, #EC168C, #8A2BE2)',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                fontSize: '1.25rem',
-                flexShrink: 0,
-              }}
-            >
-              🛍️
-            </div>
-            <div style={{ flex: 1, minWidth: 0 }}>
-              <div
-                style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'space-between',
-                  marginBottom: 2,
-                }}
-              >
-                <span
-                  style={{
-                    fontWeight: 700,
-                    fontSize: '0.92rem',
-                    color: '#C9A84C',
-                    letterSpacing: '0.02em',
-                  }}
-                >
-                  New Order Request!
-                </span>
-                <span
-                  style={{
-                    fontSize: '0.72rem',
-                    background: 'rgba(236, 22, 140, 0.2)',
-                    color: '#EC168C',
-                    padding: '2px 6px',
-                    borderRadius: '6px',
-                    fontWeight: 600,
-                  }}
-                >
-                  LIVE
-                </span>
-              </div>
-              <div
-                style={{
-                  fontSize: '0.82rem',
-                  color: '#FAF9FC',
-                  fontWeight: 600,
-                  whiteSpace: 'nowrap',
-                  overflow: 'hidden',
-                  textOverflow: 'ellipsis',
-                }}
-              >
-                {data.orderId} • {data.customerName}
-              </div>
-              <div style={{ fontSize: '0.76rem', color: '#ACA6B8', marginTop: 2 }}>
-                ₹{data.orderAmount} • {data.itemsCount || data.items?.length || 1} items
-              </div>
-            </div>
-          </div>
-        ),
-        { duration: 6000, position: 'top-right' }
-      );
-    });
-
-    // Real-Time Event: Order Status Update
-    s.on('order_status_updated', (data) => {
-      fetchNotifications();
-      toast.success(`Order ${data.orderId} updated to ${data.status}`);
-    });
-
-    setSocket(s);
+    // Resume immediately when user focuses back to the tab
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === 'visible') {
+        pollNotifications();
+      }
+    };
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    window.addEventListener('focus', handleVisibilityChange);
 
     return () => {
-      s.disconnect();
+      clearInterval(intervalId);
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+      window.removeEventListener('focus', handleVisibilityChange);
     };
-  }, [admin, playChime, fetchNotifications]);
+  }, [admin, pollNotifications]);
 
   return (
     <SocketContext.Provider

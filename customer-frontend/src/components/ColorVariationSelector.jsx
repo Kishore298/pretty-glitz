@@ -11,6 +11,7 @@ import { useTheme } from '../context/ThemeContext';
  * Supports:
  * - Collapsed state: displays heading, current selection, first 5 thumbnails, and an expand toggle.
  * - Expanded state: smoothly reveals all available colour variations in a responsive grid.
+ * - "Show all / Show fewer" toggle integrated directly into the "Choose Colour" header line.
  * - Selection indicator: accent border, subtle glow, and checkmark badge.
  * - Live stock status: visual indicator for sold-out colour variants.
  */
@@ -43,11 +44,11 @@ const ColorVariationSelector = ({
           alignItems: 'center',
           justifyContent: 'space-between',
           marginBottom: 6,
-          gap: 12,
+          gap: 10,
           flexWrap: 'wrap',
         }}
       >
-        <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}>
           <span
             style={{
               fontSize: '0.92rem',
@@ -63,9 +64,46 @@ const ColorVariationSelector = ({
               fontSize: '0.82rem',
               fontWeight: 500,
               color: 'var(--text-muted)',
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: 4,
             }}
           >
-            ({totalCount} {totalCount === 1 ? 'option' : 'options'})
+            ({totalCount} {totalCount === 1 ? 'colour' : 'colours'}
+            {hasMoreThanFive && (
+              <>
+                <span style={{ opacity: 0.5, margin: '0 2px' }}>•</span>
+                <button
+                  type="button"
+                  onClick={() => setIsExpanded((prev) => !prev)}
+                  style={{
+                    background: 'none',
+                    border: 'none',
+                    padding: 0,
+                    cursor: 'pointer',
+                    color: 'var(--accent, #C4386C)',
+                    fontSize: '0.82rem',
+                    fontWeight: 700,
+                    letterSpacing: '0.01em',
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    gap: 3,
+                    textDecoration: 'underline',
+                  }}
+                  title={isExpanded ? 'Collapse to 5 colours' : `Show all ${totalCount} colours`}
+                >
+                  <span>{isExpanded ? 'Show fewer' : 'Show all'}</span>
+                  <ChevronDown
+                    size={13}
+                    style={{
+                      transform: isExpanded ? 'rotate(180deg)' : 'none',
+                      transition: 'transform 0.2s ease',
+                    }}
+                  />
+                </button>
+              </>
+            )}
+            )
           </span>
         </div>
 
@@ -105,7 +143,7 @@ const ColorVariationSelector = ({
               style={{
                 fontSize: '0.8rem',
                 fontWeight: 700,
-                color: 'var(--text)',
+                color: 'var(--accent, #C4386C)',
                 textTransform: 'capitalize',
               }}
             >
@@ -121,8 +159,8 @@ const ColorVariationSelector = ({
         className="color-variation-grid"
         style={{
           display: 'grid',
-          gridTemplateColumns: 'repeat(auto-fill, minmax(68px, 1fr))',
-          gap: 10,
+          gridTemplateColumns: 'repeat(auto-fill, minmax(58px, 1fr))',
+          gap: 8,
         }}
       >
         <AnimatePresence initial={false}>
@@ -133,8 +171,6 @@ const ColorVariationSelector = ({
             );
 
             const thumbImg = cVar.images?.[0]?.url || fallbackImage;
-            // Variant is in stock if any of its sizes has inStock !== false, or if no sizes and cVar.inStock !== false.
-            // Stock counts are optional; unentered counts (0) with inStock=true remain in-stock.
             const isOutOfStock = (
               Array.isArray(cVar.sizes) && cVar.sizes.length > 0
                 ? cVar.sizes.every((s) => s.inStock === false)
@@ -145,96 +181,53 @@ const ColorVariationSelector = ({
               <motion.button
                 key={cVar._id || cVar.colorName}
                 layout
-                className="color-variation-card"
+                className={`color-variation-card ${isSelected ? 'is-selected' : ''}`}
                 initial={{ opacity: 0, scale: 0.9 }}
                 animate={{ opacity: 1, scale: 1 }}
                 exit={{ opacity: 0, scale: 0.9 }}
-                transition={{ duration: 0.2 }}
+                transition={{ duration: 0.15 }}
                 type="button"
                 onClick={() => onSelectColor && onSelectColor(cVar)}
+                title={`${cVar.colorName}${isOutOfStock ? ' (Sold Out)' : ''}`}
                 aria-label={`Select colour ${cVar.colorName}${isOutOfStock ? ' (Sold Out)' : ''}`}
                 aria-pressed={isSelected}
                 style={{
                   position: 'relative',
                   display: 'flex',
-                  flexDirection: 'column',
                   alignItems: 'center',
-                  padding: '6px 6px 8px',
-                  borderRadius: 12,
+                  justifyContent: 'center',
+                  padding: 4,
+                  aspectRatio: '1 / 1',
+                  borderRadius: 10,
                   border: isSelected
                     ? '2px solid var(--accent, #C4386C)'
                     : '1px solid var(--border)',
                   background: isSelected
-                    ? (isDark ? 'rgba(196,56,108,0.16)' : 'rgba(196,56,108,0.05)')
+                    ? (isDark ? 'rgba(196,56,108,0.18)' : 'rgba(196,56,108,0.06)')
                     : (isDark ? 'rgba(255,255,255,0.03)' : '#FFFFFF'),
                   boxShadow: isSelected
-                    ? '0 3px 12px rgba(196,56,108,0.22)'
+                    ? '0 3px 12px rgba(196,56,108,0.25)'
                     : 'none',
                   cursor: 'pointer',
-                  transition: 'border-color 0.2s, box-shadow 0.2s, background-color 0.2s',
+                  transition: 'border-color 0.15s, box-shadow 0.15s, transform 0.1s',
                   userSelect: 'none',
-                  opacity: isOutOfStock ? 0.6 : 1,
+                  opacity: isOutOfStock ? 0.5 : 1,
                   minWidth: 0,
                   width: '100%',
                 }}
               >
-                {/* Selected Checkmark Badge */}
-                {isSelected && (
-                  <span
-                    style={{
-                      position: 'absolute',
-                      top: 4,
-                      right: 4,
-                      width: 16,
-                      height: 16,
-                      borderRadius: '50%',
-                      background: 'var(--accent, #C4386C)',
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      zIndex: 2,
-                      boxShadow: '0 2px 6px rgba(196,56,108,0.4)',
-                    }}
-                  >
-                    <Check size={10} color="#FFFFFF" strokeWidth={3} />
-                  </span>
-                )}
-
-                {/* Sold Out Badge */}
-                {isOutOfStock && !isSelected && (
-                  <span
-                    style={{
-                      position: 'absolute',
-                      top: 4,
-                      right: 4,
-                      background: '#EF4444',
-                      color: '#FFFFFF',
-                      fontSize: '8px',
-                      fontWeight: 800,
-                      padding: '1px 4px',
-                      borderRadius: 4,
-                      lineHeight: 1.1,
-                      zIndex: 2,
-                    }}
-                  >
-                    Out
-                  </span>
-                )}
-
-                {/* Thumbnail Image Container - Clean single container without inner border */}
+                {/* Thumbnail Image Container */}
                 <div
                   className="color-variation-thumb-box"
                   style={{
                     width: '100%',
-                    aspectRatio: '1 / 1',
-                    maxHeight: 56,
-                    borderRadius: 8,
+                    height: '100%',
+                    borderRadius: 7,
                     overflow: 'hidden',
                     background: cVar.colorCode || '#FAF6EE',
                     border: 'none',
                     position: 'relative',
                     flexShrink: 0,
-                    marginBottom: 6,
                   }}
                 >
                   {thumbImg ? (
@@ -263,25 +256,48 @@ const ColorVariationSelector = ({
                   )}
                 </div>
 
-                {/* Colour Name Label */}
-                <span
-                  className="color-variation-label"
-                  style={{
-                    fontSize: '0.72rem',
-                    fontWeight: isSelected ? 700 : 500,
-                    color: isSelected ? 'var(--accent, #C4386C)' : 'var(--text)',
-                    whiteSpace: 'nowrap',
-                    overflow: 'hidden',
-                    textOverflow: 'ellipsis',
-                    maxWidth: '100%',
-                    padding: '0 2px',
-                    textAlign: 'center',
-                    lineHeight: 1.2,
-                  }}
-                  title={cVar.colorName}
-                >
-                  {cVar.colorName}
-                </span>
+                {/* Selected Checkmark Badge */}
+                {isSelected && (
+                  <span
+                    style={{
+                      position: 'absolute',
+                      top: 3,
+                      right: 3,
+                      width: 15,
+                      height: 15,
+                      borderRadius: '50%',
+                      background: 'var(--accent, #C4386C)',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      zIndex: 2,
+                      boxShadow: '0 1px 4px rgba(196,56,108,0.5)',
+                    }}
+                  >
+                    <Check size={10} color="#FFFFFF" strokeWidth={3} />
+                  </span>
+                )}
+
+                {/* Sold Out Badge */}
+                {isOutOfStock && !isSelected && (
+                  <span
+                    style={{
+                      position: 'absolute',
+                      top: 3,
+                      right: 3,
+                      background: '#EF4444',
+                      color: '#FFFFFF',
+                      fontSize: '7px',
+                      fontWeight: 800,
+                      padding: '1px 3px',
+                      borderRadius: 3,
+                      lineHeight: 1,
+                      zIndex: 2,
+                    }}
+                  >
+                    Out
+                  </span>
+                )}
               </motion.button>
             );
           })}
@@ -290,7 +306,7 @@ const ColorVariationSelector = ({
 
       {/* Expand / Collapse Control Button (if > 5 colours) */}
       {hasMoreThanFive && (
-        <div style={{ marginTop: 10 }}>
+        <div style={{ marginTop: 8 }}>
           <button
             type="button"
             onClick={() => setIsExpanded((prev) => !prev)}
@@ -300,7 +316,7 @@ const ColorVariationSelector = ({
               gap: 6,
               background: 'none',
               border: 'none',
-              padding: '6px 0',
+              padding: '4px 0',
               cursor: 'pointer',
               color: 'var(--accent, #C4386C)',
               fontSize: '0.82rem',
@@ -315,7 +331,7 @@ const ColorVariationSelector = ({
               {isExpanded ? 'Show fewer colours' : `Show all ${totalCount} colours`}
             </span>
             <ChevronDown
-              size={15}
+              size={14}
               style={{
                 transform: isExpanded ? 'rotate(180deg)' : 'none',
                 transition: 'transform 0.25s cubic-bezier(0.16, 1, 0.3, 1)',
@@ -329,4 +345,3 @@ const ColorVariationSelector = ({
 };
 
 export default ColorVariationSelector;
-

@@ -3,6 +3,7 @@ import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-d
 import { AuthProvider, AuthContext } from './context/AuthContext';
 import { CartProvider, CartContext } from './context/CartContext';
 import { WishlistProvider, WishlistContext } from './context/WishlistContext';
+import { NotificationProvider } from './context/NotificationContext';
 import { ThemeProvider } from './context/ThemeContext';
 import Navbar from './components/Navbar';
 import Footer from './components/Footer';
@@ -74,41 +75,43 @@ function App() {
       <AuthProvider>
         <CartProvider>
           <WishlistProvider>
-            <Router>
-              <AuthSyncBridge />
-              <ScrollToTop />
-              <PageTracker />
-              <div className="flex flex-col min-h-screen" style={{ position: 'relative', zIndex: 1 }}>
-                <Navbar />
-                <main className="flex-grow">
-                  <Suspense fallback={<PageLoader />}>
-                    <Routes>
-                      {/* ── Existing routes (UNCHANGED) ── */}
-                      <Route path="/"                          element={<Home />} />
-                      <Route path="/products"                 element={<AllProducts />} />
-                      <Route path="/categories"              element={<Categories />} />
-                      <Route path="/collections"             element={<Categories />} />
-                      <Route path="/category/:categoryName"                  element={<CategoryPage />} />
-                      <Route path="/category/:categoryName/:subcategoryName" element={<CategoryPage />} />
-                      <Route path="/product/:id"                             element={<ProductDetail />} />
-                      <Route path="/search"                  element={<Search />} />
-                      <Route path="/offers"                  element={<Offers />} />
-                      <Route path="/cart"                    element={<Cart />} />
-                      <Route path="/checkout"                element={<Checkout />} />
+            <NotificationProvider>
+              <Router>
+                <AuthSyncBridge />
+                <ScrollToTop />
+                <PageTracker />
+                <div className="flex flex-col min-h-screen" style={{ position: 'relative', zIndex: 1 }}>
+                  <Navbar />
+                  <main className="flex-grow">
+                    <Suspense fallback={<PageLoader />}>
+                      <Routes>
+                        {/* ── Existing routes (UNCHANGED) ── */}
+                        <Route path="/"                          element={<Home />} />
+                        <Route path="/products"                 element={<AllProducts />} />
+                        <Route path="/categories"              element={<Categories />} />
+                        <Route path="/collections"             element={<Categories />} />
+                        <Route path="/category/:categoryName"                  element={<CategoryPage />} />
+                        <Route path="/category/:categoryName/:subcategoryName" element={<CategoryPage />} />
+                        <Route path="/product/:id"                             element={<ProductDetail />} />
+                        <Route path="/search"                  element={<Search />} />
+                        <Route path="/offers"                  element={<Offers />} />
+                        <Route path="/cart"                    element={<Cart />} />
+                        <Route path="/checkout"                element={<Checkout />} />
 
-                      {/* ── New customer routes ── */}
-                      <Route path="/wishlist"                element={<Wishlist />} />
-                      <Route path="/login"                   element={<Login />} />
-                      <Route path="/register"               element={<Register />} />
-                      <Route path="/account"                element={<Account />} />
-                      <Route path="/track-order"            element={<Navigate to="/account" replace />} />
-                    </Routes>
-                  </Suspense>
-                </main>
-                <Footer />
-                <BottomNav />
-              </div>
-            </Router>
+                        {/* ── New customer routes ── */}
+                        <Route path="/wishlist"                element={<Wishlist />} />
+                        <Route path="/login"                   element={<Login />} />
+                        <Route path="/register"               element={<Register />} />
+                        <Route path="/account"                element={<Account />} />
+                        <Route path="/track-order"            element={<Navigate to="/account" replace />} />
+                      </Routes>
+                    </Suspense>
+                  </main>
+                  <Footer />
+                  <BottomNav />
+                </div>
+              </Router>
+            </NotificationProvider>
           </WishlistProvider>
         </CartProvider>
       </AuthProvider>

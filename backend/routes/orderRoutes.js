@@ -8,6 +8,7 @@ const {
   trackOrderPublic,
   getMyOrders,
   updateOrderStatus,
+  resendWhatsAppOrderMessage,
 } = require('../controllers/orderController');
 
 // Customer places order request
@@ -23,6 +24,7 @@ router.get('/track/:orderId', trackOrderPublic);
 router.get('/', protectAdmin, getOrders);
 router.get('/:id', protectAdmin, getOrderById);
 router.patch('/:id/status', protectAdmin, updateOrderStatus);
+router.post('/:id/resend-whatsapp', protectAdmin, resendWhatsAppOrderMessage);
 
 module.exports = router;
 

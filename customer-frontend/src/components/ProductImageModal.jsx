@@ -25,6 +25,7 @@ const ProductImageModal = ({
   product,
   images: overrideImages = null,
   initialIndex = 0,
+  onImageChange = null,
 }) => {
   const { isDark } = useTheme();
 
@@ -37,13 +38,23 @@ const ProductImageModal = ({
 
   const images = Array.isArray(rawImages) ? rawImages : [];
   const [activeIndex, setActiveIndex] = useState(initialIndex || 0);
+  const activeIndexRef = useRef(initialIndex || 0);
   const [touchStartX, setTouchStartX] = useState(null);
   const [touchEndX, setTouchEndX] = useState(null);
   const scrollYRef = useRef(0);
 
+  const updateActiveIndex = useCallback((newIndex) => {
+    activeIndexRef.current = newIndex;
+    setActiveIndex(newIndex);
+    if (typeof onImageChange === 'function') {
+      onImageChange(newIndex);
+    }
+  }, [onImageChange]);
+
   // Sync active index when opening or when initialIndex changes
   useEffect(() => {
     if (isOpen && typeof initialIndex === 'number' && initialIndex >= 0) {
+      activeIndexRef.current = initialIndex;
       setActiveIndex(initialIndex);
     }
   }, [isOpen, initialIndex]);
@@ -51,13 +62,24 @@ const ProductImageModal = ({
   // Navigate next / previous
   const handleNext = useCallback(() => {
     if (images.length <= 1) return;
-    setActiveIndex((prev) => (prev + 1) % images.length);
-  }, [images.length]);
+    const next = (activeIndexRef.current + 1) % images.length;
+    updateActiveIndex(next);
+  }, [images.length, updateActiveIndex]);
 
   const handlePrev = useCallback(() => {
     if (images.length <= 1) return;
-    setActiveIndex((prev) => (prev - 1 + images.length) % images.length);
-  }, [images.length]);
+    const prev = (activeIndexRef.current - 1 + images.length) % images.length;
+    updateActiveIndex(prev);
+  }, [images.length, updateActiveIndex]);
+
+  const handleClose = useCallback(() => {
+    if (typeof onImageChange === 'function') {
+      onImageChange(activeIndexRef.current);
+    }
+    if (typeof onClose === 'function') {
+      onClose(activeIndexRef.current);
+    }
+  }, [onClose, onImageChange]);
 
   // Scroll lock + Keyboard navigation + Exact scroll position restoration
   useEffect(() => {
@@ -70,7 +92,7 @@ const ProductImageModal = ({
 
     const handleKeyDown = (e) => {
       if (e.key === 'Escape') {
-        onClose();
+        handleClose();
       } else if (e.key === 'ArrowRight') {
         handleNext();
       } else if (e.key === 'ArrowLeft') {
@@ -98,7 +120,7 @@ const ProductImageModal = ({
         html.style.scrollBehavior = prevBehavior;
       });
     };
-  }, [isOpen, onClose, handleNext, handlePrev]);
+  }, [isOpen, handleClose, handleNext, handlePrev]);
 
   // Mobile Touch Swipe Handlers
   const handleTouchStart = (e) => {
@@ -147,7 +169,7 @@ const ProductImageModal = ({
             userSelect: 'none',
             padding: 0,
           }}
-          onClick={onClose}
+          onClick={handleClose}
         >
           {/* Modal Container with Fade and Scale & Upward Lift */}
           <motion.div
@@ -207,7 +229,7 @@ const ProductImageModal = ({
               {/* Close Button */}
               <button
                 type="button"
-                onClick={onClose}
+                onClick={handleClose}
                 aria-label="Close enlarged preview"
                 className="product-image-modal-close-btn"
                 style={{
@@ -313,7 +335,7 @@ const ProductImageModal = ({
                         type="button"
                         onClick={(e) => {
                           e.stopPropagation();
-                          setActiveIndex(dotIdx);
+                          updateActiveIndex(dotIdx);
                         }}
                         aria-label={`View photo ${dotIdx + 1}`}
                         style={{
@@ -548,7 +570,7 @@ const ProductImageModal = ({
                     <button
                       key={idx}
                       type="button"
-                      onClick={() => setActiveIndex(idx)}
+                      onClick={() => updateActiveIndex(idx)}
                       aria-label={`Show image ${idx + 1}`}
                       style={{
                         width: 'clamp(42px, 7vw, 50px)',

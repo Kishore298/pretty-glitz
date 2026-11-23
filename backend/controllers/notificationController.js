@@ -14,12 +14,16 @@ const {
 // ─── GET /api/notifications (Admin list notifications) ───────────────────────
 const getNotifications = async (req, res) => {
   try {
-    const notifications = await Notification.find({})
+    const limit = Math.min(Number(req.query.limit) || 25, 50);
+    const filter = {
+      $or: [{ forRole: 'admin' }, { userId: null }, { forRole: { $exists: false } }],
+    };
+    const notifications = await Notification.find(filter)
       .sort({ createdAt: -1 })
-      .limit(40)
+      .limit(limit)
       .lean();
 
-    const unreadCount = await Notification.countDocuments({ read: false });
+    const unreadCount = await Notification.countDocuments({ ...filter, read: false });
 
     return res.status(200).json({
       notifications,
@@ -28,6 +32,115 @@ const getNotifications = async (req, res) => {
   } catch (err) {
     console.error('[Notifications] getNotifications error:', err);
     return res.status(500).json({ message: 'Failed to fetch notifications.' });
+  }
+};
+
+// ─── GET /api/notifications/unread-count (Admin lightweight unread polling) ───
+const getUnreadCount = async (req, res) => {
+  try {
+    const filter = {
+      $or: [{ forRole: 'admin' }, { userId: null }, { forRole: { $exists: false } }],
+    };
+    const unreadCount = await Notification.countDocuments({ ...filter, read: false });
+    const latest = await Notification.findOne(filter)
+      .sort({ createdAt: -1 })
+      .select('_id createdAt title type message orderId')
+      .lean();
+
+    return res.status(200).json({
+      unreadCount,
+      latestNotificationId: latest?._id || null,
+      latestTimestamp: latest?.createdAt || null,
+      latestNotification: latest || null,
+    });
+  } catch (err) {
+    console.error('[Notifications] getUnreadCount error:', err);
+    return res.status(500).json({ message: 'Failed to fetch unread count.' });
+  }
+};
+
+// ─── Customer Notification Endpoints (Scoped to Authenticated Customer) ───────
+
+// GET /api/notifications/customer/unread-count (Customer lightweight unread polling)
+const getCustomerUnreadCount = async (req, res) => {
+  try {
+    const cUserId = req.user?.userId || req.user?._id || req.user?.id;
+    if (!cUserId) {
+      return res.status(200).json({ unreadCount: 0, latestNotificationId: null });
+    }
+    const filter = { userId: cUserId };
+    const unreadCount = await Notification.countDocuments({ ...filter, read: false });
+    const latest = await Notification.findOne(filter)
+      .sort({ createdAt: -1 })
+      .select('_id createdAt title type message orderId')
+      .lean();
+
+    return res.status(200).json({
+      unreadCount,
+      latestNotificationId: latest?._id || null,
+      latestTimestamp: latest?.createdAt || null,
+      latestNotification: latest || null,
+    });
+  } catch (err) {
+    console.error('[Notifications] getCustomerUnreadCount error:', err);
+    return res.status(500).json({ message: 'Failed to fetch customer unread count.' });
+  }
+};
+
+// GET /api/notifications/customer (Customer list notifications)
+const getCustomerNotifications = async (req, res) => {
+  try {
+    const cUserId = req.user?.userId || req.user?._id || req.user?.id;
+    if (!cUserId) {
+      return res.status(200).json({ notifications: [], unreadCount: 0 });
+    }
+    const limit = Math.min(Number(req.query.limit) || 20, 50);
+    const filter = { userId: cUserId };
+    const notifications = await Notification.find(filter)
+      .sort({ createdAt: -1 })
+      .limit(limit)
+      .lean();
+
+    const unreadCount = await Notification.countDocuments({ ...filter, read: false });
+
+    return res.status(200).json({
+      notifications,
+      unreadCount,
+    });
+  } catch (err) {
+    console.error('[Notifications] getCustomerNotifications error:', err);
+    return res.status(500).json({ message: 'Failed to fetch customer notifications.' });
+  }
+};
+
+// PATCH /api/notifications/customer/:id/read (Mark single customer notification read)
+const markCustomerNotificationRead = async (req, res) => {
+  try {
+    const cUserId = req.user?.userId || req.user?._id || req.user?.id;
+    const { id } = req.params;
+    const notif = await Notification.findOneAndUpdate(
+      { _id: id, userId: cUserId },
+      { read: true, readAt: new Date() },
+      { returnDocument: 'after' }
+    );
+    if (!notif) return res.status(404).json({ message: 'Notification not found.' });
+    const unreadCount = await Notification.countDocuments({ userId: cUserId, read: false });
+    return res.status(200).json({ success: true, notification: notif, unreadCount });
+  } catch (err) {
+    console.error('[Notifications] markCustomerNotificationRead error:', err);
+    return res.status(500).json({ message: 'Failed to mark notification as read.' });
+  }
+};
+
+// PATCH /api/notifications/customer/read-all (Mark all customer notifications read)
+const markAllCustomerNotificationsRead = async (req, res) => {
+  try {
+    const cUserId = req.user?.userId || req.user?._id || req.user?.id;
+    await Notification.updateMany({ userId: cUserId, read: false }, { read: true, readAt: new Date() });
+    return res.status(200).json({ success: true, message: 'All notifications marked as read.', unreadCount: 0 });
+  } catch (err) {
+    console.error('[Notifications] markAllCustomerNotificationsRead error:', err);
+    return res.status(500).json({ message: 'Failed to mark all notifications as read.' });
   }
 };
 
@@ -408,6 +521,11 @@ const getVapidKey = (req, res) => {
 
 module.exports = {
   getNotifications,
+  getUnreadCount,
+  getCustomerUnreadCount,
+  getCustomerNotifications,
+  markCustomerNotificationRead,
+  markAllCustomerNotificationsRead,
   markAsRead,
   markAllAsRead,
   deleteNotification,

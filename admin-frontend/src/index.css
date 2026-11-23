@@ -1156,6 +1156,11 @@ select.admin-input option:checked,
     margin-bottom: 20px !important;
   }
 
+  /* Hide form hints/notes on product add form on mobile/smaller devices up to 648px */
+  .form-note-hint {
+    display: none !important;
+  }
+
   .products-table-scroll {
     overflow-x: auto !important;
     -webkit-overflow-scrolling: touch !important;

@@ -152,9 +152,9 @@ const Home = () => {
   const minCardsPerGroup = 6;
   const copiesPerLoop = bestsellers.length
     ? Math.max(
-        Math.ceil(minCardsPerGroup / bestsellers.length),
-        Math.ceil((viewportWidth + 200) / (bestsellers.length * estimatedCardStep))
-      )
+      Math.ceil(minCardsPerGroup / bestsellers.length),
+      Math.ceil((viewportWidth + 200) / (bestsellers.length * estimatedCardStep))
+    )
     : 1;
   const carouselProducts = Array.from({ length: copiesPerLoop }, () => bestsellers).flat();
 
@@ -305,7 +305,7 @@ const Home = () => {
               marginBottom: 12,
             }}
           >
-            Curated Atelier
+            Curated Elegance
           </p>
           <h2
             style={{
@@ -316,7 +316,7 @@ const Home = () => {
               margin: 0,
             }}
           >
-            Signature Atelier Collections
+            Signature Styles
           </h2>
         </motion.div>
 
@@ -381,11 +381,11 @@ const Home = () => {
                         src={
                           category.bannerImage
                             ? optimizeImageUrl(category.bannerImage, {
-                                width: 600,
-                                height: 450,
-                                crop: 'fill',
-                                gravity: 'auto',
-                              })
+                              width: 600,
+                              height: 450,
+                              crop: 'fill',
+                              gravity: 'auto',
+                            })
                             : logoImg
                         }
                         alt={category.name}

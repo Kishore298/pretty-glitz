@@ -37,6 +37,10 @@ const WishlistItemRow = ({ product }) => {
   const handleActionClick = (e) => {
     e.preventDefault();
     e.stopPropagation();
+    if (inCart) {
+      navigate('/cart');
+      return;
+    }
     if (hasOptions) {
       navigate(getProductUrl(product));
       return;
@@ -56,6 +60,7 @@ const WishlistItemRow = ({ product }) => {
       exit={{ opacity: 0, scale: 0.95 }}
       transition={{ duration: 0.2 }}
       className="wishlist-horizontal-card"
+      onClick={() => navigate(getProductUrl(product))}
       style={{
         background: isDark ? 'var(--bg-secondary, #161622)' : '#FFFFFF',
         border: '1px solid var(--border)',
@@ -64,6 +69,7 @@ const WishlistItemRow = ({ product }) => {
         display: 'flex',
         alignItems: 'center',
         gap: 12,
+        cursor: 'pointer',
         transition: 'all 0.2s ease',
       }}
     >

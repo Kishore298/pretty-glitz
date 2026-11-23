@@ -6,6 +6,7 @@ import { useTheme } from '../context/ThemeContext';
 import { AuthContext } from '../context/AuthContext';
 import { CartContext } from '../context/CartContext';
 import { useWishlist } from '../context/WishlistContext';
+import { useNotifications } from '../context/NotificationContext';
 import api from '../utils/api';
 import { getProductUrl } from '../utils/urlHelper';
 import logoImg from '../assets/pretty-glitz-logo.png';
@@ -41,6 +42,7 @@ const Navbar = () => {
   const wishlistCount = getWishlistCount();
   const { getCartCount } = useContext(CartContext);
   const cartCount = getCartCount();
+  const { unreadCount: notifUnreadCount } = useNotifications();
   const [allCategories, setAllCategories] = useState([]);
   const [bangleSubcategories, setBangleSubcategories] = useState(DEFAULT_BANGLE_SUBS);
   const [searchResults, setSearchResults] = useState([]);
@@ -859,9 +861,23 @@ const Navbar = () => {
                 style={{ position: 'relative', color: user ? 'var(--accent)' : 'var(--text-secondary)', transition: 'color 0.2s', display: 'flex', alignItems: 'center' }}
                 onMouseEnter={e => e.currentTarget.style.color = 'var(--text)'}
                 onMouseLeave={e => e.currentTarget.style.color = user ? 'var(--accent)' : 'var(--text-secondary)'}
-                title={user ? `Account: ${user.name || user.mobile}` : 'Login'}
+                title={user ? `Account: ${user.name || user.mobile}${notifUnreadCount > 0 ? ` (${notifUnreadCount} new updates)` : ''}` : 'Login'}
               >
                 <User size={20} />
+                {notifUnreadCount > 0 && (
+                  <span
+                    style={{
+                      position: 'absolute',
+                      top: -1,
+                      right: -3,
+                      width: 8,
+                      height: 8,
+                      borderRadius: '50%',
+                      background: 'var(--accent, #C4386C)',
+                      boxShadow: '0 0 6px rgba(196, 56, 108, 0.7)',
+                    }}
+                  />
+                )}
               </Link>
 
               {/* Mobile Hamburger */}

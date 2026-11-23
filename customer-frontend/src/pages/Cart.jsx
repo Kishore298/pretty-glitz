@@ -27,6 +27,19 @@ const Cart = () => {
     navigate('/checkout');
   };
 
+  const handleContinueShopping = (e) => {
+    if (e) e.preventDefault();
+    try {
+      const prevPage = sessionStorage.getItem('pg_prev_page');
+      const prevScroll = parseInt(sessionStorage.getItem('pg_prev_scroll') || '0', 10);
+      if (prevPage && prevPage !== '/cart' && !prevPage.startsWith('/cart')) {
+        navigate(prevPage, { state: { restoreScrollY: isNaN(prevScroll) ? 0 : prevScroll } });
+        return;
+      }
+    } catch {}
+    navigate('/');
+  };
+
   if (cartItems.length === 0) {
     return (
       <div style={{ minHeight: '100vh', paddingTop: 'var(--nav-height, 76px)', paddingBottom: 100, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }}>
@@ -95,6 +108,23 @@ const Cart = () => {
                       ? `${item.packagingQuantity || item.product?.packagingQuantity || 1} ${item.packagingType || item.product?.packagingType}`
                       : (item.pieceCount ? `${item.pieceCount} Pieces` : null);
 
+                    const cartItemImage = (() => {
+                      if (item.colorVariantImage) return item.colorVariantImage;
+                      if (item.colorVariantId && Array.isArray(item.product?.colorVariants)) {
+                        const cVar = item.product.colorVariants.find(
+                          (cv) => cv._id?.toString() === item.colorVariantId?.toString()
+                        );
+                        if (cVar?.images?.[0]?.url) return cVar.images[0].url;
+                      }
+                      if (item.colorName && Array.isArray(item.product?.colorVariants)) {
+                        const cVar = item.product.colorVariants.find(
+                          (cv) => cv.colorName?.toLowerCase() === item.colorName?.toLowerCase()
+                        );
+                        if (cVar?.images?.[0]?.url) return cVar.images[0].url;
+                      }
+                      return item.product?.images?.[0]?.url || item.product?.image || null;
+                    })();
+
                     return (
                       <motion.li 
                         key={uniqueKey}
@@ -125,7 +155,7 @@ const Cart = () => {
                           }}
                         >
                           <img
-                            src={item.product.images?.[0] ? optimizeImageUrl(item.product.images[0].url, 160) : logoImg}
+                            src={cartItemImage ? optimizeImageUrl(cartItemImage, 160) : logoImg}
                             alt={item.product.name}
                             loading="lazy"
                             onError={(e) => {
@@ -137,8 +167,8 @@ const Cart = () => {
                             style={{
                               width: '100%',
                               height: '100%',
-                              objectFit: item.product.images?.[0] ? 'cover' : 'contain',
-                              padding: item.product.images?.[0] ? 0 : '6px',
+                              objectFit: cartItemImage ? 'cover' : 'contain',
+                              padding: cartItemImage ? 0 : '6px',
                               filter: isOutOfStock ? 'grayscale(0.8)' : 'none',
                             }}
                           />
@@ -258,27 +288,31 @@ const Cart = () => {
             </div>
             
             <div style={{ display: 'flex', justifyContent: 'center', marginTop: 14 }}>
-              <Link to="/" style={{
-                display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: 8,
-                color: 'var(--text-secondary)', textDecoration: 'none', fontSize: '0.8rem', fontWeight: 600,
-                textTransform: 'uppercase', letterSpacing: '0.06em',
-                padding: '8px 22px',
-                borderRadius: 999,
-                background: 'var(--bg-secondary)',
-                border: '1px solid var(--border)',
-                transition: 'all 0.18s ease',
-              }}
-              onMouseEnter={(e) => {
-                e.currentTarget.style.borderColor = 'var(--accent, #C4386C)';
-                e.currentTarget.style.color = 'var(--accent, #C4386C)';
-              }}
-              onMouseLeave={(e) => {
-                e.currentTarget.style.borderColor = 'var(--border)';
-                e.currentTarget.style.color = 'var(--text-secondary)';
-              }}
+              <button
+                type="button"
+                onClick={handleContinueShopping}
+                style={{
+                  display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: 8,
+                  color: 'var(--text-secondary)', fontSize: '0.8rem', fontWeight: 600,
+                  textTransform: 'uppercase', letterSpacing: '0.06em',
+                  padding: '8px 22px',
+                  borderRadius: 999,
+                  background: 'var(--bg-secondary)',
+                  border: '1px solid var(--border)',
+                  cursor: 'pointer',
+                  transition: 'all 0.18s ease',
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.borderColor = 'var(--accent, #C4386C)';
+                  e.currentTarget.style.color = 'var(--accent, #C4386C)';
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.borderColor = 'var(--border)';
+                  e.currentTarget.style.color = 'var(--text-secondary)';
+                }}
               >
                 <ArrowLeft size={14} /> <span>Continue Shopping</span>
-              </Link>
+              </button>
             </div>
           </div>
 

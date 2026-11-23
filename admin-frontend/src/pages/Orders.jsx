@@ -20,6 +20,7 @@ import api from '../utils/api';
 import { useSocket } from '../context/SocketContext';
 import PageHeader from '../components/PageHeader';
 import AdminDropdown from '../components/AdminDropdown';
+import ConfirmModal from '../components/ConfirmModal';
 
 const STATUS_CONFIG = {
   ALL: { label: 'All Orders', color: '#ACA6B8', bg: 'rgba(255, 255, 255, 0.05)', border: 'rgba(255, 255, 255, 0.12)' },
@@ -77,7 +78,7 @@ const Orders = () => {
   const [searchParams] = useSearchParams();
   const highlightedIdFromUrl = searchParams.get('id');
 
-  const { socket } = useSocket();
+  useSocket();
 
   const [orders, setOrders] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -87,6 +88,8 @@ const Orders = () => {
   const [selectedOrder, setSelectedOrder] = useState(null);
   const [trackingInput, setTrackingInput] = useState('');
   const [statusUpdating, setStatusUpdating] = useState(false);
+  const [resendingWhatsApp, setResendingWhatsApp] = useState(false);
+  const [showResendConfirm, setShowResendConfirm] = useState(false);
 
   useEffect(() => {
     if (selectedOrder) {
@@ -136,26 +139,26 @@ const Orders = () => {
     }
   }, [page, statusFilter, searchQuery, highlightedIdFromUrl, selectedOrder]);
 
-  // Listen for socket events to auto-refresh orders
+  // Auto-refresh orders on notification poll event & periodic interval while on Orders page
   useEffect(() => {
-    if (!socket) return;
-
-    const handleNewOrder = (orderData) => {
+    const handleOrderEvent = () => {
       fetchOrders();
     };
 
-    const handleStatusUpdate = (updateData) => {
-      fetchOrders();
-    };
+    window.addEventListener('pg:order_event', handleOrderEvent);
 
-    socket.on('new_order_request', handleNewOrder);
-    socket.on('order_status_updated', handleStatusUpdate);
+    // Periodic order sync every 25 seconds while active
+    const intervalId = setInterval(() => {
+      if (typeof document === 'undefined' || document.visibilityState === 'visible') {
+        fetchOrders();
+      }
+    }, 25000);
 
     return () => {
-      socket.off('new_order_request', handleNewOrder);
-      socket.off('order_status_updated', handleStatusUpdate);
+      window.removeEventListener('pg:order_event', handleOrderEvent);
+      clearInterval(intervalId);
     };
-  }, [socket, fetchOrders]);
+  }, [fetchOrders]);
 
   useEffect(() => {
     fetchOrders();
@@ -199,6 +202,31 @@ const Orders = () => {
       `Hello ${order.customer.name}! Thank you for your order request (${order.orderId}) on PrettyGlitz. We are reviewing your order of ₹${order.totalAmount}. Let us know if you have any questions!`
     );
     window.open(`https://wa.me/91${cleanPhone}?text=${greeting}`, '_blank');
+  };
+
+  const handleResendWhatsApp = async (order) => {
+    if (!order) return;
+    setResendingWhatsApp(true);
+    try {
+      const res = await api.post(`/orders/${order._id || order.orderId}/resend-whatsapp`, {
+        messageType: order.status === 'PENDING_WHATSAPP' || order.status === 'CONFIRMED' ? 'ORDER_CONFIRMATION' : 'STATUS_UPDATE',
+      });
+      if (res.data?.success) {
+        toast.success(res.data.message || 'WhatsApp message resent successfully!');
+        if (res.data.order) {
+          setSelectedOrder((prev) => (prev ? { ...prev, ...res.data.order } : prev));
+          setOrders((prev) =>
+            prev.map((o) => (o.orderId === order.orderId ? { ...o, ...res.data.order } : o))
+          );
+        }
+      }
+      setShowResendConfirm(false);
+    } catch (err) {
+      console.error('Error resending WhatsApp:', err);
+      toast.error(err.response?.data?.message || 'Failed to resend WhatsApp message');
+    } finally {
+      setResendingWhatsApp(false);
+    }
   };
 
   const formatDateTime = (isoString) => {
@@ -765,31 +793,73 @@ const Orders = () => {
                     <span>+91 {selectedOrder.customer?.mobile}</span>
                   </div>
 
-                  {/* Direct WhatsApp Contact CTA */}
-                  <button
-                    onClick={() => openWhatsAppChat(selectedOrder)}
-                    style={{
-                      marginTop: 12,
-                      display: 'inline-flex',
-                      alignItems: 'center',
-                      gap: 8,
-                      padding: '8px 14px',
-                      borderRadius: 10,
-                      background: 'linear-gradient(135deg, #25D366, #128C7E)',
-                      border: 'none',
-                      color: '#FFFFFF',
-                      fontSize: '0.8rem',
-                      fontWeight: 700,
-                      cursor: 'pointer',
-                      transition: 'transform 0.15s ease',
-                    }}
-                    onMouseEnter={(e) => (e.currentTarget.style.transform = 'translateY(-1px)')}
-                    onMouseLeave={(e) => (e.currentTarget.style.transform = 'none')}
-                  >
-                    <MessageCircle size={15} />
-                    <span>Chat on WhatsApp</span>
-                    <ExternalLink size={12} style={{ opacity: 0.8 }} />
-                  </button>
+                  {/* WhatsApp Actions: Direct Chat & Resend Message */}
+                  <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginTop: 12 }}>
+                    <button
+                      type="button"
+                      onClick={() => openWhatsAppChat(selectedOrder)}
+                      style={{
+                        display: 'inline-flex',
+                        alignItems: 'center',
+                        gap: 8,
+                        padding: '8px 14px',
+                        borderRadius: 10,
+                        background: 'linear-gradient(135deg, #25D366, #128C7E)',
+                        border: 'none',
+                        color: '#FFFFFF',
+                        fontSize: '0.8rem',
+                        fontWeight: 700,
+                        cursor: 'pointer',
+                        transition: 'transform 0.15s ease',
+                      }}
+                      onMouseEnter={(e) => (e.currentTarget.style.transform = 'translateY(-1px)')}
+                      onMouseLeave={(e) => (e.currentTarget.style.transform = 'none')}
+                    >
+                      <MessageCircle size={15} />
+                      <span>Chat on WhatsApp</span>
+                      <ExternalLink size={12} style={{ opacity: 0.8 }} />
+                    </button>
+
+                    <button
+                      type="button"
+                      disabled={resendingWhatsApp}
+                      onClick={() => setShowResendConfirm(true)}
+                      style={{
+                        display: 'inline-flex',
+                        alignItems: 'center',
+                        gap: 8,
+                        padding: '8px 14px',
+                        borderRadius: 10,
+                        background: 'rgba(37, 211, 102, 0.15)',
+                        border: '1px solid rgba(37, 211, 102, 0.4)',
+                        color: '#25D366',
+                        fontSize: '0.8rem',
+                        fontWeight: 700,
+                        cursor: resendingWhatsApp ? 'not-allowed' : 'pointer',
+                        transition: 'all 0.15s ease',
+                        opacity: resendingWhatsApp ? 0.6 : 1,
+                      }}
+                      title="Resend WhatsApp notification for this order"
+                    >
+                      <RefreshCw size={14} className={resendingWhatsApp ? 'animate-spin' : ''} />
+                      <span>{resendingWhatsApp ? 'Sending...' : 'Resend Message'}</span>
+                    </button>
+                  </div>
+
+                  {/* WhatsApp Delivery Status Tracking Info */}
+                  <div style={{ marginTop: 8, fontSize: '0.74rem', color: '#ACA6B8', display: 'flex', alignItems: 'center', gap: 6, flexWrap: 'wrap' }}>
+                    <span>
+                      Status: <strong style={{ color: selectedOrder.whatsappDeliveryStatus === 'FAILED' ? '#EF4444' : '#25D366' }}>
+                        {selectedOrder.whatsappDeliveryStatus || (selectedOrder.whatsappSentAt ? 'SENT' : 'NOT SENT')}
+                      </strong>
+                    </span>
+                    {selectedOrder.whatsappSendCount > 0 && (
+                      <span>• Sent {selectedOrder.whatsappSendCount} {selectedOrder.whatsappSendCount === 1 ? 'time' : 'times'}</span>
+                    )}
+                    {selectedOrder.whatsappSentAt && (
+                      <span>• Last: {formatDateTime(selectedOrder.whatsappSentAt)}</span>
+                    )}
+                  </div>
                 </div>
 
                 <div>
@@ -1034,6 +1104,18 @@ const Orders = () => {
           )}
         </div>
       </div>
+
+      {/* Confirm Resend WhatsApp Modal */}
+      <ConfirmModal
+        isOpen={showResendConfirm}
+        onClose={() => setShowResendConfirm(false)}
+        onConfirm={() => handleResendWhatsApp(selectedOrder)}
+        title="Resend WhatsApp Notification"
+        message={`Are you sure you want to resend the WhatsApp notification to ${selectedOrder?.customer?.name || 'the customer'} (${selectedOrder?.customer?.mobile || ''}) for order ${selectedOrder?.orderId}?`}
+        confirmText={resendingWhatsApp ? 'Sending...' : 'Resend WhatsApp'}
+        type="info"
+        loading={resendingWhatsApp}
+      />
     </div>
   );
 };

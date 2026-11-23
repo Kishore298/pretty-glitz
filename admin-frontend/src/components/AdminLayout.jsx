@@ -198,10 +198,10 @@ const AdminLayout = ({ children }) => {
 
             {/* Right: Controls & Navigation */}
             <div className="admin-topbar-controls" style={{ display: 'flex', alignItems: 'center', gap: 12, flexShrink: 0 }}>
-              {/* Real-time Socket Live Status Pill */}
+              {/* Real-time Live Status Pill (HTTP Polling) */}
               <div
                 className="admin-live-pill"
-                title={isConnected ? 'Live Socket connected' : 'Connecting to live events...'}
+                title={isConnected ? 'Live Sync active (HTTP Polling)' : 'Connecting to live events...'}
                 style={{
                   display: 'flex',
                   alignItems: 'center',

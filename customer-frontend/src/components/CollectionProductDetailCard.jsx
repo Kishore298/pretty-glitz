@@ -6,7 +6,6 @@ import {
   Plus,
   Minus,
   Check,
-  Ruler,
   Maximize2,
   ChevronLeft,
   ChevronRight,
@@ -18,7 +17,7 @@ import { CartContext, resolveStock } from '../context/CartContext';
 import { useWishlist } from '../context/WishlistContext';
 import { useTheme } from '../context/ThemeContext';
 import { optimizeImageUrl } from '../utils/cloudinary';
-import { sortSizesAscending } from '../utils/sizeHelper';
+import { sortSizesAscending, formatBangleSize } from '../utils/sizeHelper';
 import { getProductUrl } from '../utils/urlHelper';
 import ProductDescriptionDisplay from './ProductDescriptionDisplay';
 import BangleSizeChartModal from './BangleSizeChartModal';
@@ -28,7 +27,7 @@ import logoImg from '../assets/pretty-glitz-logo.png';
 
 const CollectionProductDetailCard = ({ product, isLast = false }) => {
   const { isDark } = useTheme();
-  const { addToCart, updateQuantity, removeFromCart, getCartItemQuantity, isInCart } = useContext(CartContext);
+  const { cartItems, addToCart, updateQuantity, removeFromCart } = useContext(CartContext);
   const { isInWishlist, toggleWishlist } = useWishlist();
 
   // Color Variant Selection (unselected by default so showcase main image is displayed first)
@@ -47,13 +46,31 @@ const CollectionProductDetailCard = ({ product, isLast = false }) => {
   const inWishlist = isInWishlist(product._id);
   const [error, setError] = useState('');
 
-  // Available Sizes for currently selected variant - sorted ascending (e.g. 2.2 before 2.4, 2.6, 2.8)
+  // Available Sizes for currently selected variant - or aggregated by default for Designer Glass Bangles
   const activeSizes = useMemo(() => {
-    const raw = (selectedColor && selectedColor.sizes?.length > 0)
-      ? selectedColor.sizes
-      : (product.sizes || []);
-    return sortSizesAscending(raw);
-  }, [selectedColor, product.sizes]);
+    if (selectedColor && selectedColor.sizes?.length > 0) {
+      return sortSizesAscending(selectedColor.sizes);
+    }
+    // If no color selected yet, aggregate all available unique sizes across colorVariants so size selection is ALWAYS displayed by default!
+    if (Array.isArray(product.colorVariants) && product.colorVariants.length > 0) {
+      const sizeMap = new Map();
+      product.colorVariants.forEach((cv) => {
+        if (Array.isArray(cv.sizes)) {
+          cv.sizes.forEach((s) => {
+            if (!sizeMap.has(s.size)) {
+              sizeMap.set(s.size, s);
+            } else if (s.inStock && !sizeMap.get(s.size)?.inStock) {
+              sizeMap.set(s.size, s);
+            }
+          });
+        }
+      });
+      if (sizeMap.size > 0) {
+        return sortSizesAscending(Array.from(sizeMap.values()));
+      }
+    }
+    return sortSizesAscending(product.sizes || []);
+  }, [selectedColor, product.colorVariants, product.sizes]);
 
   // Keep size initially unselected per user instruction
   const [selectedSize, setSelectedSize] = useState(null);
@@ -114,9 +131,43 @@ const CollectionProductDetailCard = ({ product, isLast = false }) => {
     ? Math.round(((resolvedOriginalPrice - resolvedPrice) / resolvedOriginalPrice) * 100)
     : 0;
 
-  // Cart variant check
-  const cartVariantQty = getCartItemQuantity(product._id, selectedSize, selectedPieceCount?.count ?? null, selectedColor?._id);
-  const variantInCart = isInCart(product._id, selectedSize, selectedPieceCount?.count ?? null, selectedColor?._id);
+  // Strict Cart Variant Matching: Stepper and "View Cart" only display when the exact variant matches
+  const hasColors = Boolean(product?.colorVariants && product.colorVariants.length > 0);
+  const hasSizes = Boolean(activeSizes && activeSizes.length > 0);
+  const isSelectionComplete = (!hasColors || selectedColor) && (!hasSizes || selectedSize);
+
+  const matchedCartItem = useMemo(() => {
+    if (!product || !isSelectionComplete) return null;
+    return (cartItems || []).find((i) => {
+      const pId = (typeof i.product === 'object' ? i.product?._id : i.product)?.toString();
+      if (pId !== product._id?.toString()) return false;
+
+      if (hasColors) {
+        const itemColorId = i.colorVariantId ? i.colorVariantId.toString() : null;
+        const curColorId = selectedColor?._id ? selectedColor._id.toString() : null;
+        if (itemColorId && curColorId) {
+          if (itemColorId !== curColorId) return false;
+        } else if (i.colorName && selectedColor?.colorName) {
+          if (i.colorName.toLowerCase() !== selectedColor.colorName.toLowerCase()) return false;
+        } else if (itemColorId !== curColorId) {
+          return false;
+        }
+      }
+
+      if (hasSizes) {
+        if (i.size !== selectedSize) return false;
+      }
+
+      if (selectedPieceCount) {
+        if (i.pieceCount !== (selectedPieceCount?.count ?? null)) return false;
+      }
+
+      return true;
+    });
+  }, [product, isSelectionComplete, cartItems, hasColors, selectedColor, hasSizes, selectedSize, selectedPieceCount]);
+
+  const variantInCart = Boolean(matchedCartItem);
+  const cartVariantQty = matchedCartItem ? matchedCartItem.quantity : 0;
 
   // Live stock evaluation for current variant (Scenario A & B)
   const stockInfo = resolveStock(product, selectedSize, selectedColor);
@@ -125,6 +176,7 @@ const CollectionProductDetailCard = ({ product, isLast = false }) => {
 
   const handleSelectColor = (cVar) => {
     setSelectedColor(cVar);
+    setError('');
     // Smoothly jump activeImg to this color variant's image
     const cVarUrl = cVar.images?.[0]?.url || (typeof cVar.images?.[0] === 'string' ? cVar.images[0] : null);
     if (cVarUrl) {
@@ -143,6 +195,7 @@ const CollectionProductDetailCard = ({ product, isLast = false }) => {
 
   const handleThumbnailClick = (idx) => {
     setActiveImg(idx);
+    setError('');
     const clickedItem = images[idx];
     const clickedUrl = typeof clickedItem === 'string' ? clickedItem : clickedItem?.url;
     if (clickedItem?.colorVariant) {
@@ -182,8 +235,12 @@ const CollectionProductDetailCard = ({ product, isLast = false }) => {
 
   const handleAddToCart = (e) => {
     e.preventDefault();
+    if (product.colorVariants && product.colorVariants.length > 0 && !selectedColor) {
+      setError('Please choose a colour to continue');
+      return;
+    }
     if (activeSizes?.length > 0 && !selectedSize) {
-      setError('Please select a size first');
+      setError('Please select a size to continue');
       return;
     }
     if (isOutOfStock) return;
@@ -243,6 +300,12 @@ const CollectionProductDetailCard = ({ product, isLast = false }) => {
 
         {/* ── Left Column: Clean Hero Product Gallery ───────────────── */}
         <div className="product-gallery-wrapper">
+          <div className="collection-product-card-header">
+            <span className="collection-product-collection-heading">
+              {product.category}
+            </span>
+          </div>
+
           <div
             className="product-gallery-main product-detail-gallery-main collection-product-gallery-main"
             onTouchStart={handleTouchStart}
@@ -402,75 +465,11 @@ const CollectionProductDetailCard = ({ product, isLast = false }) => {
               <Maximize2 size={16} strokeWidth={2.2} />
             </button>
           </div>
-
-          {/* Thumbnail Strip: Showcase & Colour Variant Images */}
-          {images.length > 1 && (
-            <div
-              className="product-gallery-thumbnails"
-              style={{
-                display: 'flex',
-                alignItems: 'center',
-                gap: 10,
-                marginTop: 14,
-                overflowX: 'auto',
-                padding: '4px 2px 8px',
-                scrollbarWidth: 'thin',
-              }}
-            >
-              {images.map((item, idx) => {
-                const isActive = idx === activeImg;
-                return (
-                  <button
-                    key={item._id || idx}
-                    type="button"
-                    onClick={() => handleThumbnailClick(idx)}
-                    aria-label={`View photo ${idx + 1}`}
-                    title={`Photo ${idx + 1}`}
-                    style={{
-                      width: 58,
-                      height: 58,
-                      borderRadius: 12,
-                      overflow: 'hidden',
-                      padding: 0,
-                      border: isActive
-                        ? '2px solid var(--accent, #C4386C)'
-                        : '1.5px solid var(--border)',
-                      background: 'var(--bg-secondary)',
-                      cursor: 'pointer',
-                      flexShrink: 0,
-                      boxShadow: isActive
-                        ? '0 4px 12px rgba(196, 56, 108, 0.28)'
-                        : 'none',
-                      opacity: 1,
-                      transition: 'all 0.2s cubic-bezier(0.16, 1, 0.3, 1)',
-                      transform: isActive ? 'scale(1.04)' : 'none',
-                    }}
-                  >
-                    <img
-                      src={optimizeImageUrl(item.url, 140)}
-                      alt={`${product.name} ${idx + 1}`}
-                      loading="lazy"
-                      style={{
-                        width: '100%',
-                        height: '100%',
-                        objectFit: 'cover',
-                        display: 'block',
-                      }}
-                    />
-                  </button>
-                );
-              })}
-            </div>
-          )}
         </div>
 
         {/* ── Right Column: Info Wrapper (Identical to Product Detail Section) ── */}
         <div className="product-info-wrapper">
           <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5 }}>
-
-            <p className="product-detail-category">
-              {product.category}
-            </p>
 
             {/* Toast for copied link */}
             {copyToast && (
@@ -603,45 +602,13 @@ const CollectionProductDetailCard = ({ product, isLast = false }) => {
               )}
             </div>
 
-            {/* Colour Variation Selector with Expand/Collapse */}
-            {product.colorVariants && product.colorVariants.length > 0 && (
-              <ColorVariationSelector
-                colorVariants={product.colorVariants}
-                selectedColor={selectedColor}
-                onSelectColor={handleSelectColor}
-                fallbackImage={product.images?.[0]?.url}
-              />
-            )}
-
-            {/* Bangle Size Selector with Live Stock Availability */}
+            {/* Bangle Size Selector with Live Stock Availability (Positioned directly below price) */}
             {activeSizes?.length > 0 && (
-              <div className="product-detail-section">
-                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 6 }}>
-                  <span className="product-detail-label" style={{ margin: 0 }}>
-                    Select Size
-                  </span>
-                  <button
-                    type="button"
-                    onClick={() => setShowSizeChart(true)}
-                    style={{
-                      background: 'none',
-                      border: 'none',
-                      cursor: 'pointer',
-                      display: 'inline-flex',
-                      alignItems: 'center',
-                      gap: 5,
-                      fontSize: '0.8rem',
-                      fontWeight: 600,
-                      color: 'var(--accent, #C4386C)',
-                      textDecoration: 'underline',
-                      textUnderlineOffset: 3,
-                      padding: 0,
-                    }}
-                  >
-                    <Ruler size={14} /> Size Guide
-                  </button>
-                </div>
-                <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
+              <div className="product-detail-section" style={{ marginTop: 12, marginBottom: 12 }}>
+                <span className="product-detail-label" style={{ marginBottom: 6 }}>
+                  Select Size
+                </span>
+                <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
                   {activeSizes.map((s, idx) => {
                     const isOutOfStock = s.inStock === false;
                     const isSelected = selectedSize === s.size;
@@ -670,16 +637,25 @@ const CollectionProductDetailCard = ({ product, isLast = false }) => {
                           textDecoration: isOutOfStock ? 'line-through' : 'none',
                           opacity: isOutOfStock ? 0.5 : 1,
                           position: 'relative',
-                          minWidth: 46,
                         }}
                         title={isOutOfStock ? `${s.size} is currently out of stock` : `Select size ${s.size}`}
                       >
-                        {s.size}
+                        {formatBangleSize(s.size)}
                       </button>
                     );
                   })}
                 </div>
               </div>
+            )}
+
+            {/* Colour Variation Selector with Expand/Collapse */}
+            {product.colorVariants && product.colorVariants.length > 0 && (
+              <ColorVariationSelector
+                colorVariants={product.colorVariants}
+                selectedColor={selectedColor}
+                onSelectColor={handleSelectColor}
+                fallbackImage={product.images?.[0]?.url}
+              />
             )}
 
             {/* Piece Count Selector */}
@@ -924,10 +900,20 @@ const CollectionProductDetailCard = ({ product, isLast = false }) => {
       {/* Enlarged Product Image Modal with Swipe */}
       <ProductImageModal
         isOpen={isEnlargedModalOpen}
-        onClose={() => setIsEnlargedModalOpen(false)}
+        onClose={(finalIdx) => {
+          setIsEnlargedModalOpen(false);
+          if (typeof finalIdx === 'number' && images[finalIdx]) {
+            setActiveImg(finalIdx);
+            handleThumbnailClick(finalIdx);
+          }
+        }}
         product={product}
         images={images}
         initialIndex={activeImg}
+        onImageChange={(newIdx) => {
+          setActiveImg(newIdx);
+          handleThumbnailClick(newIdx);
+        }}
       />
     </div>
   );

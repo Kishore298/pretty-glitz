@@ -1,5 +1,6 @@
 const Order = require('../models/Order');
 const User = require('../models/User');
+const whatsappService = require('../services/whatsappService');
 
 /**
  * GET /api/admin/customers
@@ -191,7 +192,53 @@ const getCustomerOrders = async (req, res) => {
   }
 };
 
+/**
+ * POST /api/admin/customers/send-whatsapp-offer
+ * Allows admins to dispatch custom offer WhatsApp messages to customers.
+ */
+const sendCustomerWhatsAppOffer = async (req, res) => {
+  try {
+    const { customerPhone, customerName, offerMessage } = req.body;
+
+    if (!customerPhone) {
+      return res.status(400).json({ message: 'Customer phone number is required.' });
+    }
+
+    const cleanPhone = String(customerPhone).replace(/\D/g, '').slice(-10);
+    if (!/^[6-9]\d{9}$/.test(cleanPhone)) {
+      return res.status(400).json({ message: 'Please enter a valid 10-digit Indian phone number.' });
+    }
+
+    if (!offerMessage || !offerMessage.trim()) {
+      return res.status(400).json({ message: 'Offer message text cannot be empty.' });
+    }
+
+    const result = await whatsappService.sendCustomOffer({
+      phone: cleanPhone,
+      customerName: customerName ? customerName.trim() : '',
+      offerText: offerMessage.trim(),
+    });
+
+    const waLink = whatsappService.generateWhatsAppDeepLink(
+      cleanPhone,
+      `✨ PrettyGlitz Special Offer ✨\n\n${customerName ? `Dear ${customerName},\n\n` : ''}${offerMessage.trim()}`
+    );
+
+    return res.status(200).json({
+      success: true,
+      message: 'Custom offer message sent successfully to customer WhatsApp.',
+      simulated: result.simulated || false,
+      messageId: result.messageId,
+      waLink,
+    });
+  } catch (err) {
+    console.error('[customerAdminController] sendCustomerWhatsAppOffer error:', err);
+    return res.status(500).json({ message: err.message || 'Failed to dispatch WhatsApp offer message.' });
+  }
+};
+
 module.exports = {
   getCustomers,
   getCustomerOrders,
+  sendCustomerWhatsAppOffer,
 };

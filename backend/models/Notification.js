@@ -2,9 +2,20 @@ const mongoose = require('mongoose');
 
 const notificationSchema = new mongoose.Schema(
   {
+    userId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: 'User',
+      default: null,
+      index: true,
+    },
+    forRole: {
+      type: String,
+      enum: ['admin', 'customer', 'all'],
+      default: 'admin',
+      index: true,
+    },
     type: {
       type: String,
-      enum: ['NEW_ORDER_REQUEST', 'ORDER_CONFIRMED', 'SYSTEM_ALERT'],
       default: 'NEW_ORDER_REQUEST',
       index: true,
     },
@@ -38,7 +49,8 @@ const notificationSchema = new mongoose.Schema(
   { timestamps: { createdAt: true, updatedAt: true } }
 );
 
-notificationSchema.index({ read: 1, createdAt: -1 });
+notificationSchema.index({ forRole: 1, read: 1, createdAt: -1 });
+notificationSchema.index({ userId: 1, read: 1, createdAt: -1 });
 
 module.exports = mongoose.model('Notification', notificationSchema);
 

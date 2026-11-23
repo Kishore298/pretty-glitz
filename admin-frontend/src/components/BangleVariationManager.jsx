@@ -736,7 +736,7 @@ const BangleVariationManager = ({
                       alignItems: 'center',
                       gap: 8,
                       flexShrink: 0,
-                      flexWrap: 'nowrap',
+                      flexWrap: 'wrap',
                       justifyContent: 'flex-end',
                       marginLeft: 'auto',
                     }}

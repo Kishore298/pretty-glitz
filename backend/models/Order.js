@@ -112,6 +112,23 @@ const orderSchema = new mongoose.Schema(
       type: Date,
       default: null,
     },
+    whatsappSendCount: {
+      type: Number,
+      default: 0,
+    },
+    whatsappDeliveryStatus: {
+      type: String,
+      enum: ['PENDING', 'SENT', 'DELIVERED', 'FAILED', 'SIMULATED'],
+      default: 'PENDING',
+    },
+    whatsappLastMessageId: {
+      type: String,
+      default: null,
+    },
+    whatsappLastSentType: {
+      type: String,
+      default: null,
+    },
     confirmedAt: {
       type: Date,
       default: null,

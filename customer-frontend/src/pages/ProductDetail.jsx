@@ -17,7 +17,6 @@ import {
   Minus,
   ShoppingBag,
   Heart,
-  Ruler,
 } from 'lucide-react';
 import ProductCard from '../components/ProductCard';
 import CollectionProductDetailCard from '../components/CollectionProductDetailCard';
@@ -26,7 +25,7 @@ import ProductDescriptionDisplay from '../components/ProductDescriptionDisplay';
 import BangleSizeChartModal from '../components/BangleSizeChartModal';
 import ProductImageModal from '../components/ProductImageModal';
 import ColorVariationSelector from '../components/ColorVariationSelector';
-import { sortSizesAscending } from '../utils/sizeHelper';
+import { sortSizesAscending, formatBangleSize } from '../utils/sizeHelper';
 import { slugify } from '../utils/urlHelper';
 import logoImg from '../assets/pretty-glitz-logo.png';
 
@@ -56,7 +55,7 @@ const ProductDetail = () => {
   const [shippingOpen, setShippingOpen] = useState(false);
   const [copyToast, setCopyToast] = useState(false);
 
-  const { addToCart, updateQuantity, removeFromCart, getCartItemQuantity, isInCart } = useContext(CartContext);
+  const { cartItems, addToCart, updateQuantity, removeFromCart } = useContext(CartContext);
   const { isInWishlist, toggleWishlist } = useWishlist();
 
   const inWishlist = product ? isInWishlist(product._id) : false;
@@ -65,6 +64,8 @@ const ProductDetail = () => {
     setActiveCustomImage(null);
     setSelectedColor(null);
     setSelectedSize(null);
+    setActiveCustomImage(null);
+    setError('');
     fetchProduct();
     // Instantly reset scroll to top without visible smooth scrolling animation
     const html = document.documentElement;
@@ -95,15 +96,11 @@ const ProductDetail = () => {
         }
       }
 
-      // Handle Color Variants: Showcase image is default for designer bangles!
-      // Do NOT pre-select color variant on initial load.
-      if (data.colorVariants && data.colorVariants.length > 0) {
-        setSelectedColor(null);
-        setSelectedSize(null);
-      } else if (data.sizes?.length > 0) {
-        const firstInStock = data.sizes.find(s => s.inStock !== false);
-        setSelectedSize(firstInStock ? firstInStock.size : data.sizes[0].size);
-      }
+      // Keep color and size initially unselected per user instruction.
+      // Size must always be selected manually by the user, for both products with and without color variants.
+      setSelectedColor(null);
+      setSelectedSize(null);
+      setError('');
 
       // Auto-select lowest piece count
       if (data.pieceCounts?.length > 0) {
@@ -199,11 +196,11 @@ const ProductDetail = () => {
     setActiveCustomImage(item.url);
     if (item.type === 'color' && item.colorVariant) {
       setSelectedColor(item.colorVariant);
-      if (item.colorVariant.sizes?.length > 0) {
+      setError('');
+      if (selectedSize && item.colorVariant.sizes?.length > 0) {
         const stillValid = item.colorVariant.sizes.find(s => s.size === selectedSize && s.inStock !== false);
         if (!stillValid) {
-          const firstInStock = item.colorVariant.sizes.find(s => s.inStock !== false);
-          setSelectedSize(firstInStock ? firstInStock.size : item.colorVariant.sizes[0].size);
+          setSelectedSize(null);
         }
       }
     } else if (item.type === 'showcase') {
@@ -223,9 +220,44 @@ const ProductDetail = () => {
   const resolvedPrice = selectedPieceCount ? selectedPieceCount.price : product?.price;
   const resolvedOriginalPrice = selectedPieceCount ? selectedPieceCount.originalPrice : product?.originalPrice;
 
-  // Cart state for current variant
-  const cartVariantQty = product ? getCartItemQuantity(product._id, selectedSize, selectedPieceCount?.count ?? null, selectedColor?._id) : 0;
-  const variantInCart = product ? isInCart(product._id, selectedSize, selectedPieceCount?.count ?? null, selectedColor?._id) : false;
+  // Strict Cart Variant Matching: Stepper and "View Cart" only display when the exact variant matches
+  const hasColors = Boolean(product?.colorVariants && product.colorVariants.length > 0);
+  const hasSizes = Boolean(activeSizes && activeSizes.length > 0);
+  const hasPieceCounts = Boolean(product?.pieceCounts && product.pieceCounts.length > 0);
+  const isSelectionComplete = (!hasColors || selectedColor) && (!hasSizes || selectedSize);
+
+  const matchedCartItem = React.useMemo(() => {
+    if (!product || !isSelectionComplete) return null;
+    return (cartItems || []).find((i) => {
+      const pId = (typeof i.product === 'object' ? i.product?._id : i.product)?.toString();
+      if (pId !== product._id?.toString()) return false;
+
+      if (hasColors) {
+        const itemColorId = i.colorVariantId ? i.colorVariantId.toString() : null;
+        const curColorId = selectedColor?._id ? selectedColor._id.toString() : null;
+        if (itemColorId && curColorId) {
+          if (itemColorId !== curColorId) return false;
+        } else if (i.colorName && selectedColor?.colorName) {
+          if (i.colorName.toLowerCase() !== selectedColor.colorName.toLowerCase()) return false;
+        } else if (itemColorId !== curColorId) {
+          return false;
+        }
+      }
+
+      if (hasSizes) {
+        if (i.size !== selectedSize) return false;
+      }
+
+      if (hasPieceCounts) {
+        if (i.pieceCount !== (selectedPieceCount?.count ?? null)) return false;
+      }
+
+      return true;
+    });
+  }, [product, isSelectionComplete, cartItems, hasColors, selectedColor, hasSizes, selectedSize, hasPieceCounts, selectedPieceCount]);
+
+  const variantInCart = Boolean(matchedCartItem);
+  const cartVariantQty = matchedCartItem ? matchedCartItem.quantity : 0;
 
   // Authoritative stock evaluation for current variant (Scenario A & B)
   const stockInfo = resolveStock(product, selectedSize, selectedColor);
@@ -322,11 +354,11 @@ const ProductDetail = () => {
   const handleColorSelect = (cVar) => {
     setSelectedColor(cVar);
     setActiveCustomImage(cVar?.images?.[0]?.url || null);
-    if (cVar?.sizes?.length > 0) {
+    setError('');
+    if (selectedSize && cVar?.sizes?.length > 0) {
       const stillValid = cVar.sizes.find(s => s.size === selectedSize && s.inStock !== false);
       if (!stillValid) {
-        const firstAvailable = cVar.sizes.find(s => s.inStock !== false);
-        setSelectedSize(firstAvailable ? firstAvailable.size : cVar.sizes[0].size);
+        setSelectedSize(null);
       }
     }
   };
@@ -337,7 +369,6 @@ const ProductDetail = () => {
     </div>
   );
 
-  const hasPieceCounts = product.pieceCounts?.length > 0;
   const hasColorVariants = Array.isArray(product.colorVariants) && product.colorVariants.length > 0;
   const isDesignerBangles = (product.category && /designer/i.test(product.category)) || hasColorVariants;
 
@@ -607,10 +638,6 @@ const ProductDetail = () => {
           <div className="product-info-wrapper">
             <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.5 }}>
 
-              <p className="product-detail-category">
-                {product.category}
-              </p>
-
               {/* Toast for copied link */}
               {copyToast && (
                 <motion.div
@@ -653,14 +680,14 @@ const ProductDetail = () => {
                       background: inWishlist ? 'rgba(225,29,72,0.08)' : 'transparent',
                     }}
                   >
-                  <Heart
-                    size={16}
-                    style={{
-                      fill: inWishlist ? '#E11D48' : 'rgba(255, 255, 255, 0.65)',
-                      stroke: inWishlist ? '#E11D48' : (isDark ? 'rgba(255, 255, 255, 0.75)' : 'rgba(35, 28, 33, 0.65)'),
-                      strokeWidth: 1.6,
-                    }}
-                  />
+                    <Heart
+                      size={16}
+                      style={{
+                        fill: inWishlist ? '#E11D48' : 'rgba(255, 255, 255, 0.65)',
+                        stroke: inWishlist ? '#E11D48' : (isDark ? 'rgba(255, 255, 255, 0.75)' : 'rgba(35, 28, 33, 0.65)'),
+                        strokeWidth: 1.6,
+                      }}
+                    />
                   </button>
 
                   <button
@@ -716,51 +743,20 @@ const ProductDetail = () => {
                 )}
               </div>
 
-              {/* Colour Variation Selector with Expand/Collapse */}
-              {product.colorVariants && product.colorVariants.length > 0 && (
-                <ColorVariationSelector
-                  colorVariants={product.colorVariants}
-                  selectedColor={selectedColor}
-                  onSelectColor={handleColorSelect}
-                  fallbackImage={product.images?.[0]?.url}
-                />
-              )}
-
-              {/* Bangle Size Selector with Live Stock Availability */}
+              {/* Bangle Size Selector with Live Stock Availability (Positioned directly below price) */}
               {activeSizes?.length > 0 && (
-                <div className="product-detail-section">
-                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 6 }}>
-                    <span className="product-detail-label" style={{ margin: 0 }}>
-                      Select Size
-                    </span>
-                    <button
-                      type="button"
-                      onClick={() => setShowSizeChart(true)}
-                      style={{
-                        background: 'none',
-                        border: 'none',
-                        cursor: 'pointer',
-                        display: 'inline-flex',
-                        alignItems: 'center',
-                        gap: 5,
-                        fontSize: '0.8rem',
-                        fontWeight: 600,
-                        color: 'var(--accent, #C4386C)',
-                        textDecoration: 'underline',
-                        textUnderlineOffset: 3,
-                        padding: 0,
-                      }}
-                    >
-                      <Ruler size={14} /> Size Guide
-                    </button>
-                  </div>
-                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8 }}>
+                <div className="product-detail-section" style={{ marginTop: 12, marginBottom: 12 }}>
+                  <span className="product-detail-label" style={{ marginBottom: 6 }}>
+                    Select Size
+                  </span>
+                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
                     {activeSizes.map((s, idx) => {
                       const isOutOfStock = s.inStock === false;
                       const isSelected = selectedSize === s.size;
                       return (
                         <button
                           key={idx}
+                          type="button"
                           disabled={isOutOfStock}
                           onClick={() => {
                             if (!isOutOfStock) {
@@ -782,16 +778,25 @@ const ProductDetail = () => {
                             textDecoration: isOutOfStock ? 'line-through' : 'none',
                             opacity: isOutOfStock ? 0.5 : 1,
                             position: 'relative',
-                            minWidth: 46,
                           }}
                           title={isOutOfStock ? `${s.size} is currently out of stock` : `Select size ${s.size}`}
                         >
-                          {s.size}
+                          {formatBangleSize(s.size)}
                         </button>
                       );
                     })}
                   </div>
                 </div>
+              )}
+
+              {/* Colour Variation Selector with Expand/Collapse */}
+              {product.colorVariants && product.colorVariants.length > 0 && (
+                <ColorVariationSelector
+                  colorVariants={product.colorVariants}
+                  selectedColor={selectedColor}
+                  onSelectColor={handleColorSelect}
+                  fallbackImage={product.images?.[0]?.url}
+                />
               )}
 
               {/* Piece Count Selector */}
@@ -1055,7 +1060,7 @@ const ProductDetail = () => {
                 More to Explore Across Collections
               </h2>
               <p className="product-related-subtitle" style={{ marginTop: 4, marginBottom: 0 }}>
-                Discover bespoke handcrafted jewellery across all our atelier collections
+                Discover handcrafted bangles and timeless jewellery
               </p>
             </div>
 
@@ -1112,10 +1117,20 @@ const ProductDetail = () => {
       {/* Enlarged Product Image Lightbox Modal */}
       <ProductImageModal
         isOpen={isImageModalOpen}
-        onClose={() => setIsImageModalOpen(false)}
+        onClose={(finalIdx) => {
+          setIsImageModalOpen(false);
+          if (typeof finalIdx === 'number' && allGalleryThumbnails[finalIdx]) {
+            handleThumbnailClick(allGalleryThumbnails[finalIdx]);
+          }
+        }}
         product={product}
         images={allGalleryThumbnails.length > 0 ? allGalleryThumbnails : (product.images || [])}
         initialIndex={Math.max(0, allGalleryThumbnails.findIndex(t => t.url === currentMainImageUrl))}
+        onImageChange={(newIdx) => {
+          if (allGalleryThumbnails[newIdx]) {
+            handleThumbnailClick(allGalleryThumbnails[newIdx]);
+          }
+        }}
       />
     </div>
   );

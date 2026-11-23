@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import api from '../utils/api';
 import { motion } from 'framer-motion';
-import { ArrowRight } from 'lucide-react';
+import { ChevronRight, ArrowRight } from 'lucide-react';
 import { optimizeImageUrl } from '../utils/cloudinary';
 import { useTheme } from '../context/ThemeContext';
 import logoImg from '../assets/pretty-glitz-logo.png';
@@ -45,6 +45,8 @@ const Categories = () => {
         {/* Breadcrumb Bar */}
         <div className="breadcrumb">
           <Link to="/">Home</Link>
+          <ChevronRight size={11} className="separator" />
+          <span style={{ color: 'var(--accent)', fontWeight: 600 }}>All Collections</span>
         </div>
 
         {/* Header */}
@@ -64,21 +66,20 @@ const Categories = () => {
               marginBottom: 10,
             }}
           >
-            Curated Atelier
+            Curated Elegance
           </p>
-          <h1
+          <p
+            className="collection-tagline"
             style={{
-              fontFamily: '"Cormorant Garamond", Georgia, serif',
-              fontSize: 'clamp(2rem, 5vw, 2.75rem)',
-              fontWeight: 700,
-              color: 'var(--text)',
-              margin: '0 0 10px',
+              color: 'var(--text-secondary)',
+              fontSize: 'clamp(0.85rem, 2.4vw, 0.95rem)',
+              maxWidth: 480,
+              margin: '10px auto 0',
+              lineHeight: 1.45,
+              padding: '0 12px',
             }}
           >
-            All Collections
-          </h1>
-          <p style={{ color: 'var(--text-secondary)', fontSize: '0.9rem', maxWidth: 540, margin: '0 auto' }}>
-            Discover bespoke handcrafted jewellery, traditional bangles, and designer accessories across our boutique collections.
+            Discover handcrafted bangles and timeless jewellery.
           </p>
         </motion.div>
 
@@ -143,11 +144,11 @@ const Categories = () => {
                         src={
                           category.bannerImage
                             ? optimizeImageUrl(category.bannerImage, {
-                                width: 600,
-                                height: 450,
-                                crop: 'fill',
-                                gravity: 'auto',
-                              })
+                              width: 600,
+                              height: 450,
+                              crop: 'fill',
+                              gravity: 'auto',
+                            })
                             : logoImg
                         }
                         alt={category.name}

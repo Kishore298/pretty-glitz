@@ -6,6 +6,36 @@
  * irrespective of the order they were inserted into the database.
  */
 
+export const BANGLE_DIAMETER_MAP = {
+  '2.2': '5.4 cm',
+  '2.4': '5.7 cm',
+  '2.6': '6.0 cm',
+  '2.8': '6.4 cm',
+  '2.10': '6.7 cm',
+  '2.12': '7.0 cm',
+};
+
+/**
+ * Formats bangle size into standard display format: "2.2 (5.4 cm)"
+ */
+export const formatBangleSize = (sizeValue) => {
+  if (sizeValue === null || sizeValue === undefined) return '';
+  const raw = typeof sizeValue === 'object' ? (sizeValue.size ?? '') : String(sizeValue);
+  const str = String(raw).trim();
+  if (!str) return '';
+
+  if (str.includes('(') || str.toLowerCase().includes('cm')) {
+    return str;
+  }
+
+  const normalized = str.replace(/[-\s]/g, '.');
+  if (BANGLE_DIAMETER_MAP[normalized]) {
+    return `${normalized} (${BANGLE_DIAMETER_MAP[normalized]})`;
+  }
+
+  return str;
+};
+
 export const parseBangleSize = (sizeValue) => {
   if (sizeValue === null || sizeValue === undefined) return 999999;
   const raw = typeof sizeValue === 'object' ? (sizeValue.size ?? '') : String(sizeValue);

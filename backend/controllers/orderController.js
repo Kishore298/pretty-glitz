@@ -4,9 +4,9 @@ const Order = require('../models/Order');
 const Product = require('../models/Product');
 const InventoryLog = require('../models/InventoryLog');
 const Notification = require('../models/Notification');
-const { emitToAdmin, emitToUser } = require('../config/socket');
 const { sendPushToAllAdmins } = require('../services/pushService');
 const { sendFcmToCustomer } = require('../services/firebaseService');
+const whatsappService = require('../services/whatsappService');
 const jwt = require('jsonwebtoken');
 
 // Helper: Safely extract customer userId from optional authorization header
@@ -385,25 +385,10 @@ const createOrder = async (req, res) => {
         console.warn('[Orders] Out-of-stock check warning:', stockErr.message);
       }
 
-      // a. Socket.IO instant alert to Admin Panel
-      try {
-        emitToAdmin('new_order_request', {
-          orderId: createdOrder.orderId,
-          customerName: createdOrder.customer.name,
-          customerMobile: createdOrder.customer.mobile,
-          orderAmount: createdOrder.totalAmount,
-          itemsCount: createdOrder.items.length,
-          items: createdOrder.items.map((i) => ({ name: i.name, quantity: i.quantity, price: i.price })),
-          status: createdOrder.status,
-          createdAt: createdOrder.createdAt,
-        });
-      } catch (socketErr) {
-        console.warn('[Orders] Socket.IO emission warning:', socketErr.message);
-      }
-
-      // b. Persistent MongoDB Notification
+      // a. Persistent MongoDB Notification for Admin Polling
       try {
         await Notification.create({
+          forRole: 'admin',
           type: 'NEW_ORDER_REQUEST',
           title: `New Order Request: ${createdOrder.orderId}`,
           message: `${createdOrder.customer.name} placed a ₹${createdOrder.totalAmount} order request (${createdOrder.items.length} items)`,
@@ -418,7 +403,7 @@ const createOrder = async (req, res) => {
           read: false,
         });
       } catch (notifErr) {
-        console.warn('[Orders] Persistent notification warning:', notifErr.message);
+        console.warn('[Orders] Could not persist order notification:', notifErr.message);
       }
 
       // c. Background Web Push to Admin Devices
@@ -434,6 +419,19 @@ const createOrder = async (req, res) => {
         });
       } catch (pushErr) {
         console.warn('[Orders] Web push dispatch warning:', pushErr.message);
+      }
+
+      // d. Automatic WhatsApp Order Confirmation Notification (with support info)
+      try {
+        const waRes = await whatsappService.sendOrderConfirmation(createdOrder);
+        createdOrder.whatsappSentAt = new Date();
+        createdOrder.whatsappSendCount = 1;
+        createdOrder.whatsappDeliveryStatus = waRes.simulated ? 'SIMULATED' : 'SENT';
+        createdOrder.whatsappLastMessageId = waRes.messageId || null;
+        createdOrder.whatsappLastSentType = 'ORDER_CONFIRMATION';
+        await createdOrder.save();
+      } catch (waErr) {
+        console.warn('[Orders] Automatic WhatsApp confirmation dispatch warning:', waErr.message);
       }
 
       return res.status(201).json({
@@ -796,15 +794,21 @@ const updateOrderStatus = async (req, res) => {
 
     await order.save();
 
-    // Broadcast status change to admin sockets
+    // Record status change notification for admin and customer polling
     try {
-      emitToAdmin('order_status_updated', {
+      await Notification.create({
+        forRole: 'admin',
+        type: 'ORDER_UPDATE',
+        title: `Order #${order.orderId} ${order.status}`,
+        message: `Order #${order.orderId} was updated to ${order.status}${order.trackingId ? ` (Tracking: ${order.trackingId})` : ''}.`,
         orderId: order.orderId,
-        status: order.status,
-        trackingId: order.trackingId,
-        courierPartner: order.courierPartner,
-        updatedAt: order.updatedAt,
-      });
+        data: {
+          orderId: order.orderId,
+          status: order.status,
+          trackingId: order.trackingId,
+        },
+        read: false,
+      }).catch(() => {});
 
       if (status === 'CANCELLED') {
         sendPushToAllAdmins({
@@ -868,14 +872,6 @@ const updateOrderStatus = async (req, res) => {
       }
 
       if (order.userId) {
-        emitToUser(order.userId.toString(), 'order_status_updated', {
-          orderId: order.orderId,
-          status: order.status,
-          trackingId: order.trackingId,
-          courierPartner: order.courierPartner,
-          updatedAt: order.updatedAt,
-        });
-
         // Customer in-app notification
         let notifMsg = `Your order #${order.orderId} status has been updated to ${order.status}.`;
         if (order.status === 'DISPATCHED' && order.trackingId) {
@@ -883,6 +879,7 @@ const updateOrderStatus = async (req, res) => {
         }
         await Notification.create({
           userId: order.userId,
+          forRole: 'customer',
           type: 'ORDER_UPDATE',
           title: `Order #${order.orderId} ${order.status}`,
           message: notifMsg,
@@ -894,6 +891,24 @@ const updateOrderStatus = async (req, res) => {
           },
           read: false,
         }).catch(() => {});
+      }
+
+      // Dispatch WhatsApp Order Status Update (with support info)
+      if (status && order.customer?.mobile) {
+        try {
+          const waRes = await whatsappService.sendOrderStatusUpdate(order, status, {
+            courierPartner: order.courierPartner,
+            trackingId: order.trackingId,
+          });
+          order.whatsappSentAt = new Date();
+          order.whatsappSendCount = (order.whatsappSendCount || 0) + 1;
+          order.whatsappDeliveryStatus = waRes.simulated ? 'SIMULATED' : 'SENT';
+          order.whatsappLastMessageId = waRes.messageId || null;
+          order.whatsappLastSentType = `STATUS_${status}`;
+          await order.save();
+        } catch (waErr) {
+          console.warn('[Orders] Automatic WhatsApp status update warning:', waErr.message);
+        }
       }
     } catch {
       // Non-critical
@@ -910,6 +925,89 @@ const updateOrderStatus = async (req, res) => {
   }
 };
 
+// ─── POST /api/orders/:id/resend-whatsapp (Admin resends WhatsApp order message) ─
+const resendWhatsAppOrderMessage = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { messageType = 'AUTO', customText } = req.body;
+
+    const isObjectId = mongoose.Types.ObjectId.isValid(id);
+    const query = isObjectId ? { _id: id } : { orderId: id.toUpperCase() };
+
+    const order = await Order.findOne(query);
+    if (!order) {
+      return res.status(404).json({ message: 'Order not found.' });
+    }
+
+    if (!order.customer?.mobile) {
+      return res.status(400).json({ message: 'Customer phone number is missing on this order.' });
+    }
+
+    // Accidental repeat send protection: 30-second cooldown
+    const COOLDOWN_MS = 30 * 1000;
+    if (order.whatsappSentAt) {
+      const elapsed = Date.now() - new Date(order.whatsappSentAt).getTime();
+      if (elapsed < COOLDOWN_MS) {
+        const remainingSec = Math.ceil((COOLDOWN_MS - elapsed) / 1000);
+        return res.status(429).json({
+          message: `Please wait ${remainingSec}s before resending another WhatsApp message.`,
+          retryAfter: remainingSec,
+        });
+      }
+    }
+
+    let waRes;
+    let sentType = messageType;
+
+    if (customText && customText.trim()) {
+      waRes = await whatsappService.dispatchWhatsApp({
+        to: order.customer.mobile,
+        text: customText.trim(),
+      });
+      sentType = 'CUSTOM';
+    } else if (messageType === 'ORDER_CONFIRMATION' || order.status === 'PENDING_WHATSAPP' || order.status === 'CONFIRMED') {
+      waRes = await whatsappService.sendOrderConfirmation(order);
+      sentType = 'ORDER_CONFIRMATION';
+    } else {
+      waRes = await whatsappService.sendOrderStatusUpdate(order, order.status, {
+        courierPartner: order.courierPartner,
+        trackingId: order.trackingId,
+      });
+      sentType = `STATUS_${order.status}`;
+    }
+
+    order.whatsappSentAt = new Date();
+    order.whatsappSendCount = (order.whatsappSendCount || 0) + 1;
+    order.whatsappDeliveryStatus = waRes.simulated ? 'SIMULATED' : 'SENT';
+    order.whatsappLastMessageId = waRes.messageId || null;
+    order.whatsappLastSentType = sentType;
+    await order.save();
+
+    const waLink = whatsappService.generateWhatsAppDeepLink(
+      order.customer.mobile,
+      `Hello ${order.customer.name}! Following up on your order #${order.orderId} (Status: ${order.status}, Total: ₹${order.totalAmount}).`
+    );
+
+    return res.status(200).json({
+      success: true,
+      message: 'WhatsApp notification resent successfully.',
+      simulated: waRes.simulated || false,
+      messageId: waRes.messageId,
+      order: {
+        orderId: order.orderId,
+        whatsappSentAt: order.whatsappSentAt,
+        whatsappSendCount: order.whatsappSendCount,
+        whatsappDeliveryStatus: order.whatsappDeliveryStatus,
+        whatsappLastSentType: order.whatsappLastSentType,
+      },
+      waLink,
+    });
+  } catch (err) {
+    console.error('[Orders] resendWhatsAppOrderMessage error:', err);
+    return res.status(500).json({ message: err.message || 'Failed to resend WhatsApp message.' });
+  }
+};
+
 module.exports = {
   createOrder,
   getOrders,
@@ -917,5 +1015,6 @@ module.exports = {
   trackOrderPublic,
   getMyOrders,
   updateOrderStatus,
+  resendWhatsAppOrderMessage,
 };
 
