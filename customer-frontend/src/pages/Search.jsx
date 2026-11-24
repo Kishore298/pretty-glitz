@@ -23,10 +23,15 @@ const Search = () => {
   useEffect(() => {
     if (query) fetchResults();
     else { setResults([]); setLoading(false); }
-    try {
-      window.scrollTo({ top: 0, left: 0, behavior: 'instant' });
-    } catch {
-      window.scrollTo(0, 0);
+    const hasRestoreState = Boolean(
+      window.history.state?.usr?.restoreScrollY !== undefined
+    );
+    if (!hasRestoreState) {
+      try {
+        window.scrollTo({ top: 0, left: 0, behavior: 'instant' });
+      } catch {
+        window.scrollTo(0, 0);
+      }
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [query]);

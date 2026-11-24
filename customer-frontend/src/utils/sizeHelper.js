@@ -7,12 +7,47 @@
  */
 
 export const BANGLE_DIAMETER_MAP = {
-  '2.2': '5.4 cm',
-  '2.4': '5.7 cm',
-  '2.6': '6.0 cm',
-  '2.8': '6.4 cm',
-  '2.10': '6.7 cm',
-  '2.12': '7.0 cm',
+  '2.0': '4.9-5.1cm',
+  '2.2': '5.2-5.4cm',
+  '2.4': '5.5-5.7cm',
+  '2.6': '5.8-6.0cm',
+  '2.8': '6.1-6.4cm',
+  '2.10': '6.5-6.7cm',
+  '2.12': '6.8-7.0cm',
+};
+
+/**
+ * Returns separated size number and centimeter range parts for custom UI formatting:
+ * { sizeNumber: '2.2', cmRange: '5.2-5.4cm' }
+ */
+export const getBangleSizeParts = (sizeValue) => {
+  if (sizeValue === null || sizeValue === undefined) return { sizeNumber: '', cmRange: '' };
+  const raw = typeof sizeValue === 'object' ? (sizeValue.size ?? '') : String(sizeValue);
+  const str = String(raw).trim();
+  if (!str) return { sizeNumber: '', cmRange: '' };
+
+  const parenMatch = str.match(/^(.*?)\s*\((.*?)\)$/);
+  const candidateNumber = parenMatch ? parenMatch[1].trim() : str;
+  const normalized = candidateNumber.replace(/[-\s]/g, '.');
+
+  if (BANGLE_DIAMETER_MAP[normalized]) {
+    return {
+      sizeNumber: normalized,
+      cmRange: BANGLE_DIAMETER_MAP[normalized],
+    };
+  }
+
+  if (parenMatch && parenMatch[2].trim()) {
+    return {
+      sizeNumber: candidateNumber,
+      cmRange: parenMatch[2].trim(),
+    };
+  }
+
+  return {
+    sizeNumber: str,
+    cmRange: '',
+  };
 };
 
 /**

@@ -21,7 +21,7 @@ app.use(helmet());
 connectDB();
 
 // Routes — existing (UNCHANGED)
-app.use('/api/admin/auth', adminAuthRoutes);
+app.use('/api/admin/auth', require('./routes/adminAuthRoutes'));
 app.use('/api/admin/customers', require('./routes/customerAdminRoutes'));
 app.use('/api/products',   require('./routes/productRoutes'));
 app.use('/api/inventory',  require('./routes/inventoryRoutes'));

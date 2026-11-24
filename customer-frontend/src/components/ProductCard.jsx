@@ -24,7 +24,9 @@ const ProductCard = ({ product, showVariants = false }) => {
   const navigate = useNavigate();
 
   const inWishlist = isInWishlist(product._id);
-  const images = product.images && product.images.length > 0 ? product.images : [];
+  const images = (product?.images && product.images.length > 0)
+    ? product.images
+    : (product?.image ? [{ url: product.image }] : []);
   const hasMultipleImages = images.length > 1;
   const currentImage = images[activeImgIndex] || images[0];
 
@@ -152,7 +154,7 @@ const ProductCard = ({ product, showVariants = false }) => {
             background: isDark ? '#161622' : '#F7F5F2',
             borderRadius: 10,
             overflow: 'hidden',
-            marginBottom: hasMultipleImages ? 3 : 4,
+            marginBottom: 6,
             transition: 'background 0.35s ease',
             touchAction: hasMultipleImages ? 'pan-y' : 'auto',
             cursor: 'pointer',
@@ -193,55 +195,6 @@ const ProductCard = ({ product, showVariants = false }) => {
                   filter: 'contrast(1.04)',
                 }}
               />
-            </div>
-          )}
-
-          {/* Dots Indicator for Multi-Image (Clean loop without jump or auto-scroll) */}
-          {hasMultipleImages && (
-            <div
-              style={{
-                position: 'absolute',
-                bottom: 8,
-                left: '50%',
-                transform: 'translateX(-50%)',
-                display: 'flex',
-                alignItems: 'center',
-                gap: 5,
-                zIndex: 4,
-                background: 'rgba(0,0,0,0.45)',
-                backdropFilter: 'blur(6px)',
-                WebkitBackdropFilter: 'blur(6px)',
-                padding: '3px 8px',
-                borderRadius: 999,
-              }}
-              onClick={(e) => {
-                e.preventDefault();
-                e.stopPropagation();
-              }}
-            >
-              {images.map((_, i) => (
-                <button
-                  key={i}
-                  type="button"
-                  onClick={(e) => {
-                    e.preventDefault();
-                    e.stopPropagation();
-                    setActiveImgIndex(i);
-                  }}
-                  aria-label={`View image ${i + 1}`}
-                  style={{
-                    border: 'none',
-                    padding: 0,
-                    margin: 0,
-                    cursor: 'pointer',
-                    width: i === activeImgIndex ? 14 : 5,
-                    height: 5,
-                    borderRadius: 999,
-                    background: i === activeImgIndex ? '#FFFFFF' : 'rgba(255,255,255,0.45)',
-                    transition: 'all 0.25s ease',
-                  }}
-                />
-              ))}
             </div>
           )}
 
@@ -406,61 +359,6 @@ const ProductCard = ({ product, showVariants = false }) => {
             />
           </button>
         </div>
-
-        {/* Amazon-style Multiple Images Thumbnails Strip */}
-        {hasMultipleImages && (
-          <div
-            onClick={(e) => { e.preventDefault(); e.stopPropagation(); }}
-            style={{
-              display: 'flex',
-              alignItems: 'center',
-              gap: 5,
-              overflowX: 'auto',
-              padding: '3px 0 6px',
-              scrollbarWidth: 'none',
-              msOverflowStyle: 'none',
-            }}
-          >
-            {images.slice(0, 5).map((img, idx) => (
-              <button
-                key={idx}
-                type="button"
-                onClick={(e) => {
-                  e.preventDefault();
-                  e.stopPropagation();
-                  setActiveImgIndex(idx);
-                }}
-                onMouseEnter={() => setActiveImgIndex(idx)}
-                style={{
-                  width: 32,
-                  height: 32,
-                  borderRadius: 6,
-                  overflow: 'hidden',
-                  padding: 0,
-                  border: `1.5px solid ${activeImgIndex === idx ? 'var(--accent, #C4386C)' : 'var(--border)'}`,
-                  boxShadow: activeImgIndex === idx ? '0 0 0 1px var(--accent, #C4386C)' : 'none',
-                  cursor: 'pointer',
-                  background: 'var(--bg-secondary)',
-                  flexShrink: 0,
-                  transition: 'all 0.15s ease',
-                  opacity: 1,
-                }}
-                aria-label={`View photo ${idx + 1}`}
-              >
-                <img
-                  src={optimizeImageUrl(img.url, 100)}
-                  alt=""
-                  style={{ width: '100%', height: '100%', objectFit: 'cover' }}
-                />
-              </button>
-            ))}
-            {images.length > 5 && (
-              <span style={{ fontSize: '0.66rem', color: 'var(--text-muted)', fontWeight: 600, padding: '0 2px' }}>
-                +{images.length - 5}
-              </span>
-            )}
-          </div>
-        )}
 
         {/* Content */}
         <div style={{
@@ -661,6 +559,7 @@ const ProductCard = ({ product, showVariants = false }) => {
       isOpen={isEnlargedModalOpen}
       onClose={() => setIsEnlargedModalOpen(false)}
       product={product}
+      images={images}
       initialIndex={activeImgIndex}
     />
   </>

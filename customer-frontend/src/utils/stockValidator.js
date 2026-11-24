@@ -8,6 +8,22 @@
  * - Multi-tiered hierarchy: Color Variant -> Size Variant -> Top-Level Sizes -> Simple Product.
  */
 
+/**
+ * Evaluates whether a colour variation has gone completely out of stock across all of its sizes.
+ * If true, that colour variant and its specific images must be excluded from storefront displays.
+ */
+export const isColorCompletelyOutOfStock = (cVar) => {
+  if (!cVar) return true;
+  if (cVar.inStock === false) return true;
+  if (typeof cVar.stockCount === 'number' && cVar.stockCount <= 0) return true;
+  if (Array.isArray(cVar.sizes) && cVar.sizes.length > 0) {
+    return cVar.sizes.every(
+      (s) => s.inStock === false || (typeof s.stockCount === 'number' && s.stockCount <= 0)
+    );
+  }
+  return false;
+};
+
 export const resolveStock = (product, size = null, colorVariant = null) => {
   if (!product) {
     return {

@@ -14,10 +14,15 @@ const Categories = () => {
 
   useEffect(() => {
     fetchCategories();
-    try {
-      window.scrollTo({ top: 0, left: 0, behavior: 'instant' });
-    } catch {
-      window.scrollTo(0, 0);
+    const hasRestoreState = Boolean(
+      window.history.state?.usr?.restoreScrollY !== undefined
+    );
+    if (!hasRestoreState) {
+      try {
+        window.scrollTo({ top: 0, left: 0, behavior: 'instant' });
+      } catch {
+        window.scrollTo(0, 0);
+      }
     }
   }, []);
 
@@ -54,7 +59,7 @@ const Categories = () => {
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.5 }}
-          style={{ textAlign: 'center', marginBottom: 40 }}
+          className="collections-header-wrap"
         >
           <p
             style={{
@@ -63,7 +68,7 @@ const Categories = () => {
               fontWeight: 700,
               letterSpacing: '0.2em',
               textTransform: 'uppercase',
-              marginBottom: 10,
+              marginBottom: 6,
             }}
           >
             Curated Elegance
@@ -74,8 +79,8 @@ const Categories = () => {
               color: 'var(--text-secondary)',
               fontSize: 'clamp(0.85rem, 2.4vw, 0.95rem)',
               maxWidth: 480,
-              margin: '10px auto 0',
-              lineHeight: 1.45,
+              margin: '6px auto 0',
+              lineHeight: 1.4,
               padding: '0 12px',
             }}
           >
@@ -176,6 +181,7 @@ const Categories = () => {
                     </div>
 
                     <div
+                      className="collection-card-content"
                       style={{
                         padding: 16,
                         flex: 1,
@@ -191,7 +197,7 @@ const Categories = () => {
                           fontFamily: 'Outfit, sans-serif',
                           fontWeight: 700,
                           color: 'var(--text)',
-                          margin: '0 0 8px',
+                          margin: '0 0 4px',
                         }}
                       >
                         {category.name}
@@ -200,7 +206,7 @@ const Categories = () => {
                         style={{
                           display: 'inline-flex',
                           alignItems: 'center',
-                          gap: 6,
+                          gap: 5,
                           color: 'var(--accent)',
                           fontWeight: 600,
                           fontSize: '0.85rem',

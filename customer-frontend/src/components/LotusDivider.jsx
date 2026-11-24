@@ -9,7 +9,7 @@ const LotusDivider = ({ className = '', style = {}, color = '#C4386C' }) => {
         alignItems: 'center',
         justifyContent: 'center',
         gap: 14,
-        margin: '16px auto 24px',
+        margin: '4px auto 6px',
         width: '100%',
         maxWidth: 380,
         ...style,

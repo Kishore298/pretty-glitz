@@ -6,4 +6,6 @@ const categorySchema = new mongoose.Schema({
   bannerImage: { type: String }
 }, { timestamps: true });
 
+categorySchema.index({ order: 1 });
+
 module.exports = mongoose.model('Category', categorySchema);

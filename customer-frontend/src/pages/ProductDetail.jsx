@@ -1,8 +1,8 @@
-import React, { useEffect, useState, useContext } from 'react';
-import { useParams, Link } from 'react-router-dom';
+import React, { useEffect, useState, useContext, useRef } from 'react';
+import { useParams, Link, useLocation } from 'react-router-dom';
 import api from '../utils/api';
 import { motion, AnimatePresence } from 'framer-motion';
-import { CartContext, resolveStock } from '../context/CartContext';
+import { CartContext, resolveStock, isColorCompletelyOutOfStock } from '../context/CartContext';
 import { useWishlist } from '../context/WishlistContext';
 import { useTheme } from '../context/ThemeContext';
 import { optimizeImageUrl } from '../utils/cloudinary';
@@ -17,6 +17,7 @@ import {
   Minus,
   ShoppingBag,
   Heart,
+  Ruler,
 } from 'lucide-react';
 import ProductCard from '../components/ProductCard';
 import CollectionProductDetailCard from '../components/CollectionProductDetailCard';
@@ -25,13 +26,14 @@ import ProductDescriptionDisplay from '../components/ProductDescriptionDisplay';
 import BangleSizeChartModal from '../components/BangleSizeChartModal';
 import ProductImageModal from '../components/ProductImageModal';
 import ColorVariationSelector from '../components/ColorVariationSelector';
-import { sortSizesAscending, formatBangleSize } from '../utils/sizeHelper';
+import { sortSizesAscending, getBangleSizeParts } from '../utils/sizeHelper';
 import { slugify } from '../utils/urlHelper';
 import logoImg from '../assets/pretty-glitz-logo.png';
 
 const ProductDetail = () => {
   const { isDark } = useTheme();
   const { id } = useParams();
+  const location = useLocation();
   const [product, setProduct] = useState(null);
   const [relatedProducts, setRelatedProducts] = useState([]);
   const [productsByCategory, setProductsByCategory] = useState({});
@@ -47,6 +49,7 @@ const ProductDetail = () => {
   const [addedFeedback, setAddedFeedback] = useState(false);
   const [touchStartX, setTouchStartX] = useState(null);
   const [touchEndX, setTouchEndX] = useState(null);
+  const touchMovedRef = useRef(false);
   const [showSizeChart, setShowSizeChart] = useState(false);
   const [isImageModalOpen, setIsImageModalOpen] = useState(false);
 
@@ -67,19 +70,25 @@ const ProductDetail = () => {
     setActiveCustomImage(null);
     setError('');
     fetchProduct();
-    // Instantly reset scroll to top without visible smooth scrolling animation
-    const html = document.documentElement;
-    const prevBehavior = html.style.scrollBehavior;
-    html.style.scrollBehavior = 'auto';
-    try {
-      window.scrollTo({ top: 0, left: 0, behavior: 'instant' });
-    } catch (err) {
-      window.scrollTo(0, 0);
+    const hasRestoreState = Boolean(
+      location.state?.restoreScrollY !== undefined ||
+      window.history.state?.usr?.restoreScrollY !== undefined
+    );
+    if (!hasRestoreState) {
+      // Instantly reset scroll to top without visible smooth scrolling animation
+      const html = document.documentElement;
+      const prevBehavior = html.style.scrollBehavior;
+      html.style.scrollBehavior = 'auto';
+      try {
+        window.scrollTo({ top: 0, left: 0, behavior: 'instant' });
+      } catch (err) {
+        window.scrollTo(0, 0);
+      }
+      const raf = requestAnimationFrame(() => {
+        html.style.scrollBehavior = prevBehavior;
+      });
+      return () => cancelAnimationFrame(raf);
     }
-    const raf = requestAnimationFrame(() => {
-      html.style.scrollBehavior = prevBehavior;
-    });
-    return () => cancelAnimationFrame(raf);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [id]);
 
@@ -161,9 +170,10 @@ const ProductDetail = () => {
       });
     }
 
-    // 2. Colour variant images
+    // 2. Colour variant images (exclude completely out of stock colorways)
     if (Array.isArray(product.colorVariants)) {
       product.colorVariants.forEach((cVar) => {
+        if (isColorCompletelyOutOfStock(cVar)) return;
         if (Array.isArray(cVar.images)) {
           cVar.images.forEach((img, i) => {
             if (img?.url && !seenUrls.has(img.url)) {
@@ -184,17 +194,23 @@ const ProductDetail = () => {
     return list;
   }, [product]);
 
+  // Available in-stock colour variations
+  const availableColorVariants = React.useMemo(() => {
+    return (product?.colorVariants || []).filter((cVar) => !isColorCompletelyOutOfStock(cVar));
+  }, [product?.colorVariants]);
+
   // Current active main image: showcase main image ALWAYS by default, or color specific image after selection
   const currentMainImageUrl = activeCustomImage
     || (product?.images?.[0]?.url)
     || (product?.image)
-    || (selectedColor?.images?.[0]?.url)
+    || (!isColorCompletelyOutOfStock(selectedColor) && selectedColor?.images?.[0]?.url)
     || logoImg;
 
   const handleThumbnailClick = (item) => {
     if (!item) return;
     setActiveCustomImage(item.url);
     if (item.type === 'color' && item.colorVariant) {
+      if (isColorCompletelyOutOfStock(item.colorVariant)) return;
       setSelectedColor(item.colorVariant);
       setError('');
       if (selectedSize && item.colorVariant.sizes?.length > 0) {
@@ -209,16 +225,19 @@ const ProductDetail = () => {
   };
 
   const activeSizes = sortSizesAscending(
-    (selectedColor && selectedColor.sizes?.length > 0)
+    (selectedColor && !isColorCompletelyOutOfStock(selectedColor) && selectedColor.sizes?.length > 0)
       ? selectedColor.sizes
-      : (product?.colorVariants?.[0]?.sizes?.length > 0
-        ? product.colorVariants[0].sizes
+      : (availableColorVariants?.[0]?.sizes?.length > 0
+        ? availableColorVariants[0].sizes
         : (product?.sizes || []))
   );
 
   // Resolved price (piece count price overrides product price)
   const resolvedPrice = selectedPieceCount ? selectedPieceCount.price : product?.price;
   const resolvedOriginalPrice = selectedPieceCount ? selectedPieceCount.originalPrice : product?.originalPrice;
+  const discountPercent = (resolvedOriginalPrice && resolvedPrice && resolvedOriginalPrice > resolvedPrice)
+    ? Math.round(((resolvedOriginalPrice - resolvedPrice) / resolvedOriginalPrice) * 100)
+    : 0;
 
   // Strict Cart Variant Matching: Stepper and "View Cart" only display when the exact variant matches
   const hasColors = Boolean(product?.colorVariants && product.colorVariants.length > 0);
@@ -369,8 +388,21 @@ const ProductDetail = () => {
     </div>
   );
 
-  const hasColorVariants = Array.isArray(product.colorVariants) && product.colorVariants.length > 0;
-  const isDesignerBangles = (product.category && /designer/i.test(product.category)) || hasColorVariants;
+  const handleGalleryClick = (e) => {
+    if (touchMovedRef.current) return;
+    if (allGalleryThumbnails.length <= 1) return;
+    const rect = e.currentTarget.getBoundingClientRect();
+    const clickX = e.clientX - rect.left;
+    const ratio = clickX / rect.width;
+    const currentIdx = allGalleryThumbnails.findIndex((t) => t.url === currentMainImageUrl);
+    if (ratio < 0.45) {
+      const prevIdx = (currentIdx - 1 + allGalleryThumbnails.length) % allGalleryThumbnails.length;
+      handleThumbnailClick(allGalleryThumbnails[prevIdx]);
+    } else if (ratio > 0.55) {
+      const nextIdx = (currentIdx + 1) % allGalleryThumbnails.length;
+      handleThumbnailClick(allGalleryThumbnails[nextIdx]);
+    }
+  };
 
   return (
     <div className="product-detail-page">
@@ -393,15 +425,22 @@ const ProductDetail = () => {
 
         <div className="product-detail-layout">
 
-          {/* ── Image Gallery (Showcase Default + Colour-Specific Selection + Thumbnail Strip) ── */}
+          {/* ── Image Gallery (Showcase Default + Colour-Specific Selection) ── */}
           <div className="product-gallery-wrapper">
             <div
               className="product-gallery-main product-detail-gallery-main"
+              onClick={handleGalleryClick}
               onTouchStart={(e) => {
+                touchMovedRef.current = false;
                 setTouchEndX(null);
                 setTouchStartX(e.targetTouches[0].clientX);
               }}
-              onTouchMove={(e) => setTouchEndX(e.targetTouches[0].clientX)}
+              onTouchMove={(e) => {
+                setTouchEndX(e.targetTouches[0].clientX);
+                if (touchStartX && Math.abs(e.targetTouches[0].clientX - touchStartX) > 8) {
+                  touchMovedRef.current = true;
+                }
+              }}
               onTouchEnd={() => {
                 if (!touchStartX || !touchEndX || allGalleryThumbnails.length <= 1) return;
                 const distance = touchStartX - touchEndX;
@@ -444,7 +483,7 @@ const ProductDetail = () => {
                     style={{
                       width: '100%',
                       height: '100%',
-                      objectFit: currentMainImageUrl ? 'cover' : 'contain',
+                      objectFit: 'cover',
                       display: 'block',
                       padding: 0,
                     }}
@@ -572,66 +611,6 @@ const ProductDetail = () => {
                 <Maximize2 size={16} strokeWidth={2.2} />
               </button>
             </div>
-
-            {/* ── Thumbnail Strip: Showcase & Colour Variant Images (Hidden for Designer Bangles) ── */}
-            {allGalleryThumbnails.length > 1 && !isDesignerBangles && (
-              <div
-                className="product-gallery-thumbnails"
-                style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: 10,
-                  marginTop: 14,
-                  overflowX: 'auto',
-                  padding: '4px 2px 8px',
-                  scrollbarWidth: 'thin',
-                }}
-              >
-                {allGalleryThumbnails.map((item, idx) => {
-                  const isActive = item.url === currentMainImageUrl;
-                  return (
-                    <button
-                      key={item.id || idx}
-                      type="button"
-                      onClick={() => handleThumbnailClick(item)}
-                      aria-label={`View ${item.label}`}
-                      title={item.label}
-                      style={{
-                        width: 58,
-                        height: 58,
-                        borderRadius: 12,
-                        overflow: 'hidden',
-                        padding: 0,
-                        border: isActive
-                          ? '2px solid var(--accent, #C4386C)'
-                          : '1.5px solid var(--border)',
-                        background: 'var(--bg-secondary)',
-                        cursor: 'pointer',
-                        flexShrink: 0,
-                        boxShadow: isActive
-                          ? '0 4px 12px rgba(196, 56, 108, 0.28)'
-                          : 'none',
-                        opacity: 1,
-                        transition: 'all 0.2s cubic-bezier(0.16, 1, 0.3, 1)',
-                        transform: isActive ? 'scale(1.04)' : 'none',
-                      }}
-                    >
-                      <img
-                        src={optimizeImageUrl(item.url, 140)}
-                        alt={item.label}
-                        loading="lazy"
-                        style={{
-                          width: '100%',
-                          height: '100%',
-                          objectFit: 'cover',
-                          display: 'block',
-                        }}
-                      />
-                    </button>
-                  );
-                })}
-              </div>
-            )}
           </div>
 
           {/* ── Product Info ───────────────────────────────────── */}
@@ -706,9 +685,24 @@ const ProductDetail = () => {
                 <span className="product-detail-price">
                   ₹{resolvedPrice}
                 </span>
-                {resolvedOriginalPrice && (
+                {resolvedOriginalPrice && resolvedOriginalPrice > resolvedPrice && (
                   <span className="product-detail-original-price">
                     ₹{resolvedOriginalPrice}
+                  </span>
+                )}
+                {discountPercent > 0 && resolvedOriginalPrice && resolvedOriginalPrice > resolvedPrice && (
+                  <span
+                    style={{
+                      fontSize: '0.78rem',
+                      fontWeight: 700,
+                      color: '#C4386C',
+                      background: 'rgba(196,56,108,0.1)',
+                      padding: '2px 9px',
+                      borderRadius: 6,
+                      alignSelf: 'center',
+                    }}
+                  >
+                    Save ₹{resolvedOriginalPrice - resolvedPrice}
                   </span>
                 )}
                 {product.packagingType && (
@@ -744,15 +738,52 @@ const ProductDetail = () => {
               </div>
 
               {/* Bangle Size Selector with Live Stock Availability (Positioned directly below price) */}
-              {activeSizes?.length > 0 && (
-                <div className="product-detail-section" style={{ marginTop: 12, marginBottom: 12 }}>
-                  <span className="product-detail-label" style={{ marginBottom: 6 }}>
-                    Select Size
-                  </span>
+              {activeSizes?.length > 0 && (!hasColors || selectedColor) && (
+                <div className="product-detail-section product-size-section">
+                  <div
+                    style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: 12,
+                      marginBottom: 6,
+                    }}
+                  >
+                    <span
+                      style={{
+                        fontSize: '0.85rem',
+                        fontWeight: 700,
+                        color: 'var(--text)',
+                        letterSpacing: '-0.01em',
+                      }}
+                    >
+                      Select Size
+                    </span>
+                    <button
+                      type="button"
+                      onClick={() => setShowSizeChart(true)}
+                      style={{
+                        background: 'none',
+                        border: 'none',
+                        cursor: 'pointer',
+                        display: 'inline-flex',
+                        alignItems: 'center',
+                        gap: 4,
+                        fontSize: '0.78rem',
+                        fontWeight: 600,
+                        color: 'var(--accent, #C4386C)',
+                        textDecoration: 'underline',
+                        textUnderlineOffset: 3,
+                        padding: '2px 4px',
+                      }}
+                    >
+                      <Ruler size={13} /> Size Guide
+                    </button>
+                  </div>
                   <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
                     {activeSizes.map((s, idx) => {
                       const isOutOfStock = s.inStock === false;
                       const isSelected = selectedSize === s.size;
+                      const { sizeNumber, cmRange } = getBangleSizeParts(s.size);
                       return (
                         <button
                           key={idx}
@@ -772,8 +803,9 @@ const ProductDetail = () => {
                             color: isOutOfStock
                               ? 'var(--text-muted)'
                               : isSelected ? 'white' : 'var(--text)',
-                            border: isSelected ? 'none' : '1px solid var(--border)',
-                            boxShadow: isSelected ? '0 8px 20px rgba(196,56,108,0.4)' : 'none',
+                            border: isSelected ? '2px solid var(--accent, #C4386C)' : '1px solid var(--border)',
+                            borderRadius: 10,
+                            boxShadow: isSelected ? '0 4px 14px rgba(196,56,108,0.35)' : 'none',
                             cursor: isOutOfStock ? 'not-allowed' : 'pointer',
                             textDecoration: isOutOfStock ? 'line-through' : 'none',
                             opacity: isOutOfStock ? 0.5 : 1,
@@ -781,7 +813,12 @@ const ProductDetail = () => {
                           }}
                           title={isOutOfStock ? `${s.size} is currently out of stock` : `Select size ${s.size}`}
                         >
-                          {formatBangleSize(s.size)}
+                          <span style={{ fontWeight: 700 }}>{sizeNumber}</span>
+                          {cmRange && (
+                            <span style={{ fontSize: '0.82em', fontWeight: 500, opacity: 0.9, marginLeft: 4 }}>
+                              ({cmRange})
+                            </span>
+                          )}
                         </button>
                       );
                     })}
@@ -790,9 +827,9 @@ const ProductDetail = () => {
               )}
 
               {/* Colour Variation Selector with Expand/Collapse */}
-              {product.colorVariants && product.colorVariants.length > 0 && (
+              {availableColorVariants && availableColorVariants.length > 0 && (
                 <ColorVariationSelector
-                  colorVariants={product.colorVariants}
+                  colorVariants={availableColorVariants}
                   selectedColor={selectedColor}
                   onSelectColor={handleColorSelect}
                   fallbackImage={product.images?.[0]?.url}
@@ -1020,13 +1057,13 @@ const ProductDetail = () => {
         {relatedProducts.length > 0 && (
           <div className="product-related-section">
             <div className="product-related-header">
-              <h2 className="product-related-title">
+              <h2 className="product-related-title complete-your-look-title">
                 Complete Your Look
               </h2>
               <p className="product-related-subtitle">
                 Other handcrafted designs from the {product.category} collection with complete details & specifications
               </p>
-              <LotusDivider />
+              <LotusDivider style={{ margin: '4px auto 6px' }} />
             </div>
 
             <div style={{
@@ -1126,6 +1163,8 @@ const ProductDetail = () => {
         product={product}
         images={allGalleryThumbnails.length > 0 ? allGalleryThumbnails : (product.images || [])}
         initialIndex={Math.max(0, allGalleryThumbnails.findIndex(t => t.url === currentMainImageUrl))}
+        showViewDetails={false}
+        aspectRatio="1 / 1"
         onImageChange={(newIdx) => {
           if (allGalleryThumbnails[newIdx]) {
             handleThumbnailClick(allGalleryThumbnails[newIdx]);

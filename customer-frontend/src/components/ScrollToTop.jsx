@@ -1,4 +1,4 @@
-import { useEffect } from 'react';
+import { useEffect, useLayoutEffect } from 'react';
 import { useLocation, useNavigationType } from 'react-router-dom';
 
 /**
@@ -53,8 +53,8 @@ const ScrollToTop = () => {
     };
   }, [location.pathname, location.search, location.hash]);
 
-  // Handle instant scroll restoration on route transition
-  useEffect(() => {
+  // Handle instant scroll restoration on route transition before paint
+  useLayoutEffect(() => {
     const html = document.documentElement;
     const prevBehavior = html.style.scrollBehavior;
     html.style.scrollBehavior = 'auto';
@@ -79,6 +79,13 @@ const ScrollToTop = () => {
     }
 
     if (targetY !== null) {
+      // Ensure the page document has enough height so the browser cannot clamp to footer during async loads
+      const requiredHeight = targetY + window.innerHeight + 100;
+      const prevMinHeight = document.body.style.minHeight;
+      if (document.documentElement.scrollHeight < requiredHeight) {
+        document.body.style.minHeight = `${requiredHeight}px`;
+      }
+
       const instantRestore = () => {
         try {
           window.scrollTo({ top: targetY, left: 0, behavior: 'instant' });
@@ -92,6 +99,10 @@ const ScrollToTop = () => {
       const t1 = setTimeout(instantRestore, 30);
       const t2 = setTimeout(instantRestore, 90);
       const t3 = setTimeout(instantRestore, 180);
+      const t4 = setTimeout(() => {
+        instantRestore();
+        document.body.style.minHeight = prevMinHeight;
+      }, 350);
 
       const raf = requestAnimationFrame(() => {
         html.style.scrollBehavior = prevBehavior;
@@ -101,6 +112,8 @@ const ScrollToTop = () => {
         clearTimeout(t1);
         clearTimeout(t2);
         clearTimeout(t3);
+        clearTimeout(t4);
+        document.body.style.minHeight = prevMinHeight;
         cancelAnimationFrame(raf);
       };
     }

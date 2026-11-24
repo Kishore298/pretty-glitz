@@ -1,4 +1,4 @@
-import React, { useState, useContext, useMemo } from 'react';
+import React, { useState, useContext, useMemo, useRef } from 'react';
 import { Link } from 'react-router-dom';
 import {
   Heart,
@@ -11,13 +11,14 @@ import {
   ChevronRight,
   ChevronDown,
   Share2,
+  Ruler,
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { CartContext, resolveStock } from '../context/CartContext';
+import { CartContext, resolveStock, isColorCompletelyOutOfStock } from '../context/CartContext';
 import { useWishlist } from '../context/WishlistContext';
 import { useTheme } from '../context/ThemeContext';
 import { optimizeImageUrl } from '../utils/cloudinary';
-import { sortSizesAscending, formatBangleSize } from '../utils/sizeHelper';
+import { sortSizesAscending, getBangleSizeParts } from '../utils/sizeHelper';
 import { getProductUrl } from '../utils/urlHelper';
 import ProductDescriptionDisplay from './ProductDescriptionDisplay';
 import BangleSizeChartModal from './BangleSizeChartModal';
@@ -36,6 +37,7 @@ const CollectionProductDetailCard = ({ product, isLast = false }) => {
   const [activeImg, setActiveImg] = useState(0);
   const [touchStartX, setTouchStartX] = useState(null);
   const [touchEndX, setTouchEndX] = useState(null);
+  const touchMovedRef = useRef(false);
   const [isEnlargedModalOpen, setIsEnlargedModalOpen] = useState(false);
   const [detailsOpen, setDetailsOpen] = useState(false);
   const [shippingOpen, setShippingOpen] = useState(false);
@@ -46,15 +48,20 @@ const CollectionProductDetailCard = ({ product, isLast = false }) => {
   const inWishlist = isInWishlist(product._id);
   const [error, setError] = useState('');
 
-  // Available Sizes for currently selected variant - or aggregated by default for Designer Glass Bangles
+  // In-stock colour variations
+  const availableColorVariants = useMemo(() => {
+    return (product?.colorVariants || []).filter((cVar) => !isColorCompletelyOutOfStock(cVar));
+  }, [product?.colorVariants]);
+
+  // Available Sizes for currently selected variant - or aggregated by default across in-stock variants
   const activeSizes = useMemo(() => {
-    if (selectedColor && selectedColor.sizes?.length > 0) {
+    if (selectedColor && !isColorCompletelyOutOfStock(selectedColor) && selectedColor.sizes?.length > 0) {
       return sortSizesAscending(selectedColor.sizes);
     }
-    // If no color selected yet, aggregate all available unique sizes across colorVariants so size selection is ALWAYS displayed by default!
-    if (Array.isArray(product.colorVariants) && product.colorVariants.length > 0) {
+    // If no color selected yet, aggregate all available unique sizes across in-stock colorVariants
+    if (availableColorVariants.length > 0) {
       const sizeMap = new Map();
-      product.colorVariants.forEach((cv) => {
+      availableColorVariants.forEach((cv) => {
         if (Array.isArray(cv.sizes)) {
           cv.sizes.forEach((s) => {
             if (!sizeMap.has(s.size)) {
@@ -70,7 +77,7 @@ const CollectionProductDetailCard = ({ product, isLast = false }) => {
       }
     }
     return sortSizesAscending(product.sizes || []);
-  }, [selectedColor, product.colorVariants, product.sizes]);
+  }, [selectedColor, availableColorVariants, product.sizes]);
 
   // Keep size initially unselected per user instruction
   const [selectedSize, setSelectedSize] = useState(null);
@@ -83,7 +90,7 @@ const CollectionProductDetailCard = ({ product, isLast = false }) => {
     return null;
   });
 
-  // Combine overall product showcase images FIRST, followed by all color variant images
+  // Combine overall product showcase images FIRST, followed by in-stock color variant images
   // so the main image is always #1 and color variant images follow next consistently
   const images = React.useMemo(() => {
     const list = [];
@@ -105,17 +112,18 @@ const CollectionProductDetailCard = ({ product, isLast = false }) => {
       addImg(product.image, { isShowcase: true });
     }
 
-    // 2. Add images from all other color variants next
+    // 2. Add images from in-stock color variants next (completely out-of-stock colorways excluded)
     if (Array.isArray(product.colorVariants)) {
       product.colorVariants.forEach((cVar) => {
+        if (isColorCompletelyOutOfStock(cVar)) return;
         if (Array.isArray(cVar.images)) {
           cVar.images.forEach((img) => addImg(img, { colorVariant: cVar }));
         }
       });
     }
 
-    // 3. Fallback / Selected color images if any remaining
-    if (selectedColor && Array.isArray(selectedColor.images)) {
+    // 3. Fallback / Selected color images if any remaining and in stock
+    if (selectedColor && !isColorCompletelyOutOfStock(selectedColor) && Array.isArray(selectedColor.images)) {
       selectedColor.images.forEach((img) => addImg(img, { colorVariant: selectedColor }));
     }
 
@@ -132,7 +140,7 @@ const CollectionProductDetailCard = ({ product, isLast = false }) => {
     : 0;
 
   // Strict Cart Variant Matching: Stepper and "View Cart" only display when the exact variant matches
-  const hasColors = Boolean(product?.colorVariants && product.colorVariants.length > 0);
+  const hasColors = availableColorVariants.length > 0;
   const hasSizes = Boolean(activeSizes && activeSizes.length > 0);
   const isSelectionComplete = (!hasColors || selectedColor) && (!hasSizes || selectedSize);
 
@@ -193,20 +201,41 @@ const CollectionProductDetailCard = ({ product, isLast = false }) => {
     }
   };
 
-  const handleThumbnailClick = (idx) => {
+  const navigateToImageIndex = (idx) => {
     setActiveImg(idx);
     setError('');
     const clickedItem = images[idx];
     const clickedUrl = typeof clickedItem === 'string' ? clickedItem : clickedItem?.url;
     if (clickedItem?.colorVariant) {
-      setSelectedColor(clickedItem.colorVariant);
+      if (!isColorCompletelyOutOfStock(clickedItem.colorVariant)) {
+        setSelectedColor(clickedItem.colorVariant);
+      }
     } else if (clickedUrl && Array.isArray(product.colorVariants)) {
       const match = product.colorVariants.find(
-        (cv) => Array.isArray(cv.images) && cv.images.some((img) => (typeof img === 'string' ? img : img?.url) === clickedUrl)
+        (cv) => !isColorCompletelyOutOfStock(cv) && Array.isArray(cv.images) && cv.images.some((img) => (typeof img === 'string' ? img : img?.url) === clickedUrl)
       );
       if (match) {
         setSelectedColor(match);
+      } else {
+        setSelectedColor(null);
       }
+    }
+  };
+
+  const handleThumbnailClick = navigateToImageIndex;
+
+  const handleGalleryClick = (e) => {
+    if (touchMovedRef.current) return;
+    if (!hasMultipleImages) return;
+    const rect = e.currentTarget.getBoundingClientRect();
+    const clickX = e.clientX - rect.left;
+    const ratio = clickX / rect.width;
+    if (ratio < 0.45) {
+      const prevIdx = (activeImg - 1 + images.length) % images.length;
+      navigateToImageIndex(prevIdx);
+    } else if (ratio > 0.55) {
+      const nextIdx = (activeImg + 1) % images.length;
+      navigateToImageIndex(nextIdx);
     }
   };
 
@@ -274,20 +303,24 @@ const CollectionProductDetailCard = ({ product, isLast = false }) => {
 
   // Mobile Touch Swipe Handlers
   const handleTouchStart = (e) => {
+    touchMovedRef.current = false;
     setTouchEndX(null);
     setTouchStartX(e.targetTouches[0].clientX);
   };
   const handleTouchMove = (e) => {
     setTouchEndX(e.targetTouches[0].clientX);
+    if (touchStartX && Math.abs(e.targetTouches[0].clientX - touchStartX) > 8) {
+      touchMovedRef.current = true;
+    }
   };
   const handleTouchEnd = () => {
     if (!touchStartX || !touchEndX || !hasMultipleImages) return;
     const distance = touchStartX - touchEndX;
     if (Math.abs(distance) > 35) {
       if (distance > 35) {
-        setActiveImg((prev) => (prev + 1) % images.length);
+        navigateToImageIndex((activeImg + 1) % images.length);
       } else {
-        setActiveImg((prev) => (prev - 1 + images.length) % images.length);
+        navigateToImageIndex((activeImg - 1 + images.length) % images.length);
       }
     }
   };
@@ -307,7 +340,8 @@ const CollectionProductDetailCard = ({ product, isLast = false }) => {
           </div>
 
           <div
-            className="product-gallery-main product-detail-gallery-main collection-product-gallery-main"
+            className="product-gallery-main collection-product-gallery-main"
+            onClick={handleGalleryClick}
             onTouchStart={handleTouchStart}
             onTouchMove={handleTouchMove}
             onTouchEnd={handleTouchEnd}
@@ -329,7 +363,7 @@ const CollectionProductDetailCard = ({ product, isLast = false }) => {
               style={{
                 width: '100%',
                 height: '100%',
-                objectFit: currentImageUrl ? 'cover' : 'contain',
+                objectFit: 'cover',
                 display: 'block',
                 transition: 'transform 0.35s ease',
               }}
@@ -343,7 +377,7 @@ const CollectionProductDetailCard = ({ product, isLast = false }) => {
                   className="product-gallery-nav-btn"
                   onClick={(e) => {
                     e.stopPropagation();
-                    setActiveImg((prev) => (prev - 1 + images.length) % images.length);
+                    navigateToImageIndex((activeImg - 1 + images.length) % images.length);
                   }}
                   aria-label="Previous photo"
                   style={{
@@ -375,7 +409,7 @@ const CollectionProductDetailCard = ({ product, isLast = false }) => {
                   className="product-gallery-nav-btn"
                   onClick={(e) => {
                     e.stopPropagation();
-                    setActiveImg((prev) => (prev + 1) % images.length);
+                    navigateToImageIndex((activeImg + 1) % images.length);
                   }}
                   aria-label="Next photo"
                   style={{
@@ -432,7 +466,7 @@ const CollectionProductDetailCard = ({ product, isLast = false }) => {
                       type="button"
                       onClick={(e) => {
                         e.stopPropagation();
-                        setActiveImg(dotIdx);
+                        navigateToImageIndex(dotIdx);
                       }}
                       aria-label={`Go to photo ${dotIdx + 1}`}
                       style={{
@@ -603,15 +637,52 @@ const CollectionProductDetailCard = ({ product, isLast = false }) => {
             </div>
 
             {/* Bangle Size Selector with Live Stock Availability (Positioned directly below price) */}
-            {activeSizes?.length > 0 && (
-              <div className="product-detail-section" style={{ marginTop: 12, marginBottom: 12 }}>
-                <span className="product-detail-label" style={{ marginBottom: 6 }}>
-                  Select Size
-                </span>
+            {activeSizes?.length > 0 && (!hasColors || selectedColor) && (
+              <div className="product-detail-section product-size-section">
+                <div
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: 12,
+                    marginBottom: 6,
+                  }}
+                >
+                  <span
+                    style={{
+                      fontSize: '0.85rem',
+                      fontWeight: 700,
+                      color: 'var(--text)',
+                      letterSpacing: '-0.01em',
+                    }}
+                  >
+                    Select Size
+                  </span>
+                  <button
+                    type="button"
+                    onClick={() => setShowSizeChart(true)}
+                    style={{
+                      background: 'none',
+                      border: 'none',
+                      cursor: 'pointer',
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      gap: 4,
+                      fontSize: '0.78rem',
+                      fontWeight: 600,
+                      color: 'var(--accent, #C4386C)',
+                      textDecoration: 'underline',
+                      textUnderlineOffset: 3,
+                      padding: '2px 4px',
+                    }}
+                  >
+                    <Ruler size={13} /> Size Guide
+                  </button>
+                </div>
                 <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
                   {activeSizes.map((s, idx) => {
                     const isOutOfStock = s.inStock === false;
                     const isSelected = selectedSize === s.size;
+                    const { sizeNumber, cmRange } = getBangleSizeParts(s.size);
                     return (
                       <button
                         key={idx}
@@ -631,8 +702,9 @@ const CollectionProductDetailCard = ({ product, isLast = false }) => {
                           color: isOutOfStock
                             ? 'var(--text-muted)'
                             : isSelected ? 'white' : 'var(--text)',
-                          border: isSelected ? 'none' : '1px solid var(--border)',
-                          boxShadow: isSelected ? '0 8px 20px rgba(196,56,108,0.4)' : 'none',
+                          border: isSelected ? '2px solid var(--accent, #C4386C)' : '1px solid var(--border)',
+                          borderRadius: 10,
+                          boxShadow: isSelected ? '0 4px 14px rgba(196,56,108,0.35)' : 'none',
                           cursor: isOutOfStock ? 'not-allowed' : 'pointer',
                           textDecoration: isOutOfStock ? 'line-through' : 'none',
                           opacity: isOutOfStock ? 0.5 : 1,
@@ -640,7 +712,12 @@ const CollectionProductDetailCard = ({ product, isLast = false }) => {
                         }}
                         title={isOutOfStock ? `${s.size} is currently out of stock` : `Select size ${s.size}`}
                       >
-                        {formatBangleSize(s.size)}
+                        <span style={{ fontWeight: 700 }}>{sizeNumber}</span>
+                        {cmRange && (
+                          <span style={{ fontSize: '0.82em', fontWeight: 500, opacity: 0.9, marginLeft: 4 }}>
+                            ({cmRange})
+                          </span>
+                        )}
                       </button>
                     );
                   })}
@@ -649,9 +726,9 @@ const CollectionProductDetailCard = ({ product, isLast = false }) => {
             )}
 
             {/* Colour Variation Selector with Expand/Collapse */}
-            {product.colorVariants && product.colorVariants.length > 0 && (
+            {availableColorVariants && availableColorVariants.length > 0 && (
               <ColorVariationSelector
-                colorVariants={product.colorVariants}
+                colorVariants={availableColorVariants}
                 selectedColor={selectedColor}
                 onSelectColor={handleSelectColor}
                 fallbackImage={product.images?.[0]?.url}
@@ -910,6 +987,8 @@ const CollectionProductDetailCard = ({ product, isLast = false }) => {
         product={product}
         images={images}
         initialIndex={activeImg}
+        showViewDetails={true}
+        aspectRatio="3 / 4"
         onImageChange={(newIdx) => {
           setActiveImg(newIdx);
           handleThumbnailClick(newIdx);

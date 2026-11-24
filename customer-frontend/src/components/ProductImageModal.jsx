@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { X, ChevronLeft, ChevronRight, ExternalLink } from 'lucide-react';
+import { X, ChevronLeft, ChevronRight, ExternalLink, ArrowLeft } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import { optimizeImageUrl } from '../utils/cloudinary';
 import { getProductUrl } from '../utils/urlHelper';
@@ -10,14 +10,17 @@ import logoImg from '../assets/pretty-glitz-logo.png';
 /**
  * ProductImageModal
  *
- * Light luxury enlarged product image pop-out viewer.
- * Complements the website's soft ivory & blush aesthetics instead of a harsh black screen.
- * Features:
- * - Soft off-white / warm ivory backdrop with backdrop blur.
- * - Smooth fade & scale open/close transitions via AnimatePresence.
- * - Scroll lock during preview + instant scroll position restoration on close.
- * - Touch swipe support on mobile devices.
- * - Keyboard navigation (Esc to close, left/right arrows to navigate).
+ * Full-width enlarged product image pop-out gallery matching wireframe design:
+ * - Image card with aspect ratio matching context:
+ *   - 1:1 on Main Product details
+ *   - 3:4 on Complete Your Look section
+ *   - Image fits the card completely.
+ * - Controls row: [<prev 1/9 next>] centered on Main Product (when view details is omitted);
+ *   spaced side-by-side on Complete Your Look.
+ * - Enclosed thumbnail section box with lines (line 1, line 2, line 3) and dividers for products with color thumbnails.
+ *   - Transparent background (no white card behind thumbnails), occupies full width and starts from the left.
+ * - Single image / products without thumbnails omit the thumbnail section completely.
+ * - Clean [ArrowLeft] icon for the Back button at the bottom right.
  */
 const ProductImageModal = ({
   isOpen,
@@ -26,22 +29,27 @@ const ProductImageModal = ({
   images: overrideImages = null,
   initialIndex = 0,
   onImageChange = null,
+  showViewDetails = true,
+  aspectRatio = '1 / 1',
 }) => {
   const { isDark } = useTheme();
 
-  // Prefer images passed explicitly (e.g. from currently active colour variant), fallback to product.images
-  const rawImages = overrideImages && overrideImages.length > 0
-    ? overrideImages
-    : (product?.images && product.images.length > 0
-      ? product.images
-      : (product?.image ? [{ url: product.image }] : []));
+  const images = React.useMemo(() => {
+    const rawImages = overrideImages && overrideImages.length > 0
+      ? overrideImages
+      : (product?.images && product.images.length > 0
+        ? product.images
+        : (product?.image ? [{ url: product.image }] : []));
+    return Array.isArray(rawImages) ? rawImages : [];
+  }, [overrideImages, product?.images, product?.image]);
 
-  const images = Array.isArray(rawImages) ? rawImages : [];
   const [activeIndex, setActiveIndex] = useState(initialIndex || 0);
   const activeIndexRef = useRef(initialIndex || 0);
   const [touchStartX, setTouchStartX] = useState(null);
   const [touchEndX, setTouchEndX] = useState(null);
+  const touchMovedRef = useRef(false);
   const scrollYRef = useRef(0);
+  const activeThumbRef = useRef(null);
 
   const updateActiveIndex = useCallback((newIndex) => {
     activeIndexRef.current = newIndex;
@@ -58,6 +66,17 @@ const ProductImageModal = ({
       setActiveIndex(initialIndex);
     }
   }, [isOpen, initialIndex]);
+
+  // Auto-scroll active thumbnail into view
+  useEffect(() => {
+    if (isOpen && activeThumbRef.current) {
+      activeThumbRef.current.scrollIntoView({
+        behavior: 'smooth',
+        block: 'nearest',
+        inline: 'center',
+      });
+    }
+  }, [activeIndex, isOpen]);
 
   // Navigate next / previous
   const handleNext = useCallback(() => {
@@ -81,11 +100,10 @@ const ProductImageModal = ({
     }
   }, [onClose, onImageChange]);
 
-  // Scroll lock + Keyboard navigation + Exact scroll position restoration
+  // Scroll lock + Keyboard navigation + Scroll position restoration
   useEffect(() => {
     if (!isOpen) return;
 
-    // Capture exact scroll position when opening
     scrollYRef.current = window.scrollY || window.pageYOffset || 0;
     const originalOverflow = document.body.style.overflow;
     document.body.style.overflow = 'hidden';
@@ -106,14 +124,13 @@ const ProductImageModal = ({
       document.removeEventListener('keydown', handleKeyDown);
       document.body.style.overflow = originalOverflow || '';
 
-      // Restore the exact previous scroll position immediately
       const savedY = scrollYRef.current;
       const html = document.documentElement;
       const prevBehavior = html.style.scrollBehavior;
       html.style.scrollBehavior = 'auto';
       try {
         window.scrollTo({ top: savedY, left: 0, behavior: 'instant' });
-      } catch (err) {
+      } catch {
         window.scrollTo(0, savedY);
       }
       requestAnimationFrame(() => {
@@ -124,25 +141,78 @@ const ProductImageModal = ({
 
   // Mobile Touch Swipe Handlers
   const handleTouchStart = (e) => {
+    touchMovedRef.current = false;
     setTouchEndX(null);
     setTouchStartX(e.targetTouches[0].clientX);
   };
 
   const handleTouchMove = (e) => {
     setTouchEndX(e.targetTouches[0].clientX);
+    if (touchStartX && Math.abs(e.targetTouches[0].clientX - touchStartX) > 8) {
+      touchMovedRef.current = true;
+    }
   };
 
   const handleTouchEnd = () => {
     if (!touchStartX || !touchEndX || images.length <= 1) return;
     const distance = touchStartX - touchEndX;
-    if (distance > 40) {
-      handleNext(); // swipe left -> next
-    } else if (distance < -40) {
-      handlePrev(); // swipe right -> prev
+    if (distance > 35) {
+      handleNext();
+    } else if (distance < -35) {
+      handlePrev();
     }
   };
 
-  const currentImage = images[activeIndex]?.url || images[0]?.url;
+  // Image stage tap navigation (left side <45% = prev, right side >55% = next)
+  const handleStageClick = (e) => {
+    if (touchMovedRef.current) return;
+    if (images.length <= 1) return;
+    const rect = e.currentTarget.getBoundingClientRect();
+    const clickX = e.clientX - rect.left;
+    const ratio = clickX / rect.width;
+    if (ratio < 0.45) {
+      handlePrev();
+    } else if (ratio > 0.55) {
+      handleNext();
+    }
+  };
+
+  const currentItem = images[activeIndex];
+  const currentImageUrl = typeof currentItem === 'string' ? currentItem : currentItem?.url;
+  const currentLabel = typeof currentItem === 'object'
+    ? (currentItem?.colorVariant?.colorName || currentItem?.label || '')
+    : '';
+
+  // Determine if product has color thumbnail images
+  const hasColorThumbnails = Boolean(
+    (product?.colorVariants && product.colorVariants.length > 0) ||
+    images.some((img) => img?.colorVariant || img?.type === 'color')
+  );
+
+  // Show thumbnail section only if product has color thumbnail images and more than 1 image
+  const showThumbnailSection = hasColorThumbnails && images.length > 1;
+
+  // Distribute smaller thumbnails into lines (e.g. 7-8 per line)
+  const thumbnailRows = React.useMemo(() => {
+    if (!showThumbnailSection || images.length === 0) return [];
+    const total = images.length;
+    const itemsPerRow = 7;
+    const rows = [];
+    for (let i = 0; i < total; i += itemsPerRow) {
+      const start = i;
+      const rowSlice = images.slice(start, start + itemsPerRow);
+      rows.push(
+        rowSlice.map((item, idx) => ({
+          item,
+          globalIdx: start + idx,
+        }))
+      );
+    }
+    return rows;
+  }, [images, showThumbnailSection]);
+
+  const hasViewDetailsButton = Boolean(showViewDetails && product);
+  const isPortraitMode = aspectRatio === '3 / 4' || aspectRatio === '9 / 16';
 
   return (
     <AnimatePresence>
@@ -154,73 +224,42 @@ const ProductImageModal = ({
           exit={{ opacity: 0 }}
           transition={{ duration: 0.22, ease: 'easeOut' }}
           className="product-image-modal-root"
-          style={{
-            position: 'fixed',
-            inset: 0,
-            zIndex: 9999,
-            display: 'flex',
-            flexDirection: 'column',
-            alignItems: 'stretch',
-            background: isDark
-              ? 'rgba(10, 10, 16, 0.88)'
-              : 'rgba(253, 250, 245, 0.88)',
-            backdropFilter: 'blur(20px)',
-            WebkitBackdropFilter: 'blur(20px)',
-            userSelect: 'none',
-            padding: 0,
-          }}
           onClick={handleClose}
         >
-          {/* Modal Container with Fade and Scale & Upward Lift */}
+          {/* Centered Modal Container */}
           <motion.div
             key="product-image-modal-card"
-            initial={{ opacity: 0, scale: 0.94, y: 0 }}
-            animate={{ opacity: 1, scale: 1, y: -36 }}
-            exit={{ opacity: 0, scale: 0.94, y: 0 }}
-            transition={{ duration: 0.24, ease: [0.16, 1, 0.3, 1] }}
-            className="product-image-modal-card"
-            style={{
-              position: 'relative',
-              display: 'flex',
-              flexDirection: 'column',
-              alignItems: 'center',
-            }}
+            initial={{ opacity: 0, scale: 0.96 }}
+            animate={{ opacity: 1, scale: 1 }}
+            exit={{ opacity: 0, scale: 0.96 }}
+            transition={{ duration: 0.22, ease: [0.16, 1, 0.3, 1] }}
+            className={`product-image-modal-card ${isPortraitMode ? 'is-portrait-card' : ''}`}
             onClick={(e) => e.stopPropagation()}
           >
-            {/* Header Bar */}
-            <div
-              className="product-image-modal-header"
-              style={{
-                width: '100%',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'space-between',
-                color: 'var(--text)',
-              }}
-            >
-              <div style={{ minWidth: 0, paddingRight: 12 }}>
-                <h3
-                  style={{
-                    fontFamily: '"Cormorant Garamond", Georgia, serif',
-                    fontSize: 'clamp(1.15rem, 2.5vw, 1.55rem)',
-                    fontWeight: 700,
-                    margin: 0,
-                    color: 'var(--text)',
-                    whiteSpace: 'nowrap',
-                    overflow: 'hidden',
-                    textOverflow: 'ellipsis',
-                    letterSpacing: '-0.01em',
-                  }}
-                >
+            {/* Header: Title, Price, Active Label & Close Button */}
+            <div className="product-image-modal-header">
+              <div style={{ minWidth: 0, flex: '1 1 auto', paddingRight: 10 }}>
+                <h3 className="product-image-modal-title">
                   {product.name}
                 </h3>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginTop: 3 }}>
-                  <span style={{ fontSize: '0.92rem', fontWeight: 800, color: 'var(--accent, #C4386C)' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginTop: 2, flexWrap: 'wrap' }}>
+                  <span style={{ fontSize: '0.94rem', fontWeight: 800, color: 'var(--accent, #C4386C)' }}>
                     ₹{product.price}
                   </span>
-                  {images.length > 1 && (
-                    <span style={{ fontSize: '0.78rem', color: 'var(--text-muted)' }}>
-                      Photo {activeIndex + 1} of {images.length}
+                  {currentLabel && (
+                    <span
+                      style={{
+                        fontSize: '0.74rem',
+                        fontWeight: 700,
+                        color: 'var(--accent, #C4386C)',
+                        background: isDark ? 'rgba(196,56,108,0.22)' : 'rgba(196,56,108,0.08)',
+                        border: '1px solid rgba(196,56,108,0.25)',
+                        padding: '1px 7px',
+                        borderRadius: 6,
+                        textTransform: 'capitalize',
+                      }}
+                    >
+                      {currentLabel}
                     </span>
                   )}
                 </div>
@@ -230,568 +269,477 @@ const ProductImageModal = ({
               <button
                 type="button"
                 onClick={handleClose}
-                aria-label="Close enlarged preview"
+                aria-label="Close image popup"
                 className="product-image-modal-close-btn"
-                style={{
-                  borderRadius: '50%',
-                  background: isDark ? 'rgba(255, 255, 255, 0.1)' : 'rgba(26, 17, 24, 0.06)',
-                  border: '1px solid var(--border)',
-                  color: 'var(--text)',
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  cursor: 'pointer',
-                  transition: 'all 0.2s cubic-bezier(0.16, 1, 0.3, 1)',
-                  flexShrink: 0,
-                  boxShadow: '0 2px 8px rgba(0,0,0,0.06)',
-                }}
-                onMouseEnter={(e) => {
-                  e.currentTarget.style.background = 'var(--accent, #C4386C)';
-                  e.currentTarget.style.color = '#FFFFFF';
-                  e.currentTarget.style.borderColor = 'var(--accent, #C4386C)';
-                  e.currentTarget.style.transform = 'scale(1.08)';
-                }}
-                onMouseLeave={(e) => {
-                  e.currentTarget.style.background = isDark ? 'rgba(255, 255, 255, 0.1)' : 'rgba(26, 17, 24, 0.06)';
-                  e.currentTarget.style.color = 'var(--text)';
-                  e.currentTarget.style.borderColor = 'var(--border)';
-                  e.currentTarget.style.transform = 'scale(1)';
-                }}
               >
-                <X size={19} />
+                <X size={18} />
               </button>
             </div>
 
-            {/* Main Enlarged Image Stage with Transparent Background & Natural Aspect Ratio */}
+            {/* Main Image Stage (1:1 on Main Product, 3:4 on Complete Your Look - Image Fits Card) */}
             <div
-              className="product-image-modal-stage"
+              className={`product-image-modal-stage ${isPortraitMode ? 'is-portrait-stage' : 'is-square-stage'}`}
+              style={{
+                aspectRatio: aspectRatio || '1 / 1',
+              }}
+              onClick={handleStageClick}
               onTouchStart={handleTouchStart}
               onTouchMove={handleTouchMove}
               onTouchEnd={handleTouchEnd}
-              style={{
-                position: 'relative',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                borderRadius: 16,
-                overflow: 'hidden',
-                background: 'transparent',
-                boxShadow: 'none',
-                touchAction: images.length > 1 ? 'pan-y' : 'auto',
-              }}
             >
-              <div
-                className="product-image-modal-img-wrapper"
-                style={{
-                  position: 'relative',
-                  display: 'inline-flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  borderRadius: 14,
-                  overflow: 'hidden',
+              <img
+                key={activeIndex}
+                src={currentImageUrl ? optimizeImageUrl(currentImageUrl, 1600) : logoImg}
+                alt={`${product.name} enlarged preview`}
+                className="product-image-modal-img"
+                onError={(e) => {
+                  e.currentTarget.onerror = null;
+                  e.currentTarget.src = logoImg;
+                  e.currentTarget.style.objectFit = 'contain';
+                  e.currentTarget.style.padding = '40px';
                 }}
-              >
-                <img
-                  key={activeIndex}
-                  src={currentImage ? optimizeImageUrl(currentImage, 1600) : logoImg}
-                  alt={`${product.name} enlarged view`}
-                  className="product-image-modal-img"
-                  style={{
-                    display: 'block',
-                    borderRadius: 14,
-                    transition: 'opacity 0.2s ease',
-                  }}
-                  onError={(e) => {
-                    e.currentTarget.onerror = null;
-                    e.currentTarget.src = logoImg;
-                    e.currentTarget.style.objectFit = 'contain';
-                    e.currentTarget.style.padding = '40px';
-                  }}
-                />
-
-                {/* Interactive Dot Indicators (Placed directly on the image at the bottom) */}
-                {images.length > 1 && (
-                  <div
-                    className="modal-gallery-dots"
-                    style={{
-                      position: 'absolute',
-                      bottom: 10,
-                      left: '50%',
-                      transform: 'translateX(-50%)',
-                      display: 'flex',
-                      alignItems: 'center',
-                      gap: 6,
-                      zIndex: 10,
-                      background: 'rgba(0, 0, 0, 0.45)',
-                      backdropFilter: 'blur(4px)',
-                      WebkitBackdropFilter: 'blur(4px)',
-                      padding: '3px 8px',
-                      borderRadius: 999,
-                    }}
-                  >
-                    {images.map((_, dotIdx) => (
-                      <button
-                        key={dotIdx}
-                        type="button"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          updateActiveIndex(dotIdx);
-                        }}
-                        aria-label={`View photo ${dotIdx + 1}`}
-                        style={{
-                          width: dotIdx === activeIndex ? 16 : 6,
-                          height: 6,
-                          borderRadius: 3,
-                          background: dotIdx === activeIndex ? 'var(--accent, #C4386C)' : 'rgba(255, 255, 255, 0.65)',
-                          border: 'none',
-                          padding: 0,
-                          cursor: 'pointer',
-                          transition: 'all 0.25s ease',
-                        }}
-                      />
-                    ))}
-                  </div>
-                )}
-              </div>
-
-              {/* Left Chevron Navigation Button (Desktop only) */}
-              {images.length > 1 && (
-                <button
-                  type="button"
-                  className="modal-gallery-nav-btn"
-                  onClick={handlePrev}
-                  aria-label="Previous image"
-                  style={{
-                    position: 'absolute',
-                    left: 14,
-                    top: '50%',
-                    transform: 'translateY(-50%)',
-                    width: 44,
-                    height: 44,
-                    borderRadius: '50%',
-                    background: isDark ? 'rgba(28, 28, 40, 0.88)' : 'rgba(255, 255, 255, 0.94)',
-                    border: '1px solid var(--border)',
-                    color: 'var(--text)',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    cursor: 'pointer',
-                    zIndex: 3,
-                    backdropFilter: 'blur(10px)',
-                    WebkitBackdropFilter: 'blur(10px)',
-                    boxShadow: '0 4px 18px rgba(0, 0, 0, 0.12)',
-                    transition: 'all 0.2s cubic-bezier(0.16, 1, 0.3, 1)',
-                  }}
-                  onMouseEnter={(e) => {
-                    e.currentTarget.style.background = 'var(--accent, #C4386C)';
-                    e.currentTarget.style.color = '#FFFFFF';
-                    e.currentTarget.style.borderColor = 'var(--accent, #C4386C)';
-                    e.currentTarget.style.transform = 'translateY(-50%) scale(1.1)';
-                  }}
-                  onMouseLeave={(e) => {
-                    e.currentTarget.style.background = isDark ? 'rgba(28, 28, 40, 0.88)' : 'rgba(255, 255, 255, 0.94)';
-                    e.currentTarget.style.color = 'var(--text)';
-                    e.currentTarget.style.borderColor = 'var(--border)';
-                    e.currentTarget.style.transform = 'translateY(-50%) scale(1)';
-                  }}
-                >
-                  <ChevronLeft size={24} />
-                </button>
-              )}
-
-              {/* Right Chevron Navigation Button (Desktop only) */}
-              {images.length > 1 && (
-                <button
-                  type="button"
-                  className="modal-gallery-nav-btn"
-                  onClick={handleNext}
-                  aria-label="Next image"
-                  style={{
-                    position: 'absolute',
-                    right: 14,
-                    top: '50%',
-                    transform: 'translateY(-50%)',
-                    width: 44,
-                    height: 44,
-                    borderRadius: '50%',
-                    background: isDark ? 'rgba(28, 28, 40, 0.88)' : 'rgba(255, 255, 255, 0.94)',
-                    border: '1px solid var(--border)',
-                    color: 'var(--text)',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    cursor: 'pointer',
-                    zIndex: 3,
-                    backdropFilter: 'blur(10px)',
-                    WebkitBackdropFilter: 'blur(10px)',
-                    boxShadow: '0 4px 18px rgba(0, 0, 0, 0.12)',
-                    transition: 'all 0.2s cubic-bezier(0.16, 1, 0.3, 1)',
-                  }}
-                  onMouseEnter={(e) => {
-                    e.currentTarget.style.background = 'var(--accent, #C4386C)';
-                    e.currentTarget.style.color = '#FFFFFF';
-                    e.currentTarget.style.borderColor = 'var(--accent, #C4386C)';
-                    e.currentTarget.style.transform = 'translateY(-50%) scale(1.1)';
-                  }}
-                  onMouseLeave={(e) => {
-                    e.currentTarget.style.background = isDark ? 'rgba(28, 28, 40, 0.88)' : 'rgba(255, 255, 255, 0.94)';
-                    e.currentTarget.style.color = 'var(--text)';
-                    e.currentTarget.style.borderColor = 'var(--border)';
-                    e.currentTarget.style.transform = 'translateY(-50%) scale(1)';
-                  }}
-                >
-                  <ChevronRight size={24} />
-                </button>
-              )}
+              />
             </div>
 
-            {/* Manual Image Navigation Buttons (← →) Below the Image */}
-            {images.length > 1 && (
+            {/* Controls Row: [<prev 1/9 next>] on left (or centered when view details is omitted) | [view details] on right */}
+            <div
+              className="modal-controls-row"
+              style={{
+                justifyContent: hasViewDetailsButton ? 'space-between' : 'center',
+              }}
+            >
+              {/* <prev 1/9 next> rectangular button group */}
               <div
-                className="modal-manual-nav-bar"
+                className="modal-nav-capsule"
                 style={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  justifyContent: 'center',
-                  gap: 14,
-                  paddingTop: 8,
-                  paddingBottom: 4,
-                  width: '100%',
+                  margin: hasViewDetailsButton ? '0' : '0 auto',
                 }}
               >
                 <button
                   type="button"
-                  onClick={handlePrev}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    handlePrev();
+                  }}
+                  disabled={images.length <= 1}
+                  className="modal-nav-capsule-btn"
                   aria-label="Previous image"
-                  title="Previous image"
-                  className="modal-manual-arrow-btn"
-                  style={{
-                    display: 'inline-flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    gap: 6,
-                    padding: '6px 14px',
-                    borderRadius: 999,
-                    background: isDark ? 'rgba(255, 255, 255, 0.08)' : 'rgba(26, 17, 24, 0.05)',
-                    border: '1px solid var(--border)',
-                    color: 'var(--text)',
-                    fontSize: '0.82rem',
-                    fontWeight: 600,
-                    cursor: 'pointer',
-                    transition: 'all 0.2s cubic-bezier(0.16, 1, 0.3, 1)',
-                  }}
-                  onMouseEnter={(e) => {
-                    e.currentTarget.style.background = 'var(--accent, #C4386C)';
-                    e.currentTarget.style.color = '#FFFFFF';
-                    e.currentTarget.style.borderColor = 'var(--accent, #C4386C)';
-                  }}
-                  onMouseLeave={(e) => {
-                    e.currentTarget.style.background = isDark ? 'rgba(255, 255, 255, 0.08)' : 'rgba(26, 17, 24, 0.05)';
-                    e.currentTarget.style.color = 'var(--text)';
-                    e.currentTarget.style.borderColor = 'var(--border)';
-                  }}
                 >
-                  <ChevronLeft size={16} strokeWidth={2.5} />
+                  <ChevronLeft size={14} />
                   <span>Prev</span>
                 </button>
 
-                <span style={{ fontSize: '0.78rem', fontWeight: 600, color: 'var(--text-muted)' }}>
-                  {activeIndex + 1} / {images.length}
+                <span className="modal-nav-capsule-count">
+                  {images.length > 0 ? `${activeIndex + 1} / ${images.length}` : '1 / 1'}
                 </span>
 
                 <button
                   type="button"
-                  onClick={handleNext}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    handleNext();
+                  }}
+                  disabled={images.length <= 1}
+                  className="modal-nav-capsule-btn"
                   aria-label="Next image"
-                  title="Next image"
-                  className="modal-manual-arrow-btn"
-                  style={{
-                    display: 'inline-flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    gap: 6,
-                    padding: '6px 14px',
-                    borderRadius: 999,
-                    background: isDark ? 'rgba(255, 255, 255, 0.08)' : 'rgba(26, 17, 24, 0.05)',
-                    border: '1px solid var(--border)',
-                    color: 'var(--text)',
-                    fontSize: '0.82rem',
-                    fontWeight: 600,
-                    cursor: 'pointer',
-                    transition: 'all 0.2s cubic-bezier(0.16, 1, 0.3, 1)',
-                  }}
-                  onMouseEnter={(e) => {
-                    e.currentTarget.style.background = 'var(--accent, #C4386C)';
-                    e.currentTarget.style.color = '#FFFFFF';
-                    e.currentTarget.style.borderColor = 'var(--accent, #C4386C)';
-                  }}
-                  onMouseLeave={(e) => {
-                    e.currentTarget.style.background = isDark ? 'rgba(255, 255, 255, 0.08)' : 'rgba(26, 17, 24, 0.05)';
-                    e.currentTarget.style.color = 'var(--text)';
-                    e.currentTarget.style.borderColor = 'var(--border)';
-                  }}
                 >
                   <span>Next</span>
-                  <ChevronRight size={16} strokeWidth={2.5} />
+                  <ChevronRight size={14} />
                 </button>
+              </div>
+
+              {/* View Full Details Button: shown only when showViewDetails is true (e.g. Complete Your Look) */}
+              {hasViewDetailsButton && (
+                <Link
+                  to={getProductUrl(product)}
+                  onClick={handleClose}
+                  className="modal-view-details-btn"
+                >
+                  <span>View Details</span>
+                  <ExternalLink size={13} />
+                </Link>
+              )}
+            </div>
+
+            {/* Thumbnail Section (Enclosed Box matching Wireframe, Transparent BG, Full Width, Left Aligned) */}
+            {showThumbnailSection && (
+              <div className="modal-thumbnail-section">
+                {thumbnailRows.map((row, rowIdx) => (
+                  <React.Fragment key={rowIdx}>
+                    {rowIdx > 0 && <div className="modal-thumbnail-row-divider" />}
+                    <div className="modal-thumbnail-row">
+                      {row.map(({ item, globalIdx }) => {
+                        const imgUrl = typeof item === 'string' ? item : item?.url;
+                        const isThumbActive = globalIdx === activeIndex;
+                        const thumbLabel = typeof item === 'object'
+                          ? (item?.colorVariant?.colorName || item?.label || `Photo ${globalIdx + 1}`)
+                          : `Photo ${globalIdx + 1}`;
+
+                        return (
+                          <button
+                            key={globalIdx}
+                            ref={isThumbActive ? activeThumbRef : null}
+                            type="button"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              updateActiveIndex(globalIdx);
+                            }}
+                            aria-label={`Select ${thumbLabel}`}
+                            title={thumbLabel}
+                            className={`modal-thumb-btn ${isThumbActive ? 'is-active' : ''}`}
+                          >
+                            <img
+                              src={optimizeImageUrl(imgUrl, 200)}
+                              alt={thumbLabel}
+                              loading="lazy"
+                              style={{
+                                width: '100%',
+                                height: '100%',
+                                objectFit: 'cover',
+                                display: 'block',
+                              }}
+                            />
+                          </button>
+                        );
+                      })}
+                    </div>
+                  </React.Fragment>
+                ))}
               </div>
             )}
 
-            {/* Bottom Thumbnails & Action Controls Row */}
-            <div
-              className="product-image-modal-bottom"
-              style={{
-                width: '100%',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: images.length > 1 ? 'space-between' : 'flex-end',
-                paddingTop: 10,
-                gap: 12,
-                flexWrap: 'nowrap',
-              }}
-            >
-              {/* Responsive Clickable Image Thumbnails when multiple images exist */}
-              {images.length > 1 && (
-                <div
-                  className="modal-thumbnails-scroll-container"
-                  style={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: 8,
-                    overflowX: 'auto',
-                    overflowY: 'hidden',
-                    padding: '4px 2px 6px',
-                    flex: '1 1 auto',
-                    minWidth: 0,
-                    maxWidth: '100%',
-                    scrollbarWidth: 'thin',
-                    WebkitOverflowScrolling: 'touch',
-                  }}
-                >
-                  {images.map((img, idx) => (
-                    <button
-                      key={idx}
-                      type="button"
-                      onClick={() => updateActiveIndex(idx)}
-                      aria-label={`Show image ${idx + 1}`}
-                      style={{
-                        width: 'clamp(42px, 7vw, 50px)',
-                        height: 'clamp(42px, 7vw, 50px)',
-                        borderRadius: 10,
-                        overflow: 'hidden',
-                        padding: 0,
-                        cursor: 'pointer',
-                        border: activeIndex === idx
-                          ? '2px solid var(--accent, #C4386C)'
-                          : '1px solid var(--border)',
-                        boxShadow: activeIndex === idx
-                          ? '0 4px 12px rgba(196, 56, 108, 0.35)'
-                          : 'none',
-                        opacity: 1, // Unshaded, crystal clear on all thumbnails
-                        background: '#FFFFFF',
-                        transition: 'all 0.2s ease',
-                        flexShrink: 0,
-                      }}
-                    >
-                      <img
-                        src={optimizeImageUrl(img.url, 140)}
-                        alt=""
-                        style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }}
-                      />
-                    </button>
-                  ))}
-                </div>
-              )}
-
-              {/* Action Column: View Full Details + Back Button (Back button placed slightly lower) */}
-              <div
-                style={{
-                  display: 'flex',
-                  flexDirection: 'column',
-                  alignItems: 'flex-end',
-                  gap: 8,
-                  marginLeft: 'auto',
-                  flexShrink: 0,
-                }}
+            {/* Bottom Right: Retained Clean ArrowLeft Icon */}
+            <div className="modal-footer-row">
+              <button
+                type="button"
+                onClick={handleClose}
+                className="modal-back-btn"
+                aria-label="Back to page"
               >
-                {product && (
-                  <Link
-                    to={getProductUrl(product)}
-                    onClick={onClose}
-                    style={{
-                      display: 'inline-flex',
-                      alignItems: 'center',
-                      gap: 6,
-                      color: '#FFFFFF',
-                      fontSize: '0.82rem',
-                      fontWeight: 700,
-                      textDecoration: 'none',
-                      padding: '8px 18px',
-                      borderRadius: 999,
-                      background: 'var(--accent-gradient, linear-gradient(135deg, #C4386C, #8A2BE2))',
-                      boxShadow: '0 4px 16px rgba(196, 56, 108, 0.35)',
-                      border: 'none',
-                      transition: 'all 0.2s ease',
-                      whiteSpace: 'nowrap',
-                    }}
-                    onMouseEnter={(e) => {
-                      e.currentTarget.style.transform = 'translateY(-1px)';
-                      e.currentTarget.style.boxShadow = '0 6px 20px rgba(196, 56, 108, 0.45)';
-                    }}
-                    onMouseLeave={(e) => {
-                      e.currentTarget.style.transform = 'none';
-                      e.currentTarget.style.boxShadow = '0 4px 16px rgba(196, 56, 108, 0.35)';
-                    }}
-                  >
-                    <span>View Full Details</span>
-                    <ExternalLink size={13} />
-                  </Link>
-                )}
-
-                {/* Back button below View Full Details, positioned slightly lower */}
-                <button
-                  type="button"
-                  onClick={onClose}
-                  style={{
-                    display: 'inline-flex',
-                    alignItems: 'center',
-                    gap: 4,
-                    color: 'var(--text-secondary)',
-                    fontSize: '0.78rem',
-                    fontWeight: 600,
-                    padding: '4px 10px',
-                    marginTop: 4,
-                    background: 'transparent',
-                    border: 'none',
-                    cursor: 'pointer',
-                    transition: 'all 0.18s ease',
-                    textDecoration: 'underline',
-                    textUnderlineOffset: '3px',
-                  }}
-                  onMouseEnter={(e) => {
-                    e.currentTarget.style.color = 'var(--accent, #C4386C)';
-                  }}
-                  onMouseLeave={(e) => {
-                    e.currentTarget.style.color = 'var(--text-secondary)';
-                  }}
-                >
-                  <span>← Back</span>
-                </button>
-              </div>
+                <ArrowLeft size={15} />
+                <span>Back</span>
+              </button>
             </div>
 
             <style>{`
               .product-image-modal-root {
-                justify-content: center !important;
-                align-items: center !important;
-                padding: 12px 10px !important;
-                overflow-y: auto !important;
-                -webkit-overflow-scrolling: touch !important;
+                position: fixed;
+                inset: 0;
+                z-index: 9999;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                background: ${isDark ? 'rgba(10, 10, 16, 0.88)' : 'rgba(253, 250, 245, 0.90)'};
+                backdrop-filter: blur(18px);
+                -webkit-backdrop-filter: blur(18px);
+                user-select: none;
+                padding: 16px 12px;
+                box-sizing: border-box;
+                overflow-y: auto;
+                -webkit-overflow-scrolling: touch;
               }
+
               .product-image-modal-card {
-                width: auto !important;
-                max-width: min(94vw, 560px) !important;
-                min-height: auto !important;
-                height: auto !important;
-                max-height: 94dvh !important;
-                display: flex !important;
-                flex-direction: column !important;
-                justify-content: center !important;
-                align-items: center !important;
-                margin: auto !important;
-                padding: 4px 6px !important;
-                box-sizing: border-box !important;
-                transform: translateY(-36px) !important;
+                position: relative;
+                width: 100%;
+                max-width: 540px;
+                display: flex;
+                flex-direction: column;
+                align-items: center;
+                margin: auto;
+                box-sizing: border-box;
+                transform: none !important;
               }
+
+              .product-image-modal-card.is-portrait-card {
+                max-width: 380px;
+              }
+
               .product-image-modal-header {
-                flex-shrink: 0 !important;
-                padding: 0 2px 6px !important;
-                width: 100% !important;
+                width: 100%;
+                display: flex;
+                align-items: center;
+                justify-content: space-between;
+                margin-bottom: 8px;
+                padding: 0 2px;
+                box-sizing: border-box;
               }
+
+              .product-image-modal-title {
+                font-family: "Cormorant Garamond", Georgia, serif;
+                font-size: clamp(1.15rem, 2.8vw, 1.4rem);
+                font-weight: 700;
+                margin: 0;
+                color: var(--text);
+                white-space: nowrap;
+                overflow: hidden;
+                text-overflow: ellipsis;
+                line-height: 1.2;
+              }
+
               .product-image-modal-close-btn {
-                width: 36px !important;
-                height: 36px !important;
+                width: 34px;
+                height: 34px;
+                border-radius: 50%;
+                background: ${isDark ? 'rgba(255, 255, 255, 0.1)' : 'rgba(26, 17, 24, 0.06)'};
+                border: 1px solid var(--border);
+                color: var(--text);
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                cursor: pointer;
+                transition: all 0.2s ease;
+                flex-shrink: 0;
               }
+
+              .product-image-modal-close-btn:hover {
+                background: var(--accent, #C4386C);
+                color: #FFFFFF;
+                border-color: var(--accent, #C4386C);
+                transform: scale(1.08);
+              }
+
+              /* Full-Width Image Card (1:1 on Main, 3:4 on Complete Your Look) */
               .product-image-modal-stage {
-                flex: 0 1 auto !important;
-                width: auto !important;
-                max-width: 100% !important;
-                min-height: auto !important;
-                max-height: min(60vh, 520px) !important;
-                display: flex !important;
-                align-items: center !important;
-                justify-content: center !important;
-                position: relative !important;
-                background: transparent !important;
-                box-shadow: none !important;
+                position: relative;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                width: 100%;
+                border-radius: 14px;
+                overflow: hidden;
+                background: ${isDark ? '#14141e' : '#f7f4ee'};
+                box-shadow: 0 8px 28px rgba(0, 0, 0, 0.18);
+                cursor: pointer;
               }
+
+              .product-image-modal-stage.is-square-stage {
+                aspect-ratio: 1 / 1;
+                max-height: min(48vh, 420px);
+              }
+
+              .product-image-modal-stage.is-portrait-stage {
+                aspect-ratio: 3 / 4;
+                max-height: min(52vh, 450px);
+              }
+
               .product-image-modal-img {
-                width: auto !important;
-                height: auto !important;
-                max-width: min(92vw, 540px) !important;
-                max-height: min(58vh, 500px) !important;
-                object-fit: contain !important;
-                border-radius: 14px !important;
-                box-shadow: 0 10px 40px rgba(0, 0, 0, 0.25) !important;
+                display: block;
+                width: 100%;
+                height: 100%;
+                object-fit: cover;
+                border-radius: 14px;
               }
-              .product-image-modal-bottom {
-                flex-shrink: 0 !important;
-                padding-top: 8px !important;
-                padding-bottom: 2px !important;
-                width: 100% !important;
+
+              /* Controls Row */
+              .modal-controls-row {
+                display: flex;
+                align-items: center;
+                width: 100%;
+                margin-top: 8px;
+                gap: 10px;
+                box-sizing: border-box;
               }
-              .modal-gallery-nav-btn {
-                display: none !important;
+
+              /* Nav Capsule Navigator: <prev 1/9 next> */
+              .modal-nav-capsule {
+                display: inline-flex;
+                align-items: center;
+                gap: 5px;
+                background: ${isDark ? 'rgba(255, 255, 255, 0.08)' : 'rgba(26, 17, 24, 0.05)'};
+                border: 1.5px solid var(--border);
+                border-radius: 8px;
+                padding: 3px 6px;
+                user-select: none;
+                box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
               }
-              .modal-gallery-dots {
-                display: flex !important;
+
+              .modal-nav-capsule-btn {
+                display: inline-flex;
+                align-items: center;
+                gap: 3px;
+                background: transparent;
+                border: none;
+                color: var(--text);
+                font-size: 0.78rem;
+                font-weight: 600;
+                cursor: pointer;
+                padding: 3px 8px;
+                border-radius: 6px;
+                transition: all 0.15s ease;
               }
-              .modal-thumbnails-scroll-container::-webkit-scrollbar {
-                height: 4px !important;
+
+              .modal-nav-capsule-btn:not(:disabled):hover {
+                background: var(--accent, #C4386C);
+                color: #FFFFFF;
               }
-              .modal-thumbnails-scroll-container::-webkit-scrollbar-thumb {
-                background: var(--border, rgba(0,0,0,0.25)) !important;
-                border-radius: 4px !important;
+
+              .modal-nav-capsule-btn:disabled {
+                opacity: 0.35;
+                cursor: not-allowed;
               }
+
+              .modal-nav-capsule-count {
+                font-size: 0.78rem;
+                font-weight: 700;
+                color: var(--text);
+                padding: 0 5px;
+                letter-spacing: 0.02em;
+              }
+
+              /* View Details Button */
+              .modal-view-details-btn {
+                display: inline-flex;
+                align-items: center;
+                gap: 6px;
+                color: #FFFFFF;
+                font-size: 0.78rem;
+                font-weight: 700;
+                text-decoration: none;
+                padding: 6px 16px;
+                border-radius: 8px;
+                background: var(--accent-gradient, linear-gradient(135deg, #C4386C, #8A2BE2));
+                box-shadow: 0 3px 12px rgba(196, 56, 108, 0.3);
+                border: none;
+                transition: all 0.2s ease;
+                white-space: nowrap;
+              }
+
+              .modal-view-details-btn:hover {
+                transform: translateY(-1px);
+                box-shadow: 0 5px 16px rgba(196, 56, 108, 0.4);
+              }
+
+              /* Enclosed Box for Thumbnail Section (Fixed Height, Vertically Scrollable, Smaller Thumbnails) */
+              .modal-thumbnail-section {
+                width: 100%;
+                height: 84px;
+                max-height: 84px;
+                background: transparent;
+                border: 1.5px solid var(--border);
+                border-radius: 10px;
+                padding: 6px 8px;
+                margin-top: 8px;
+                box-sizing: border-box;
+                overflow-y: auto;
+                overflow-x: hidden;
+                scrollbar-width: thin;
+                -webkit-overflow-scrolling: touch;
+              }
+
+              .modal-thumbnail-row {
+                display: flex;
+                align-items: center;
+                justify-content: flex-start;
+                gap: 6px;
+                flex-wrap: wrap;
+                width: 100%;
+              }
+
+              .modal-thumbnail-row-divider {
+                width: 100%;
+                height: 1px;
+                background: var(--border);
+                margin: 5px 0;
+                opacity: 0.5;
+              }
+
+              .modal-thumb-btn {
+                width: 34px;
+                height: 34px;
+                border-radius: 6px;
+                overflow: hidden;
+                padding: 0;
+                cursor: pointer;
+                border: 1.5px solid var(--border);
+                background: transparent;
+                opacity: 0.88;
+                flex-shrink: 0;
+                box-sizing: border-box;
+                transition: all 0.15s ease;
+              }
+
+              .modal-thumb-btn.is-active {
+                border-color: var(--accent, #C4386C);
+                border-width: 2px;
+                box-shadow: 0 2px 10px rgba(196, 56, 108, 0.42);
+                transform: scale(1.06);
+                opacity: 1;
+              }
+
+              .modal-thumb-btn:hover {
+                opacity: 1;
+                transform: scale(1.04);
+              }
+
+              /* Bottom Right Back with Previous Icon */
+              .modal-footer-row {
+                display: flex;
+                justify-content: flex-end;
+                width: 100%;
+                margin-top: 6px;
+                padding: 2px 2px 0;
+                box-sizing: border-box;
+                flex-shrink: 0;
+              }
+
+              .modal-back-btn {
+                display: inline-flex;
+                align-items: center;
+                gap: 5px;
+                background: transparent;
+                border: none;
+                cursor: pointer;
+                font-family: inherit;
+                font-size: 0.84rem;
+                font-weight: 700;
+                color: var(--text-secondary);
+                padding: 4px 8px;
+                border-radius: 6px;
+                transition: all 0.18s ease;
+              }
+
+              .modal-back-btn:hover {
+                color: var(--accent, #C4386C);
+                background: ${isDark ? 'rgba(196, 56, 108, 0.16)' : 'rgba(196, 56, 108, 0.08)'};
+                transform: translateX(-3px);
+              }
+
               @media (min-width: 769px) {
                 .product-image-modal-root {
-                  justify-content: center !important;
-                  padding: 24px !important;
+                  padding: 16px;
                 }
                 .product-image-modal-card {
-                  height: auto !important;
-                  max-height: 94vh !important;
-                  max-width: 820px !important;
-                  justify-content: center !important;
-                  transform: translateY(-44px) !important;
+                  max-height: 94vh;
                 }
-                .product-image-modal-header {
-                  padding: 0 4px 8px !important;
+                .modal-thumb-btn {
+                  width: 36px;
+                  height: 36px;
                 }
-                .product-image-modal-close-btn {
-                  width: 40px !important;
-                  height: 40px !important;
+              }
+
+              @media (max-width: 480px) {
+                .product-image-modal-stage.is-square-stage {
+                  max-height: min(42vh, 320px);
                 }
-                .product-image-modal-stage {
-                  flex: 0 1 auto !important;
-                  min-height: auto !important;
-                  max-height: 70vh !important;
-                  background: transparent !important;
-                  box-shadow: none !important;
+                .product-image-modal-stage.is-portrait-stage {
+                  max-height: min(46vh, 350px);
                 }
-                .product-image-modal-img {
-                  height: auto !important;
-                  width: auto !important;
-                  max-width: 80vw !important;
-                  max-height: 68vh !important;
-                  box-shadow: 0 12px 48px rgba(0, 0, 0, 0.3) !important;
+                .modal-nav-capsule-btn {
+                  font-size: 0.74rem;
+                  padding: 2px 6px;
                 }
-                .product-image-modal-bottom {
-                  padding-top: 10px !important;
+                .modal-nav-capsule-count {
+                  font-size: 0.74rem;
+                  padding: 0 4px;
                 }
-                .modal-gallery-nav-btn {
-                  display: flex !important;
+                .modal-view-details-btn {
+                  font-size: 0.74rem;
+                  padding: 5px 12px;
                 }
-                .modal-gallery-dots {
-                  display: flex !important;
+                .modal-back-btn {
+                  font-size: 0.80rem;
+                  padding: 3px 6px;
                 }
               }
             `}</style>

@@ -2,60 +2,90 @@ const Category = require('../models/Category');
 const Product = require('../models/Product');
 const Subcategory = require('../models/Subcategory');
 
+let isCategoriesSeeded = false;
+let categoryCache = null;
+let categoryCacheTimestamp = 0;
+const CACHE_TTL_MS = 60 * 1000; // 60 seconds
+
+const invalidateCategoryCache = () => {
+  categoryCache = null;
+  categoryCacheTimestamp = 0;
+};
+
 const seedCategories = async () => {
-  const cats = await Category.find();
-  if (cats.length === 0) {
-    await Category.insertMany([
-      { name: 'Designer Glass Bangles', order: 0 },
-      { name: 'Wedding Bangles', order: 1 },
-      { name: 'Antique Bangles', order: 2 },
-      { name: 'Valaikaappu Bangles', order: 3 },
-      { name: 'Artificial Flowers', order: 4 },
-      { name: 'Gift Box Combo', order: 5 },
-      { name: 'Jumkhas', order: 6 },
-      { name: 'Jewels', order: 7 },
-    ]);
+  if (isCategoriesSeeded) return;
+  try {
+    const count = await Category.estimatedDocumentCount();
+    if (count === 0) {
+      await Category.insertMany([
+        { name: 'Designer Glass Bangles', order: 0 },
+        { name: 'Wedding Bangles', order: 1 },
+        { name: 'Antique Bangles', order: 2 },
+        { name: 'Valaikaappu Bangles', order: 3 },
+        { name: 'Artificial Flowers', order: 4 },
+        { name: 'Gift Box Combo', order: 5 },
+        { name: 'Jumkhas', order: 6 },
+        { name: 'Jewels', order: 7 },
+      ]);
+    }
+    isCategoriesSeeded = true;
+  } catch (err) {
+    console.error('[categoryController] seedCategories error:', err);
   }
 };
 
 const getCategories = async (req, res) => {
   try {
-    await seedCategories();
-    const categories = await Category.find().sort({ order: 1 }).lean();
-
-    // Add aggregate product & subcategory counts
-    for (let cat of categories) {
-      const isDesignerGlassBangles = /^(designer\s+)?glass\s+bangles$/i.test(cat.name);
-      const isArtificialFlowers = /^artificial\s+flowers$/i.test(cat.name);
-
-      if (isDesignerGlassBangles) {
-        const subcatDocs = await Subcategory.find({
-          category: new RegExp('^(designer\\s+)?glass\\s+bangles$', 'i'),
-        }).select('_id');
-        const subIds = subcatDocs.map((s) => s._id);
-
-        cat.productCount = await Product.countDocuments({
-          $or: [
-            { category: new RegExp('^(designer\\s+)?glass\\s+bangles$', 'i') },
-            ...(subIds.length > 0 ? [{ subcategoryId: { $in: subIds } }] : []),
-          ],
-        });
-        cat.subcategoryCount = subcatDocs.length;
-      } else if (isArtificialFlowers) {
-        const subcatDocs = await Subcategory.find({
-          category: new RegExp('^artificial\\s+flowers$', 'i'),
-        }).select('_id');
-        cat.productCount = await Product.countDocuments({
-          category: new RegExp('^artificial\\s+flowers$', 'i'),
-        });
-        cat.subcategoryCount = subcatDocs.length;
-      } else {
-        cat.productCount = await Product.countDocuments({
-          category: new RegExp(`^${cat.name}$`, 'i'),
-        });
-        cat.subcategoryCount = 0; // Top-level categories without subcategories
-      }
+    const now = Date.now();
+    if (categoryCache && (now - categoryCacheTimestamp < CACHE_TTL_MS)) {
+      return res.json(categoryCache);
     }
+
+    await seedCategories();
+
+    // Fetch categories and subcategories in parallel
+    const [categories, allSubcats] = await Promise.all([
+      Category.find().sort({ order: 1 }).lean(),
+      Subcategory.find().lean()
+    ]);
+
+    const dgbSubIds = allSubcats
+      .filter((s) => /^(designer\s+)?glass\s+bangles$/i.test(s.category))
+      .map((s) => s._id);
+
+    const afSubcats = allSubcats
+      .filter((s) => /^artificial\s+flowers$/i.test(s.category));
+
+    // Parallelize product count calculations across categories
+    await Promise.all(
+      categories.map(async (cat) => {
+        const isDesignerGlassBangles = /^(designer\s+)?glass\s+bangles$/i.test(cat.name);
+        const isArtificialFlowers = /^artificial\s+flowers$/i.test(cat.name);
+
+        if (isDesignerGlassBangles) {
+          cat.subcategoryCount = dgbSubIds.length;
+          cat.productCount = await Product.countDocuments({
+            $or: [
+              { category: new RegExp('^(designer\\s+)?glass\\s+bangles$', 'i') },
+              ...(dgbSubIds.length > 0 ? [{ subcategoryId: { $in: dgbSubIds } }] : []),
+            ],
+          });
+        } else if (isArtificialFlowers) {
+          cat.subcategoryCount = afSubcats.length;
+          cat.productCount = await Product.countDocuments({
+            category: new RegExp('^artificial\\s+flowers$', 'i'),
+          });
+        } else {
+          cat.subcategoryCount = 0; // Top-level categories without subcategories
+          cat.productCount = await Product.countDocuments({
+            category: new RegExp(`^${cat.name}$`, 'i'),
+          });
+        }
+      })
+    );
+
+    categoryCache = categories;
+    categoryCacheTimestamp = Date.now();
 
     res.json(categories);
   } catch (error) {
@@ -68,6 +98,7 @@ const createCategory = async (req, res) => {
   try {
     const newCategory = new Category(req.body);
     const saved = await newCategory.save();
+    invalidateCategoryCache();
     res.json(saved);
   } catch (error) {
     res.status(500).json({ message: 'Server error' });
@@ -105,6 +136,7 @@ const updateCategory = async (req, res) => {
       );
     }
 
+    invalidateCategoryCache();
     res.json(updatedCategory);
   } catch (error) {
     console.error('[categoryController] updateCategory error:', error);
@@ -115,6 +147,7 @@ const updateCategory = async (req, res) => {
 const deleteCategory = async (req, res) => {
   try {
     await Category.findByIdAndDelete(req.params.id);
+    invalidateCategoryCache();
     res.json({ message: 'Category deleted' });
   } catch (error) {
     res.status(500).json({ message: 'Server error' });
@@ -128,6 +161,7 @@ const updateCategoryOrders = async (req, res) => {
       Category.findByIdAndUpdate(item.id, { order: item.order })
     );
     await Promise.all(updates);
+    invalidateCategoryCache();
     res.json({ message: 'Category orders updated' });
   } catch (error) {
     res.status(500).json({ message: 'Server error' });

@@ -2,9 +2,9 @@ import React, { createContext, useState, useEffect, useCallback, useRef, useCont
 import api from '../utils/api';
 import { LS_CART_KEY } from '../config/constants';
 import { trackProductEvent, syncGuestState } from '../utils/analytics';
-import { resolveStock } from '../utils/stockValidator';
+import { resolveStock, isColorCompletelyOutOfStock } from '../utils/stockValidator';
 
-export { resolveStock };
+export { resolveStock, isColorCompletelyOutOfStock };
 export const CartContext = createContext();
 
 /**

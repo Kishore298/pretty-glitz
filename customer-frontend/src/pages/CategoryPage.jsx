@@ -22,6 +22,7 @@ const CategoryPage = () => {
   // Normalize legacy category routes to Designer Glass Bangles
   const isLegacyBangles = /^(glass\s+bangles|bangles)$/i.test(categoryName || '');
   const normalizedCategory = isLegacyBangles ? 'Designer Glass Bangles' : categoryName;
+  const isDesignerGlassBangles = /^(designer\s+)?glass\s+bangles$/i.test(normalizedCategory || '');
 
   const [products, setProducts] = useState([]);
   const [subcategories, setSubcategories] = useState([]);
@@ -326,7 +327,7 @@ const CategoryPage = () => {
               gap: 8,
               overflowX: 'auto',
               paddingBottom: 4,
-              marginBottom: 12,
+              marginBottom: isDesignerGlassBangles ? 4 : 12,
               WebkitOverflowScrolling: 'touch',
               scrollbarWidth: 'none',
               msOverflowStyle: 'none',
@@ -422,7 +423,7 @@ const CategoryPage = () => {
               </button>
             )}
           </motion.div>
-        ) : !activeSubDoc && resolvedSubcategories.length > 0 ? (
+        ) : !activeSubDoc && resolvedSubcategories.length > 0 && !isDesignerGlassBangles ? (
           /* Main category view: grouped sections per subcategory + unassigned pieces */
           <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
             {resolvedSubcategories.map((sub, sIdx) => {
@@ -495,7 +496,7 @@ const CategoryPage = () => {
         ) : (
           /* Single Grid view (when specific subcategory is selected OR category has no subcategories) */
           <div>
-            {activeSubDoc && (
+            {activeSubDoc && !isDesignerGlassBangles && (
               <div style={{ marginBottom: 10, paddingBottom: 6, borderBottom: '1px solid var(--border)' }}>
                 <h2 style={{
                   fontSize: 'clamp(1.15rem, 2.2vw, 1.45rem)', fontWeight: 700, color: 'var(--text)',
