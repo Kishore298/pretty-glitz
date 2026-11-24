@@ -10,17 +10,19 @@ import logoImg from '../assets/pretty-glitz-logo.png';
 /**
  * ProductImageModal
  *
- * Full-width enlarged product image pop-out gallery matching wireframe design:
- * - Image card with aspect ratio matching context:
- *   - 1:1 on Main Product details
- *   - 3:4 on Complete Your Look section
- *   - Image fits the card completely.
- * - Controls row: [<prev 1/9 next>] centered on Main Product (when view details is omitted);
- *   spaced side-by-side on Complete Your Look.
- * - Enclosed thumbnail section box with lines (line 1, line 2, line 3) and dividers for products with color thumbnails.
- *   - Transparent background (no white card behind thumbnails), occupies full width and starts from the left.
- * - Single image / products without thumbnails omit the thumbnail section completely.
- * - Clean [ArrowLeft] icon for the Back button at the bottom right.
+ * Enlarged product image popup gallery matching the wireframe layout:
+ * - Top: Full-width image card (1:1 on Main Product, 3:4 on Complete Your Look).
+ * - Middle: [<prev 1/9 next>] on left (or centered when view details is omitted);
+ *   [view details] on right.
+ * - Thumbnail Section (Enclosed Box matching wireframe):
+ *   - Transparent background (no white card).
+ *   - Line 1 of thumbnails (occupies full width, starts from left).
+ *   - Divider line.
+ *   - Line 2 of thumbnails (starts from left, aligns with line 1).
+ *   - Divider line (if line 3 exists).
+ *   - Line 3 of thumbnails (starts from left).
+ *   - Omitted for single-image products or products without color thumbnails.
+ * - Bottom right: [Back with icon] fully visible on initial viewport without scrolling.
  */
 const ProductImageModal = ({
   isOpen,
@@ -192,11 +194,11 @@ const ProductImageModal = ({
   // Show thumbnail section only if product has color thumbnail images and more than 1 image
   const showThumbnailSection = hasColorThumbnails && images.length > 1;
 
-  // Distribute smaller thumbnails into lines (e.g. 7-8 per line)
+  // Distribute thumbnails into lines of 5 items per line (matching wireframe line 1, line 2, line 3)
   const thumbnailRows = React.useMemo(() => {
     if (!showThumbnailSection || images.length === 0) return [];
     const total = images.length;
-    const itemsPerRow = 7;
+    const itemsPerRow = 5;
     const rows = [];
     for (let i = 0; i < total; i += itemsPerRow) {
       const start = i;
@@ -361,7 +363,7 @@ const ProductImageModal = ({
               )}
             </div>
 
-            {/* Thumbnail Section (Enclosed Box matching Wireframe, Transparent BG, Full Width, Left Aligned) */}
+            {/* Thumbnail Section (Enclosed Box with Lines & Dividers matching Wireframe) */}
             {showThumbnailSection && (
               <div className="modal-thumbnail-section">
                 {thumbnailRows.map((row, rowIdx) => (
@@ -408,7 +410,7 @@ const ProductImageModal = ({
               </div>
             )}
 
-            {/* Bottom Right: Retained Clean ArrowLeft Icon */}
+            {/* Bottom Right: Clean ArrowLeft Icon paired with Back */}
             <div className="modal-footer-row">
               <button
                 type="button"
@@ -433,7 +435,7 @@ const ProductImageModal = ({
                 backdrop-filter: blur(18px);
                 -webkit-backdrop-filter: blur(18px);
                 user-select: none;
-                padding: 16px 12px;
+                padding: 10px 12px;
                 box-sizing: border-box;
                 overflow-y: auto;
                 -webkit-overflow-scrolling: touch;
@@ -442,17 +444,18 @@ const ProductImageModal = ({
               .product-image-modal-card {
                 position: relative;
                 width: 100%;
-                max-width: 540px;
+                max-width: 500px;
                 display: flex;
                 flex-direction: column;
                 align-items: center;
                 margin: auto;
                 box-sizing: border-box;
                 transform: none !important;
+                max-height: 98vh;
               }
 
               .product-image-modal-card.is-portrait-card {
-                max-width: 380px;
+                max-width: 420px;
               }
 
               .product-image-modal-header {
@@ -460,14 +463,14 @@ const ProductImageModal = ({
                 display: flex;
                 align-items: center;
                 justify-content: space-between;
-                margin-bottom: 8px;
+                margin-bottom: 6px;
                 padding: 0 2px;
                 box-sizing: border-box;
               }
 
               .product-image-modal-title {
                 font-family: "Cormorant Garamond", Georgia, serif;
-                font-size: clamp(1.15rem, 2.8vw, 1.4rem);
+                font-size: clamp(1.1rem, 2.6vw, 1.35rem);
                 font-weight: 700;
                 margin: 0;
                 color: var(--text);
@@ -478,8 +481,8 @@ const ProductImageModal = ({
               }
 
               .product-image-modal-close-btn {
-                width: 34px;
-                height: 34px;
+                width: 32px;
+                height: 32px;
                 border-radius: 50%;
                 background: ${isDark ? 'rgba(255, 255, 255, 0.1)' : 'rgba(26, 17, 24, 0.06)'};
                 border: 1px solid var(--border);
@@ -499,7 +502,7 @@ const ProductImageModal = ({
                 transform: scale(1.08);
               }
 
-              /* Full-Width Image Card (1:1 on Main, 3:4 on Complete Your Look) */
+              /* Full-Width Image Card */
               .product-image-modal-stage {
                 position: relative;
                 display: flex;
@@ -509,18 +512,18 @@ const ProductImageModal = ({
                 border-radius: 14px;
                 overflow: hidden;
                 background: ${isDark ? '#14141e' : '#f7f4ee'};
-                box-shadow: 0 8px 28px rgba(0, 0, 0, 0.18);
+                box-shadow: 0 8px 24px rgba(0, 0, 0, 0.16);
                 cursor: pointer;
               }
 
               .product-image-modal-stage.is-square-stage {
                 aspect-ratio: 1 / 1;
-                max-height: min(48vh, 420px);
+                max-height: min(44vh, 360px);
               }
 
               .product-image-modal-stage.is-portrait-stage {
                 aspect-ratio: 3 / 4;
-                max-height: min(52vh, 450px);
+                max-height: min(48vh, 390px);
               }
 
               .product-image-modal-img {
@@ -545,13 +548,13 @@ const ProductImageModal = ({
               .modal-nav-capsule {
                 display: inline-flex;
                 align-items: center;
-                gap: 5px;
+                gap: 4px;
                 background: ${isDark ? 'rgba(255, 255, 255, 0.08)' : 'rgba(26, 17, 24, 0.05)'};
                 border: 1.5px solid var(--border);
                 border-radius: 8px;
                 padding: 3px 6px;
                 user-select: none;
-                box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+                box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
               }
 
               .modal-nav-capsule-btn {
@@ -564,7 +567,7 @@ const ProductImageModal = ({
                 font-size: 0.78rem;
                 font-weight: 600;
                 cursor: pointer;
-                padding: 3px 8px;
+                padding: 4px 8px;
                 border-radius: 6px;
                 transition: all 0.15s ease;
               }
@@ -610,66 +613,59 @@ const ProductImageModal = ({
                 box-shadow: 0 5px 16px rgba(196, 56, 108, 0.4);
               }
 
-              /* Enclosed Box for Thumbnail Section (Fixed Height, Vertically Scrollable, Smaller Thumbnails) */
+              /* Enclosed Box for Thumbnail Section (Wireframe Design: Lines 1, 2, 3 with Dividers) */
               .modal-thumbnail-section {
                 width: 100%;
-                height: 84px;
-                max-height: 84px;
                 background: transparent;
                 border: 1.5px solid var(--border);
-                border-radius: 10px;
-                padding: 6px 8px;
+                border-radius: 12px;
+                padding: 8px 10px;
                 margin-top: 8px;
                 box-sizing: border-box;
-                overflow-y: auto;
-                overflow-x: hidden;
-                scrollbar-width: thin;
-                -webkit-overflow-scrolling: touch;
               }
 
               .modal-thumbnail-row {
-                display: flex;
-                align-items: center;
-                justify-content: flex-start;
-                gap: 6px;
-                flex-wrap: wrap;
+                display: grid;
+                grid-template-columns: repeat(5, 1fr);
+                gap: 8px;
                 width: 100%;
+                box-sizing: border-box;
+                justify-items: start;
               }
 
               .modal-thumbnail-row-divider {
                 width: 100%;
                 height: 1px;
                 background: var(--border);
-                margin: 5px 0;
-                opacity: 0.5;
+                margin: 6px 0;
+                opacity: 0.55;
               }
 
               .modal-thumb-btn {
-                width: 34px;
-                height: 34px;
-                border-radius: 6px;
+                width: 100%;
+                aspect-ratio: 1 / 1;
+                border-radius: 8px;
                 overflow: hidden;
                 padding: 0;
                 cursor: pointer;
                 border: 1.5px solid var(--border);
                 background: transparent;
                 opacity: 0.88;
-                flex-shrink: 0;
                 box-sizing: border-box;
-                transition: all 0.15s ease;
+                transition: all 0.18s ease;
               }
 
               .modal-thumb-btn.is-active {
                 border-color: var(--accent, #C4386C);
-                border-width: 2px;
-                box-shadow: 0 2px 10px rgba(196, 56, 108, 0.42);
-                transform: scale(1.06);
+                border-width: 2.5px;
+                box-shadow: 0 3px 12px rgba(196, 56, 108, 0.42);
+                transform: scale(1.04);
                 opacity: 1;
               }
 
               .modal-thumb-btn:hover {
                 opacity: 1;
-                transform: scale(1.04);
+                transform: scale(1.03);
               }
 
               /* Bottom Right Back with Previous Icon */
@@ -686,7 +682,7 @@ const ProductImageModal = ({
               .modal-back-btn {
                 display: inline-flex;
                 align-items: center;
-                gap: 5px;
+                gap: 6px;
                 background: transparent;
                 border: none;
                 cursor: pointer;
@@ -709,25 +705,18 @@ const ProductImageModal = ({
                 .product-image-modal-root {
                   padding: 16px;
                 }
-                .product-image-modal-card {
-                  max-height: 94vh;
+                .product-image-modal-stage.is-square-stage {
+                  max-height: min(48vh, 400px);
                 }
-                .modal-thumb-btn {
-                  width: 36px;
-                  height: 36px;
+                .product-image-modal-stage.is-portrait-stage {
+                  max-height: min(52vh, 430px);
                 }
               }
 
               @media (max-width: 480px) {
-                .product-image-modal-stage.is-square-stage {
-                  max-height: min(42vh, 320px);
-                }
-                .product-image-modal-stage.is-portrait-stage {
-                  max-height: min(46vh, 350px);
-                }
                 .modal-nav-capsule-btn {
                   font-size: 0.74rem;
-                  padding: 2px 6px;
+                  padding: 3px 6px;
                 }
                 .modal-nav-capsule-count {
                   font-size: 0.74rem;
