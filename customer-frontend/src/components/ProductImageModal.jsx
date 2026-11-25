@@ -21,7 +21,8 @@ import logoImg from '../assets/pretty-glitz-logo.png';
  *   - Line 2 of thumbnails (starts from left, aligns with line 1).
  *   - Divider line (if line 3 exists).
  *   - Line 3 of thumbnails (starts from left).
- *   - Omitted for single-image products or products without color thumbnails.
+ *   - Omitted for single-image products (matching wireframe 2).
+ *   - Scrollable vertically on a fixed height for 3+ rows.
  * - Bottom right: [Back with icon] fully visible on initial viewport without scrolling.
  */
 const ProductImageModal = ({
@@ -36,14 +37,47 @@ const ProductImageModal = ({
 }) => {
   const { isDark } = useTheme();
 
+  // Consolidate all available images (showcase + color variants if not provided via overrideImages)
   const images = React.useMemo(() => {
-    const rawImages = overrideImages && overrideImages.length > 0
-      ? overrideImages
-      : (product?.images && product.images.length > 0
-        ? product.images
-        : (product?.image ? [{ url: product.image }] : []));
-    return Array.isArray(rawImages) ? rawImages : [];
-  }, [overrideImages, product?.images, product?.image]);
+    if (overrideImages && overrideImages.length > 0) {
+      return overrideImages;
+    }
+    const list = [];
+    const seenUrls = new Set();
+    if (Array.isArray(product?.images) && product.images.length > 0) {
+      product.images.forEach((img, i) => {
+        const u = typeof img === 'string' ? img : img?.url;
+        if (u && !seenUrls.has(u)) {
+          seenUrls.add(u);
+          list.push(typeof img === 'object' ? img : { url: u, label: `Photo ${i + 1}` });
+        }
+      });
+    } else if (product?.image && !seenUrls.has(product.image)) {
+      seenUrls.add(product.image);
+      list.push({ url: product.image, label: product.name });
+    }
+
+    if (Array.isArray(product?.colorVariants)) {
+      product.colorVariants.forEach((cv) => {
+        if (Array.isArray(cv.images)) {
+          cv.images.forEach((img, i) => {
+            const u = typeof img === 'string' ? img : img?.url;
+            if (u && !seenUrls.has(u)) {
+              seenUrls.add(u);
+              list.push({
+                url: u,
+                label: `${cv.colorName || 'Variant'} ${i > 0 ? `(${i + 1})` : ''}`.trim(),
+                colorVariant: cv,
+                type: 'color',
+              });
+            }
+          });
+        }
+      });
+    }
+
+    return list;
+  }, [overrideImages, product]);
 
   const [activeIndex, setActiveIndex] = useState(initialIndex || 0);
   const activeIndexRef = useRef(initialIndex || 0);
@@ -185,20 +219,14 @@ const ProductImageModal = ({
     ? (currentItem?.colorVariant?.colorName || currentItem?.label || '')
     : '';
 
-  // Determine if product has color thumbnail images
-  const hasColorThumbnails = Boolean(
-    (product?.colorVariants && product.colorVariants.length > 0) ||
-    images.some((img) => img?.colorVariant || img?.type === 'color')
-  );
+  // Show thumbnail section only if product has multiple images (omitted for single-image products per wireframe)
+  const showThumbnailSection = images.length > 1;
 
-  // Show thumbnail section only if product has color thumbnail images and more than 1 image
-  const showThumbnailSection = hasColorThumbnails && images.length > 1;
-
-  // Distribute thumbnails into lines of 5 items per line (matching wireframe line 1, line 2, line 3)
+  // Distribute compact thumbnails into lines of 7 items per line (filling width edge-to-edge)
   const thumbnailRows = React.useMemo(() => {
     if (!showThumbnailSection || images.length === 0) return [];
     const total = images.length;
-    const itemsPerRow = 5;
+    const itemsPerRow = 7;
     const rows = [];
     for (let i = 0; i < total; i += itemsPerRow) {
       const start = i;
@@ -363,7 +391,7 @@ const ProductImageModal = ({
               )}
             </div>
 
-            {/* Thumbnail Section (Enclosed Box with Lines & Dividers matching Wireframe) */}
+            {/* Thumbnail Section (Enclosed Box with Lines & Dividers matching Wireframe, Scrollable on Fixed Height) */}
             {showThumbnailSection && (
               <div className="modal-thumbnail-section">
                 {thumbnailRows.map((row, rowIdx) => (
@@ -435,7 +463,7 @@ const ProductImageModal = ({
                 backdrop-filter: blur(18px);
                 -webkit-backdrop-filter: blur(18px);
                 user-select: none;
-                padding: 10px 12px;
+                padding: 14px;
                 box-sizing: border-box;
                 overflow-y: auto;
                 -webkit-overflow-scrolling: touch;
@@ -444,14 +472,14 @@ const ProductImageModal = ({
               .product-image-modal-card {
                 position: relative;
                 width: 100%;
-                max-width: 500px;
+                max-width: 480px;
                 display: flex;
                 flex-direction: column;
                 align-items: center;
                 margin: auto;
                 box-sizing: border-box;
                 transform: none !important;
-                max-height: 98vh;
+                max-height: 96vh;
               }
 
               .product-image-modal-card.is-portrait-card {
@@ -518,12 +546,12 @@ const ProductImageModal = ({
 
               .product-image-modal-stage.is-square-stage {
                 aspect-ratio: 1 / 1;
-                max-height: min(44vh, 360px);
+                max-height: min(44vh, 350px);
               }
 
               .product-image-modal-stage.is-portrait-stage {
                 aspect-ratio: 3 / 4;
-                max-height: min(48vh, 390px);
+                max-height: min(48vh, 380px);
               }
 
               .product-image-modal-img {
@@ -613,21 +641,26 @@ const ProductImageModal = ({
                 box-shadow: 0 5px 16px rgba(196, 56, 108, 0.4);
               }
 
-              /* Enclosed Box for Thumbnail Section (Wireframe Design: Lines 1, 2, 3 with Dividers) */
+              /* Enclosed Box for Thumbnail Section (Wireframe Design: Lines 1, 2, 3 with Dividers, Scrollable on Fixed Height) */
               .modal-thumbnail-section {
                 width: 100%;
+                max-height: 94px;
                 background: transparent;
                 border: 1.5px solid var(--border);
                 border-radius: 12px;
-                padding: 8px 10px;
+                padding: 7px 8px;
                 margin-top: 8px;
                 box-sizing: border-box;
+                overflow-y: auto;
+                overflow-x: hidden;
+                scrollbar-width: thin;
+                -webkit-overflow-scrolling: touch;
               }
 
               .modal-thumbnail-row {
                 display: grid;
-                grid-template-columns: repeat(5, 1fr);
-                gap: 8px;
+                grid-template-columns: repeat(7, 1fr);
+                gap: 6px;
                 width: 100%;
                 box-sizing: border-box;
                 justify-items: start;
@@ -637,7 +670,7 @@ const ProductImageModal = ({
                 width: 100%;
                 height: 1px;
                 background: var(--border);
-                margin: 6px 0;
+                margin: 5px 0;
                 opacity: 0.55;
               }
 
@@ -652,20 +685,20 @@ const ProductImageModal = ({
                 background: transparent;
                 opacity: 0.88;
                 box-sizing: border-box;
-                transition: all 0.18s ease;
+                transition: all 0.16s ease;
               }
 
               .modal-thumb-btn.is-active {
                 border-color: var(--accent, #C4386C);
-                border-width: 2.5px;
-                box-shadow: 0 3px 12px rgba(196, 56, 108, 0.42);
+                border-width: 2px;
+                box-shadow: 0 2px 10px rgba(196, 56, 108, 0.42);
                 transform: scale(1.04);
                 opacity: 1;
               }
 
               .modal-thumb-btn:hover {
                 opacity: 1;
-                transform: scale(1.03);
+                transform: scale(1.02);
               }
 
               /* Bottom Right Back with Previous Icon */
@@ -703,13 +736,17 @@ const ProductImageModal = ({
 
               @media (min-width: 769px) {
                 .product-image-modal-root {
-                  padding: 16px;
+                  padding: 20px;
+                }
+                .product-image-modal-card {
+                  max-width: 460px;
+                  margin: auto;
                 }
                 .product-image-modal-stage.is-square-stage {
-                  max-height: min(48vh, 400px);
+                  max-height: 380px;
                 }
                 .product-image-modal-stage.is-portrait-stage {
-                  max-height: min(52vh, 430px);
+                  max-height: 410px;
                 }
               }
 

@@ -561,6 +561,8 @@ const ProductCard = ({ product, showVariants = false }) => {
       product={product}
       images={images}
       initialIndex={activeImgIndex}
+      showViewDetails={true}
+      aspectRatio="1 / 1"
     />
   </>
   );

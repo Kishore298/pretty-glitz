@@ -327,7 +327,7 @@ const CategoryPage = () => {
               gap: 8,
               overflowX: 'auto',
               paddingBottom: 4,
-              marginBottom: isDesignerGlassBangles ? 4 : 12,
+              marginBottom: 6,
               WebkitOverflowScrolling: 'touch',
               scrollbarWidth: 'none',
               msOverflowStyle: 'none',
@@ -496,21 +496,6 @@ const CategoryPage = () => {
         ) : (
           /* Single Grid view (when specific subcategory is selected OR category has no subcategories) */
           <div>
-            {activeSubDoc && !isDesignerGlassBangles && (
-              <div style={{ marginBottom: 10, paddingBottom: 6, borderBottom: '1px solid var(--border)' }}>
-                <h2 style={{
-                  fontSize: 'clamp(1.15rem, 2.2vw, 1.45rem)', fontWeight: 700, color: 'var(--text)',
-                  fontFamily: '"Cormorant Garamond", Georgia, serif', margin: 0,
-                  display: 'flex', alignItems: 'center', gap: 8
-                }}>
-                  <Sparkles size={15} color="var(--accent)" />
-                  {activeSubDoc.name}
-                  <span style={{ fontSize: '0.78rem', color: 'var(--text-muted)', fontWeight: 500 }}>
-                    ({displayedProducts.length})
-                  </span>
-                </h2>
-              </div>
-            )}
             <motion.div layout className="product-grid-4">
               <AnimatePresence>
                 {getSortedProducts(displayedProducts).map((product, idx) => (
