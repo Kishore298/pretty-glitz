@@ -40,6 +40,8 @@ app.use('/api/wishlist',      require('./routes/wishlistRoutes'));
 app.use('/api/analytics',     require('./routes/analyticsRoutes'));
 app.use('/api/orders',        require('./routes/orderRoutes'));
 app.use('/api/notifications', require('./routes/notificationRoutes'));
+app.use('/api/subscribers',   require('./routes/subscriberRoutes'));
+app.use('/api/campaigns',     require('./routes/campaignRoutes'));
 
 // Basic Route
 app.get('/api', (req, res) => {

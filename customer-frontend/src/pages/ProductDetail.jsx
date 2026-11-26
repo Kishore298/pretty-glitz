@@ -1,11 +1,10 @@
-import React, { useEffect, useState, useContext, useRef } from 'react';
+import React, { useEffect, useState, useContext } from 'react';
 import { useParams, Link, useLocation } from 'react-router-dom';
 import api from '../utils/api';
 import { motion, AnimatePresence } from 'framer-motion';
 import { CartContext, resolveStock, isColorCompletelyOutOfStock } from '../context/CartContext';
 import { useWishlist } from '../context/WishlistContext';
 import { useTheme } from '../context/ThemeContext';
-import { optimizeImageUrl } from '../utils/cloudinary';
 import {
   Check,
   ChevronRight,
@@ -25,6 +24,7 @@ import LotusDivider from '../components/LotusDivider';
 import ProductDescriptionDisplay from '../components/ProductDescriptionDisplay';
 import BangleSizeChartModal from '../components/BangleSizeChartModal';
 import ProductImageModal from '../components/ProductImageModal';
+import SwipeGalleryStage from '../components/SwipeGalleryStage';
 import ColorVariationSelector from '../components/ColorVariationSelector';
 import { sortSizesAscending, getBangleSizeParts } from '../utils/sizeHelper';
 import { slugify } from '../utils/urlHelper';
@@ -47,9 +47,6 @@ const ProductDetail = () => {
 
   const [error, setError] = useState('');
   const [addedFeedback, setAddedFeedback] = useState(false);
-  const [touchStartX, setTouchStartX] = useState(null);
-  const [touchEndX, setTouchEndX] = useState(null);
-  const touchMovedRef = useRef(false);
   const [showSizeChart, setShowSizeChart] = useState(false);
   const [isImageModalOpen, setIsImageModalOpen] = useState(false);
 
@@ -388,21 +385,11 @@ const ProductDetail = () => {
     </div>
   );
 
-  const handleGalleryClick = (e) => {
-    if (touchMovedRef.current) return;
-    if (allGalleryThumbnails.length <= 1) return;
-    const rect = e.currentTarget.getBoundingClientRect();
-    const clickX = e.clientX - rect.left;
-    const ratio = clickX / rect.width;
-    const currentIdx = allGalleryThumbnails.findIndex((t) => t.url === currentMainImageUrl);
-    if (ratio < 0.45) {
-      const prevIdx = (currentIdx - 1 + allGalleryThumbnails.length) % allGalleryThumbnails.length;
-      handleThumbnailClick(allGalleryThumbnails[prevIdx]);
-    } else if (ratio > 0.55) {
-      const nextIdx = (currentIdx + 1) % allGalleryThumbnails.length;
-      handleThumbnailClick(allGalleryThumbnails[nextIdx]);
-    }
+  const handleGalleryClick = () => {
+    setIsImageModalOpen(true);
   };
+
+  const currentGalleryIndex = Math.max(0, allGalleryThumbnails.findIndex(t => t.url === currentMainImageUrl));
 
   return (
     <div className="product-detail-page">
@@ -427,71 +414,28 @@ const ProductDetail = () => {
 
           {/* ── Image Gallery (Showcase Default + Colour-Specific Selection) ── */}
           <div className="product-gallery-wrapper">
-            <div
+            <SwipeGalleryStage
               className="product-gallery-main product-detail-gallery-main"
-              onClick={handleGalleryClick}
-              onTouchStart={(e) => {
-                touchMovedRef.current = false;
-                setTouchEndX(null);
-                setTouchStartX(e.targetTouches[0].clientX);
-              }}
-              onTouchMove={(e) => {
-                setTouchEndX(e.targetTouches[0].clientX);
-                if (touchStartX && Math.abs(e.targetTouches[0].clientX - touchStartX) > 8) {
-                  touchMovedRef.current = true;
+              images={allGalleryThumbnails}
+              activeIndex={currentGalleryIndex}
+              onIndexChange={(idx) => {
+                if (allGalleryThumbnails[idx]) {
+                  handleThumbnailClick(allGalleryThumbnails[idx]);
                 }
               }}
-              onTouchEnd={() => {
-                if (!touchStartX || !touchEndX || allGalleryThumbnails.length <= 1) return;
-                const distance = touchStartX - touchEndX;
-                const currentIdx = allGalleryThumbnails.findIndex(t => t.url === currentMainImageUrl);
-                if (distance > 35) {
-                  const nextIdx = (currentIdx + 1) % allGalleryThumbnails.length;
-                  handleThumbnailClick(allGalleryThumbnails[nextIdx]);
-                } else if (distance < -35) {
-                  const nextIdx = (currentIdx - 1 + allGalleryThumbnails.length) % allGalleryThumbnails.length;
-                  handleThumbnailClick(allGalleryThumbnails[nextIdx]);
-                }
-              }}
+              onStageClick={handleGalleryClick}
+              alt={product.name}
+              imageWidth={1200}
+              priority
+              borderRadius={5}
+              hasCornerButton
               style={{
-                position: 'relative',
-                touchAction: allGalleryThumbnails.length > 1 ? 'pan-y' : 'auto',
                 width: '100%',
                 borderRadius: 5,
-                overflow: 'hidden',
-                cursor: 'default',
+                cursor: 'pointer',
               }}
             >
-              <AnimatePresence mode="wait">
-                <motion.div
-                  key={currentMainImageUrl}
-                  initial={{ opacity: 0 }}
-                  animate={{ opacity: 1 }}
-                  exit={{ opacity: 0 }}
-                  transition={{ duration: 0.25 }}
-                  style={{ width: '100%', height: '100%' }}
-                >
-                  <img
-                    src={currentMainImageUrl ? optimizeImageUrl(currentMainImageUrl, 1200) : logoImg}
-                    alt={product.name}
-                    onError={(e) => {
-                      e.currentTarget.onerror = null;
-                      e.currentTarget.src = logoImg;
-                      e.currentTarget.style.objectFit = 'contain';
-                      e.currentTarget.style.padding = '40px';
-                    }}
-                    style={{
-                      width: '100%',
-                      height: '100%',
-                      objectFit: 'cover',
-                      display: 'block',
-                      padding: 0,
-                    }}
-                  />
-                </motion.div>
-              </AnimatePresence>
-
-              {/* Desktop Hover Next/Prev Arrows (Removed on smaller devices) */}
+              {/* Desktop Hover Next/Prev Arrows */}
               {allGalleryThumbnails.length > 1 && (
                 <>
                   <button
@@ -499,8 +443,7 @@ const ProductDetail = () => {
                     className="product-gallery-nav-btn"
                     onClick={(e) => {
                       e.stopPropagation();
-                      const currentIdx = allGalleryThumbnails.findIndex(t => t.url === currentMainImageUrl);
-                      const prevIdx = (currentIdx - 1 + allGalleryThumbnails.length) % allGalleryThumbnails.length;
+                      const prevIdx = (currentGalleryIndex - 1 + allGalleryThumbnails.length) % allGalleryThumbnails.length;
                       handleThumbnailClick(allGalleryThumbnails[prevIdx]);
                     }}
                     aria-label="Previous photo"
@@ -513,14 +456,13 @@ const ProductDetail = () => {
                       height: 38,
                       borderRadius: '50%',
                       background: 'rgba(10, 10, 16, 0.65)',
-                      backdropFilter: 'blur(6px)',
                       border: '1px solid rgba(255, 255, 255, 0.15)',
                       color: '#FFFFFF',
                       alignItems: 'center',
                       justifyContent: 'center',
                       cursor: 'pointer',
-                      zIndex: 3,
-                      transition: 'all 0.2s ease',
+                      zIndex: 6,
+                      transition: 'background-color 0.2s ease',
                     }}
                     onMouseEnter={(e) => (e.currentTarget.style.background = 'rgba(196, 56, 108, 0.9)')}
                     onMouseLeave={(e) => (e.currentTarget.style.background = 'rgba(10, 10, 16, 0.65)')}
@@ -533,8 +475,7 @@ const ProductDetail = () => {
                     className="product-gallery-nav-btn"
                     onClick={(e) => {
                       e.stopPropagation();
-                      const currentIdx = allGalleryThumbnails.findIndex(t => t.url === currentMainImageUrl);
-                      const nextIdx = (currentIdx + 1) % allGalleryThumbnails.length;
+                      const nextIdx = (currentGalleryIndex + 1) % allGalleryThumbnails.length;
                       handleThumbnailClick(allGalleryThumbnails[nextIdx]);
                     }}
                     aria-label="Next photo"
@@ -547,14 +488,13 @@ const ProductDetail = () => {
                       height: 38,
                       borderRadius: '50%',
                       background: 'rgba(10, 10, 16, 0.65)',
-                      backdropFilter: 'blur(6px)',
                       border: '1px solid rgba(255, 255, 255, 0.15)',
                       color: '#FFFFFF',
                       alignItems: 'center',
                       justifyContent: 'center',
                       cursor: 'pointer',
-                      zIndex: 3,
-                      transition: 'all 0.2s ease',
+                      zIndex: 6,
+                      transition: 'background-color 0.2s ease',
                     }}
                     onMouseEnter={(e) => (e.currentTarget.style.background = 'rgba(196, 56, 108, 0.9)')}
                     onMouseLeave={(e) => (e.currentTarget.style.background = 'rgba(10, 10, 16, 0.65)')}
@@ -562,40 +502,6 @@ const ProductDetail = () => {
                     <ChevronRight size={20} />
                   </button>
                 </>
-              )}
-
-              {/* Mobile Swipe Dot Indicators (Shown on smaller devices) */}
-              {allGalleryThumbnails.length > 1 && (
-                <div
-                  className="product-gallery-dots"
-                  style={{
-                    position: 'absolute',
-                    bottom: 14,
-                    left: '50%',
-                    transform: 'translateX(-50%)',
-                    alignItems: 'center',
-                    gap: 6,
-                    zIndex: 3,
-                    pointerEvents: 'none',
-                  }}
-                >
-                  {allGalleryThumbnails.map((item, dotIdx) => {
-                    const isCurrent = item.url === currentMainImageUrl;
-                    return (
-                      <span
-                        key={item.id || dotIdx}
-                        style={{
-                          width: isCurrent ? 18 : 6,
-                          height: 6,
-                          borderRadius: 3,
-                          background: isCurrent ? 'var(--accent, #C4386C)' : 'rgba(255, 255, 255, 0.5)',
-                          boxShadow: '0 1px 4px rgba(0, 0, 0, 0.4)',
-                          transition: 'all 0.25s ease',
-                        }}
-                      />
-                    );
-                  })}
-                </div>
               )}
 
               <button
@@ -610,7 +516,7 @@ const ProductDetail = () => {
               >
                 <Maximize2 size={16} strokeWidth={2.2} />
               </button>
-            </div>
+            </SwipeGalleryStage>
           </div>
 
           {/* ── Product Info ───────────────────────────────────── */}

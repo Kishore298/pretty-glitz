@@ -5,7 +5,7 @@ import { Link } from 'react-router-dom';
 import { optimizeImageUrl } from '../utils/cloudinary';
 import { getProductUrl } from '../utils/urlHelper';
 import { useTheme } from '../context/ThemeContext';
-import logoImg from '../assets/pretty-glitz-logo.png';
+import SwipeGalleryStage from './SwipeGalleryStage';
 
 /**
  * ProductImageModal
@@ -81,9 +81,6 @@ const ProductImageModal = ({
 
   const [activeIndex, setActiveIndex] = useState(initialIndex || 0);
   const activeIndexRef = useRef(initialIndex || 0);
-  const [touchStartX, setTouchStartX] = useState(null);
-  const [touchEndX, setTouchEndX] = useState(null);
-  const touchMovedRef = useRef(false);
   const scrollYRef = useRef(0);
   const activeThumbRef = useRef(null);
 
@@ -175,33 +172,8 @@ const ProductImageModal = ({
     };
   }, [isOpen, handleClose, handleNext, handlePrev]);
 
-  // Mobile Touch Swipe Handlers
-  const handleTouchStart = (e) => {
-    touchMovedRef.current = false;
-    setTouchEndX(null);
-    setTouchStartX(e.targetTouches[0].clientX);
-  };
-
-  const handleTouchMove = (e) => {
-    setTouchEndX(e.targetTouches[0].clientX);
-    if (touchStartX && Math.abs(e.targetTouches[0].clientX - touchStartX) > 8) {
-      touchMovedRef.current = true;
-    }
-  };
-
-  const handleTouchEnd = () => {
-    if (!touchStartX || !touchEndX || images.length <= 1) return;
-    const distance = touchStartX - touchEndX;
-    if (distance > 35) {
-      handleNext();
-    } else if (distance < -35) {
-      handlePrev();
-    }
-  };
-
   // Image stage tap navigation (left side <45% = prev, right side >55% = next)
-  const handleStageClick = (e) => {
-    if (touchMovedRef.current) return;
+  const handleStageClick = useCallback((e) => {
     if (images.length <= 1) return;
     const rect = e.currentTarget.getBoundingClientRect();
     const clickX = e.clientX - rect.left;
@@ -211,10 +183,9 @@ const ProductImageModal = ({
     } else if (ratio > 0.55) {
       handleNext();
     }
-  };
+  }, [images.length, handlePrev, handleNext]);
 
   const currentItem = images[activeIndex];
-  const currentImageUrl = typeof currentItem === 'string' ? currentItem : currentItem?.url;
   const currentLabel = typeof currentItem === 'object'
     ? (currentItem?.colorVariant?.colorName || currentItem?.label || '')
     : '';
@@ -306,39 +277,29 @@ const ProductImageModal = ({
               </button>
             </div>
 
-            {/* Main Image Stage (1:1 on Main Product, 3:4 on Complete Your Look - Image Fits Card) */}
-            <div
+            {/* Main Image Stage (1:1 on Main Product, 3:4 on Complete Your Look - GPU Swipe + Dots) */}
+            <SwipeGalleryStage
               className={`product-image-modal-stage ${isPortraitMode ? 'is-portrait-stage' : 'is-square-stage'}`}
+              images={images}
+              activeIndex={activeIndex}
+              onIndexChange={updateActiveIndex}
+              onStageClick={handleStageClick}
+              alt={`${product.name} enlarged preview`}
+              imageWidth={isPortraitMode ? 1000 : 1200}
+              priority
+              borderRadius={14}
               style={{
                 aspectRatio: aspectRatio || '1 / 1',
               }}
-              onClick={handleStageClick}
-              onTouchStart={handleTouchStart}
-              onTouchMove={handleTouchMove}
-              onTouchEnd={handleTouchEnd}
-            >
-              <img
-                key={activeIndex}
-                src={currentImageUrl ? optimizeImageUrl(currentImageUrl, 1600) : logoImg}
-                alt={`${product.name} enlarged preview`}
-                className="product-image-modal-img"
-                onError={(e) => {
-                  e.currentTarget.onerror = null;
-                  e.currentTarget.src = logoImg;
-                  e.currentTarget.style.objectFit = 'contain';
-                  e.currentTarget.style.padding = '40px';
-                }}
-              />
-            </div>
+            />
 
-            {/* Controls Row: [<prev 1/9 next>] on left (or centered when view details is omitted) | [view details] on right */}
+            {/* Controls Row: [<prev 1/9 next>] and [view details] side-by-side, or centered if no view details */}
             <div
               className="modal-controls-row"
               style={{
                 justifyContent: hasViewDetailsButton ? 'space-between' : 'center',
               }}
             >
-              {/* <prev 1/9 next> rectangular button group */}
               <div
                 className="modal-nav-capsule"
                 style={{
@@ -378,7 +339,6 @@ const ProductImageModal = ({
                 </button>
               </div>
 
-              {/* View Full Details Button: shown only when showViewDetails is true (e.g. Complete Your Look) */}
               {hasViewDetailsButton && (
                 <Link
                   to={getProductUrl(product)}
@@ -391,7 +351,7 @@ const ProductImageModal = ({
               )}
             </div>
 
-            {/* Thumbnail Section (Enclosed Box with Lines & Dividers matching Wireframe, Scrollable on Fixed Height) */}
+            {/* Thumbnail Section (Enclosed Box with Lines & Dividers matching Wireframe, All visible at once) */}
             {showThumbnailSection && (
               <div className="modal-thumbnail-section">
                 {thumbnailRows.map((row, rowIdx) => (
@@ -438,8 +398,14 @@ const ProductImageModal = ({
               </div>
             )}
 
-            {/* Bottom Right: Clean ArrowLeft Icon paired with Back */}
-            <div className="modal-footer-row">
+            {/* Footer Row: Back Action on right matching wireframe */}
+            <div
+              className="modal-footer-row"
+              style={{
+                justifyContent: 'flex-end',
+                alignItems: 'center',
+              }}
+            >
               <button
                 type="button"
                 onClick={handleClose}
@@ -459,9 +425,9 @@ const ProductImageModal = ({
                 display: flex;
                 align-items: center;
                 justify-content: center;
-                background: ${isDark ? 'rgba(10, 10, 16, 0.88)' : 'rgba(253, 250, 245, 0.90)'};
-                backdrop-filter: blur(18px);
-                -webkit-backdrop-filter: blur(18px);
+                background: ${isDark ? 'rgba(10, 10, 16, 0.92)' : 'rgba(253, 250, 245, 0.94)'};
+                backdrop-filter: blur(4px);
+                -webkit-backdrop-filter: blur(4px);
                 user-select: none;
                 padding: 14px;
                 box-sizing: border-box;
@@ -554,6 +520,42 @@ const ProductImageModal = ({
                 max-height: min(48vh, 380px);
               }
 
+              /* Carousel Dot Indicators on Main Image Stage */
+              .modal-stage-dots {
+                position: absolute;
+                bottom: 12px;
+                left: 50%;
+                transform: translateX(-50%);
+                display: flex;
+                align-items: center;
+                gap: 6px;
+                z-index: 5;
+                padding: 4px 10px;
+                border-radius: 999px;
+                background: rgba(15, 12, 18, 0.45);
+                backdrop-filter: blur(8px);
+                -webkit-backdrop-filter: blur(8px);
+                border: 1px solid rgba(255, 255, 255, 0.2);
+                pointer-events: auto;
+              }
+
+              .modal-stage-dot-btn {
+                width: 6px;
+                height: 6px;
+                border-radius: 999px;
+                background: rgba(255, 255, 255, 0.65);
+                border: none;
+                padding: 0;
+                cursor: pointer;
+                transition: all 0.25s ease;
+              }
+
+              .modal-stage-dot-btn.is-active {
+                width: 20px;
+                background: var(--accent, #C4386C);
+                box-shadow: 0 0 8px rgba(196, 56, 108, 0.7);
+              }
+
               .product-image-modal-img {
                 display: block;
                 width: 100%;
@@ -618,43 +620,15 @@ const ProductImageModal = ({
                 letter-spacing: 0.02em;
               }
 
-              /* View Details Button */
-              .modal-view-details-btn {
-                display: inline-flex;
-                align-items: center;
-                gap: 6px;
-                color: #FFFFFF;
-                font-size: 0.78rem;
-                font-weight: 700;
-                text-decoration: none;
-                padding: 6px 16px;
-                border-radius: 8px;
-                background: var(--accent-gradient, linear-gradient(135deg, #C4386C, #8A2BE2));
-                box-shadow: 0 3px 12px rgba(196, 56, 108, 0.3);
-                border: none;
-                transition: all 0.2s ease;
-                white-space: nowrap;
-              }
-
-              .modal-view-details-btn:hover {
-                transform: translateY(-1px);
-                box-shadow: 0 5px 16px rgba(196, 56, 108, 0.4);
-              }
-
-              /* Enclosed Box for Thumbnail Section (Wireframe Design: Lines 1, 2, 3 with Dividers, Scrollable on Fixed Height) */
+              /* Enclosed Box for Thumbnail Section (Wireframe Design: Lines 1, 2, 3 with Dividers - All visible at once, no scrollbar) */
               .modal-thumbnail-section {
                 width: 100%;
-                max-height: 94px;
                 background: transparent;
                 border: 1.5px solid var(--border);
                 border-radius: 12px;
                 padding: 7px 8px;
                 margin-top: 8px;
                 box-sizing: border-box;
-                overflow-y: auto;
-                overflow-x: hidden;
-                scrollbar-width: thin;
-                -webkit-overflow-scrolling: touch;
               }
 
               .modal-thumbnail-row {
@@ -701,15 +675,37 @@ const ProductImageModal = ({
                 transform: scale(1.02);
               }
 
-              /* Bottom Right Back with Previous Icon */
+              /* Footer Row: View Details (left) and Back (right) */
               .modal-footer-row {
                 display: flex;
-                justify-content: flex-end;
+                align-items: center;
                 width: 100%;
-                margin-top: 6px;
-                padding: 2px 2px 0;
+                margin-top: 8px;
+                padding: 4px 2px 0;
                 box-sizing: border-box;
                 flex-shrink: 0;
+              }
+
+              .modal-view-details-btn {
+                display: inline-flex;
+                align-items: center;
+                gap: 6px;
+                color: #FFFFFF;
+                font-size: 0.80rem;
+                font-weight: 700;
+                text-decoration: none;
+                padding: 6px 14px;
+                border-radius: 8px;
+                background: var(--accent-gradient, linear-gradient(135deg, #C4386C, #8A2BE2));
+                box-shadow: 0 3px 12px rgba(196, 56, 108, 0.32);
+                border: none;
+                transition: all 0.2s ease;
+                white-space: nowrap;
+              }
+
+              .modal-view-details-btn:hover {
+                transform: translateY(-1px);
+                box-shadow: 0 5px 16px rgba(196, 56, 108, 0.45);
               }
 
               .modal-back-btn {

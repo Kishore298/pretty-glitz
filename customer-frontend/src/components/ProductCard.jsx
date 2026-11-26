@@ -1,4 +1,4 @@
-import React, { useState, useContext } from 'react';
+import React, { useState, useContext, useRef } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useTheme } from '../context/ThemeContext';
 import { CartContext } from '../context/CartContext';
@@ -14,9 +14,7 @@ const ProductCard = ({ product, showVariants = false }) => {
   const { isDark } = useTheme();
   const [isHovered, setIsHovered] = useState(false);
   const [activeImgIndex, setActiveImgIndex] = useState(0);
-  const [touchStartX, setTouchStartX] = useState(null);
-  const [touchEndX, setTouchEndX] = useState(null);
-  const [didSwipe, setDidSwipe] = useState(false);
+  const touchRef = useRef({ startX: 0, endX: 0, didSwipe: false });
   const [isEnlargedModalOpen, setIsEnlargedModalOpen] = useState(false);
 
   const { addToCart, updateQuantity, removeFromCart, isInCart, getCartItemQuantity } = useContext(CartContext);
@@ -31,38 +29,37 @@ const ProductCard = ({ product, showVariants = false }) => {
   const currentImage = images[activeImgIndex] || images[0];
 
   const handleTouchStart = (e) => {
-    setTouchEndX(null);
-    setTouchStartX(e.targetTouches[0].clientX);
-    setDidSwipe(false);
+    touchRef.current.startX = e.targetTouches[0].clientX;
+    touchRef.current.endX = e.targetTouches[0].clientX;
+    touchRef.current.didSwipe = false;
   };
 
   const handleTouchMove = (e) => {
-    setTouchEndX(e.targetTouches[0].clientX);
-    if (touchStartX && Math.abs(e.targetTouches[0].clientX - touchStartX) > 10) {
-      setDidSwipe(true);
+    const x = e.targetTouches[0].clientX;
+    touchRef.current.endX = x;
+    if (Math.abs(x - touchRef.current.startX) > 10) {
+      touchRef.current.didSwipe = true;
     }
   };
 
-  const handleTouchEnd = (e) => {
-    if (!touchStartX || !touchEndX || !hasMultipleImages) return;
-    const distance = touchStartX - touchEndX;
+  const handleTouchEnd = () => {
+    if (!hasMultipleImages) return;
+    const distance = touchRef.current.startX - touchRef.current.endX;
     if (Math.abs(distance) > 35) {
-      setDidSwipe(true);
+      touchRef.current.didSwipe = true;
       if (distance > 35) {
-        // Swiped left -> next photo
         setActiveImgIndex((prev) => (prev + 1) % images.length);
       } else {
-        // Swiped right -> prev photo
         setActiveImgIndex((prev) => (prev - 1 + images.length) % images.length);
       }
     }
   };
 
   const handleImageClick = (e) => {
-    if (didSwipe) {
+    if (touchRef.current.didSwipe) {
       e.preventDefault();
       e.stopPropagation();
-      setDidSwipe(false);
+      touchRef.current.didSwipe = false;
       return;
     }
     // Allow default click to navigate to the product detail page via the parent Link
@@ -128,7 +125,8 @@ const ProductCard = ({ product, showVariants = false }) => {
         onMouseLeave={() => setIsHovered(false)}
         style={{
           background: isDark ? 'var(--bg-secondary)' : '#FFFFFF',
-          border: '1px solid',
+          borderWidth: 1,
+          borderStyle: 'solid',
           borderColor: isHovered ? 'var(--accent-gold)' : 'var(--border)',
           borderRadius: 14,
           padding: 7,
@@ -165,6 +163,7 @@ const ProductCard = ({ product, showVariants = false }) => {
               src={optimizeImageUrl(currentImage.url, 400)}
               alt={product.name}
               loading="lazy"
+              decoding="async"
               onError={(e) => {
                 e.currentTarget.onerror = null;
                 e.currentTarget.src = logoImg;
@@ -524,7 +523,8 @@ const ProductCard = ({ product, showVariants = false }) => {
                   <button
                     className="product-card-btn"
                     style={{
-                      border: '1px solid',
+                      borderWidth: 1,
+                      borderStyle: 'solid',
                       borderColor: isHovered ? 'var(--accent)' : 'var(--border-strong)',
                       background: isHovered ? 'var(--accent)' : (isDark ? 'rgba(255,255,255,0.06)' : '#FAF8F5'),
                       color: isHovered ? '#FFFFFF' : 'var(--text)',
@@ -554,18 +554,20 @@ const ProductCard = ({ product, showVariants = false }) => {
       </div>
     </Link>
 
-    {/* Enlarged Product Image Lightbox Modal with Swipe */}
-    <ProductImageModal
-      isOpen={isEnlargedModalOpen}
-      onClose={() => setIsEnlargedModalOpen(false)}
-      product={product}
-      images={images}
-      initialIndex={activeImgIndex}
-      showViewDetails={true}
-      aspectRatio="1 / 1"
-    />
+    {/* Enlarged Product Image Lightbox Modal (mounted only when opened) */}
+    {isEnlargedModalOpen && (
+      <ProductImageModal
+        isOpen={isEnlargedModalOpen}
+        onClose={() => setIsEnlargedModalOpen(false)}
+        product={product}
+        images={images}
+        initialIndex={activeImgIndex}
+        showViewDetails={true}
+        aspectRatio="1 / 1"
+      />
+    )}
   </>
   );
 };
 
-export default ProductCard;
+export default React.memo(ProductCard);

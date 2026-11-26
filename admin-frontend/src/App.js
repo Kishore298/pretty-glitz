@@ -1,23 +1,26 @@
-import React, { useContext } from 'react';
+import React, { useContext, Suspense, lazy } from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { Toaster } from 'react-hot-toast';
 import { AuthProvider, AuthContext } from './context/AuthContext';
 import { SocketProvider } from './context/SocketContext';
 import Login from './pages/Login';
-import Dashboard from './pages/Dashboard';
-import Products from './pages/Products';
-import Inventory from './pages/Inventory';
-import Categories from './pages/Categories';
-import Subcategories from './pages/Subcategories';
-import Offers from './pages/Offers';
-import Testimonials from './pages/Testimonials';
-import Banners from './pages/Banners';
-import ProductAnalytics from './pages/ProductAnalytics';
-import Orders from './pages/Orders';
-import Customers from './pages/Customers';
-import TrafficAnalytics from './pages/TrafficAnalytics';
-import PushNotifications from './pages/PushNotifications';
 import AdminLayout from './components/AdminLayout';
+
+// Route-level code splitting for faster admin initial load
+const Dashboard = lazy(() => import('./pages/Dashboard'));
+const Products = lazy(() => import('./pages/Products'));
+const Inventory = lazy(() => import('./pages/Inventory'));
+const Categories = lazy(() => import('./pages/Categories'));
+const Subcategories = lazy(() => import('./pages/Subcategories'));
+const Offers = lazy(() => import('./pages/Offers'));
+const Testimonials = lazy(() => import('./pages/Testimonials'));
+const Banners = lazy(() => import('./pages/Banners'));
+const ProductAnalytics = lazy(() => import('./pages/ProductAnalytics'));
+const Orders = lazy(() => import('./pages/Orders'));
+const Customers = lazy(() => import('./pages/Customers'));
+const TrafficAnalytics = lazy(() => import('./pages/TrafficAnalytics'));
+const PushNotifications = lazy(() => import('./pages/PushNotifications'));
+const Campaigns = lazy(() => import('./pages/Campaigns'));
 
 const AdminLoadingSplash = () => (
   <div
@@ -145,23 +148,26 @@ function App() {
               },
             }}
           />
-          <Routes>
-            <Route path="/login" element={<Login />} />
-            <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
-            <Route path="/orders" element={<ProtectedRoute><Orders /></ProtectedRoute>} />
-            <Route path="/customers" element={<ProtectedRoute><Customers /></ProtectedRoute>} />
-            <Route path="/traffic" element={<ProtectedRoute><TrafficAnalytics /></ProtectedRoute>} />
-            <Route path="/analytics" element={<ProtectedRoute><ProductAnalytics /></ProtectedRoute>} />
-            <Route path="/products" element={<ProtectedRoute><Products /></ProtectedRoute>} />
-            <Route path="/inventory" element={<ProtectedRoute><Inventory /></ProtectedRoute>} />
-            <Route path="/categories" element={<ProtectedRoute><Categories /></ProtectedRoute>} />
-            <Route path="/subcategories" element={<ProtectedRoute><Subcategories /></ProtectedRoute>} />
-            <Route path="/banners" element={<ProtectedRoute><Banners /></ProtectedRoute>} />
-            <Route path="/offers" element={<ProtectedRoute><Offers /></ProtectedRoute>} />
-            <Route path="/push-notifications" element={<ProtectedRoute><PushNotifications /></ProtectedRoute>} />
-            <Route path="/testimonials" element={<ProtectedRoute><Testimonials /></ProtectedRoute>} />
-            <Route path="*" element={<Navigate to="/dashboard" replace />} />
-          </Routes>
+          <Suspense fallback={<AdminLoadingSplash />}>
+            <Routes>
+              <Route path="/login" element={<Login />} />
+              <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
+              <Route path="/orders" element={<ProtectedRoute><Orders /></ProtectedRoute>} />
+              <Route path="/customers" element={<ProtectedRoute><Customers /></ProtectedRoute>} />
+              <Route path="/traffic" element={<ProtectedRoute><TrafficAnalytics /></ProtectedRoute>} />
+              <Route path="/analytics" element={<ProtectedRoute><ProductAnalytics /></ProtectedRoute>} />
+              <Route path="/products" element={<ProtectedRoute><Products /></ProtectedRoute>} />
+              <Route path="/inventory" element={<ProtectedRoute><Inventory /></ProtectedRoute>} />
+              <Route path="/categories" element={<ProtectedRoute><Categories /></ProtectedRoute>} />
+              <Route path="/subcategories" element={<ProtectedRoute><Subcategories /></ProtectedRoute>} />
+              <Route path="/banners" element={<ProtectedRoute><Banners /></ProtectedRoute>} />
+              <Route path="/offers" element={<ProtectedRoute><Offers /></ProtectedRoute>} />
+              <Route path="/push-notifications" element={<ProtectedRoute><PushNotifications /></ProtectedRoute>} />
+              <Route path="/campaigns" element={<ProtectedRoute><Campaigns /></ProtectedRoute>} />
+              <Route path="/testimonials" element={<ProtectedRoute><Testimonials /></ProtectedRoute>} />
+              <Route path="*" element={<Navigate to="/dashboard" replace />} />
+            </Routes>
+          </Suspense>
         </Router>
       </SocketProvider>
     </AuthProvider>

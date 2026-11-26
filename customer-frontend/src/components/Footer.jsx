@@ -11,6 +11,9 @@ const Footer = () => {
   const [categories, setCategories] = useState([]);
   const [email, setEmail] = useState('');
   const [subscribed, setSubscribed] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
+  const [subMsg, setSubMsg] = useState('');
+  const [subError, setSubError] = useState('');
 
   useEffect(() => {
     const fetchCatsAndSubs = async () => {
@@ -32,12 +35,38 @@ const Footer = () => {
     fetchCatsAndSubs();
   }, []);
 
-  const handleSubscribe = (e) => {
+  const handleSubscribe = async (e) => {
     e.preventDefault();
-    if (email.trim()) {
+    setSubError('');
+    setSubMsg('');
+    const trimmed = email.trim();
+    if (!trimmed) {
+      setSubError('Please enter your email address.');
+      return;
+    }
+    if (!/^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/.test(trimmed)) {
+      setSubError('Please enter a valid email address.');
+      return;
+    }
+
+    setSubmitting(true);
+    try {
+      const res = await api.post('/subscribers', {
+        email: trimmed,
+        source: 'footer_newsletter',
+      });
       setSubscribed(true);
+      setSubMsg(res.data?.message || '✓ Thank you for subscribing!');
       setEmail('');
-      setTimeout(() => setSubscribed(false), 3000);
+    } catch (err) {
+      if (err.response?.status === 409) {
+        setSubscribed(true);
+        setSubMsg("✓ You're already on our VIP list!");
+      } else {
+        setSubError(err.response?.data?.message || 'Failed to subscribe. Please try again.');
+      }
+    } finally {
+      setSubmitting(false);
     }
   };
 
@@ -88,35 +117,52 @@ const Footer = () => {
                 Get Exclusive Offers
               </p>
               {subscribed ? (
-                <p style={{ color: '#10B981', fontSize: '0.85rem', fontWeight: 600 }}>✓ Thank you for subscribing!</p>
+                <p style={{ color: '#10B981', fontSize: '0.85rem', fontWeight: 600 }}>{subMsg || '✓ Thank you for subscribing!'}</p>
               ) : (
-                <form onSubmit={handleSubscribe} style={{ display: 'flex', gap: 0, maxWidth: 320 }}>
-                  <input
-                    type="email"
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
-                    placeholder="Your email"
-                    required
-                    style={{
-                      flex: 1, padding: '11px 16px', borderRadius: '12px 0 0 12px',
-                      background: isDark ? 'rgba(20, 20, 28, 0.8)' : 'rgba(255, 255, 255, 0.88)',
-                      border: isDark ? '1px solid rgba(212, 175, 55, 0.25)' : '1px solid rgba(212, 175, 55, 0.35)',
-                      borderRight: 'none', color: 'var(--text)', fontSize: '0.82rem',
-                      outline: 'none', minWidth: 0,
-                      backdropFilter: 'blur(10px)',
-                      WebkitBackdropFilter: 'blur(10px)',
-                      boxShadow: isDark ? 'none' : '0 2px 10px rgba(184, 134, 11, 0.06)',
-                    }}
-                  />
-                  <button type="submit" style={{
-                    padding: '11px 16px', borderRadius: '0 12px 12px 0',
-                    background: 'var(--accent-gradient)', border: 'none',
-                    color: 'white', cursor: 'pointer', display: 'flex', alignItems: 'center',
-                    boxShadow: '0 4px 12px rgba(196, 56, 108, 0.3)',
-                    transition: 'all 0.2s ease',
-                  }}>
-                    <Send size={15} />
-                  </button>
+                <form onSubmit={handleSubscribe} style={{ display: 'flex', flexDirection: 'column', gap: 6, maxWidth: 320 }}>
+                  <div style={{ display: 'flex', gap: 0, width: '100%' }}>
+                    <input
+                      type="email"
+                      value={email}
+                      onChange={(e) => {
+                        setEmail(e.target.value);
+                        if (subError) setSubError('');
+                      }}
+                      placeholder="Your email address"
+                      required
+                      disabled={submitting}
+                      style={{
+                        flex: 1, padding: '11px 16px', borderRadius: '12px 0 0 12px',
+                        background: isDark ? 'rgba(20, 20, 28, 0.8)' : 'rgba(255, 255, 255, 0.88)',
+                        borderTop: isDark ? '1px solid rgba(212, 175, 55, 0.25)' : '1px solid rgba(212, 175, 55, 0.35)',
+                        borderBottom: isDark ? '1px solid rgba(212, 175, 55, 0.25)' : '1px solid rgba(212, 175, 55, 0.35)',
+                        borderLeft: isDark ? '1px solid rgba(212, 175, 55, 0.25)' : '1px solid rgba(212, 175, 55, 0.35)',
+                        borderRight: 'none', color: 'var(--text)', fontSize: '0.82rem',
+                        outline: 'none', minWidth: 0,
+                        backdropFilter: 'blur(10px)',
+                        WebkitBackdropFilter: 'blur(10px)',
+                        boxShadow: isDark ? 'none' : '0 2px 10px rgba(184, 134, 11, 0.06)',
+                      }}
+                    />
+                    <button
+                      type="submit"
+                      disabled={submitting}
+                      style={{
+                        padding: '11px 16px', borderRadius: '0 12px 12px 0',
+                        background: 'var(--accent-gradient)', border: 'none',
+                        color: 'white', cursor: submitting ? 'wait' : 'pointer', display: 'flex', alignItems: 'center',
+                        boxShadow: '0 4px 12px rgba(196, 56, 108, 0.3)',
+                        transition: 'all 0.2s ease',
+                      }}
+                    >
+                      <Send size={15} />
+                    </button>
+                  </div>
+                  {subError && (
+                    <span style={{ fontSize: '0.75rem', color: '#EF4444', fontWeight: 600 }}>
+                      {subError}
+                    </span>
+                  )}
                 </form>
               )}
             </div>
@@ -141,6 +187,55 @@ const Footer = () => {
                   </Link>
                 </li>
               ))}
+            </ul>
+          </div>
+
+          {/* Customer Care & Policies */}
+          <div>
+            <h4 style={{ fontWeight: 700, fontSize: '0.85rem', color: 'var(--text)', marginBottom: 16, letterSpacing: '0.08em', textTransform: 'uppercase' }}>
+              Customer Care & Policies
+            </h4>
+            <ul style={{ listStyle: 'none', padding: 0, margin: 0, display: 'flex', flexDirection: 'column', gap: 12 }}>
+              <li>
+                <Link
+                  to="/shipping-policy"
+                  style={{ color: isDark ? 'rgba(255, 255, 255, 0.8)' : '#5A4E40', textDecoration: 'none', fontSize: '0.88rem', fontWeight: 500, transition: 'color 0.2s' }}
+                  onMouseEnter={e => e.currentTarget.style.color = 'var(--accent)'}
+                  onMouseLeave={e => e.currentTarget.style.color = isDark ? 'rgba(255, 255, 255, 0.8)' : '#5A4E40'}
+                >
+                  Shipping & Delivery
+                </Link>
+              </li>
+              <li>
+                <Link
+                  to="/cancellation-refund-policy"
+                  style={{ color: isDark ? 'rgba(255, 255, 255, 0.8)' : '#5A4E40', textDecoration: 'none', fontSize: '0.88rem', fontWeight: 500, transition: 'color 0.2s' }}
+                  onMouseEnter={e => e.currentTarget.style.color = 'var(--accent)'}
+                  onMouseLeave={e => e.currentTarget.style.color = isDark ? 'rgba(255, 255, 255, 0.8)' : '#5A4E40'}
+                >
+                  Return, Refund & Cancellation
+                </Link>
+              </li>
+              <li>
+                <Link
+                  to="/privacy-policy"
+                  style={{ color: isDark ? 'rgba(255, 255, 255, 0.8)' : '#5A4E40', textDecoration: 'none', fontSize: '0.88rem', fontWeight: 500, transition: 'color 0.2s' }}
+                  onMouseEnter={e => e.currentTarget.style.color = 'var(--accent)'}
+                  onMouseLeave={e => e.currentTarget.style.color = isDark ? 'rgba(255, 255, 255, 0.8)' : '#5A4E40'}
+                >
+                  Privacy Policy
+                </Link>
+              </li>
+              <li>
+                <Link
+                  to="/terms-and-conditions"
+                  style={{ color: isDark ? 'rgba(255, 255, 255, 0.8)' : '#5A4E40', textDecoration: 'none', fontSize: '0.88rem', fontWeight: 500, transition: 'color 0.2s' }}
+                  onMouseEnter={e => e.currentTarget.style.color = 'var(--accent)'}
+                  onMouseLeave={e => e.currentTarget.style.color = isDark ? 'rgba(255, 255, 255, 0.8)' : '#5A4E40'}
+                >
+                  Terms & Conditions
+                </Link>
+              </li>
             </ul>
           </div>
 
@@ -231,11 +326,22 @@ const Footer = () => {
         <div style={{
           borderTop: isDark ? '1px solid rgba(255, 255, 255, 0.1)' : '1px solid rgba(212, 175, 55, 0.25)',
           paddingTop: 24,
-          display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 12,
+          display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 14,
         }}>
           <p style={{ color: isDark ? 'rgba(255, 255, 255, 0.65)' : '#786C5E', fontSize: '0.8rem', margin: 0 }}>
             © {new Date().getFullYear()} PrettyGlitz. All rights reserved.
           </p>
+
+          <div style={{ display: 'flex', alignItems: 'center', gap: 12, flexWrap: 'wrap', fontSize: '0.78rem' }}>
+            <Link to="/shipping-policy" style={{ color: isDark ? 'rgba(255,255,255,0.6)' : '#786C5E', textDecoration: 'none' }}>Shipping</Link>
+            <span style={{ opacity: 0.3 }}>•</span>
+            <Link to="/cancellation-refund-policy" style={{ color: isDark ? 'rgba(255,255,255,0.6)' : '#786C5E', textDecoration: 'none' }}>Cancellation & Returns</Link>
+            <span style={{ opacity: 0.3 }}>•</span>
+            <Link to="/privacy-policy" style={{ color: isDark ? 'rgba(255,255,255,0.6)' : '#786C5E', textDecoration: 'none' }}>Privacy Policy</Link>
+            <span style={{ opacity: 0.3 }}>•</span>
+            <Link to="/terms-and-conditions" style={{ color: isDark ? 'rgba(255,255,255,0.6)' : '#786C5E', textDecoration: 'none' }}>Terms of Service</Link>
+          </div>
+
           <p style={{ color: isDark ? 'rgba(255, 255, 255, 0.65)' : '#786C5E', fontSize: '0.8rem', margin: 0, display: 'flex', alignItems: 'center', gap: 4 }}>
             Crafted by <a
               href="https://kishore-portfolio-36rk.onrender.com/#home"

@@ -76,7 +76,7 @@ const Navbar = () => {
 
   useEffect(() => {
     const onScroll = () => setScrolled(window.scrollY > 20);
-    window.addEventListener('scroll', onScroll);
+    window.addEventListener('scroll', onScroll, { passive: true });
     return () => window.removeEventListener('scroll', onScroll);
   }, []);
 
@@ -261,13 +261,16 @@ const Navbar = () => {
                   style={{
                     ...linkStyle('/category/Designer Glass Bangles', isAnyBanglesActive),
                     background: 'none',
-                    border: 'none',
+                    borderTop: 'none',
+                    borderLeft: 'none',
+                    borderRight: 'none',
                     cursor: 'pointer',
                     display: 'flex',
                     alignItems: 'center',
                     gap: 5,
-                    padding: 0,
-                    paddingBottom: linkStyle('', isAnyBanglesActive).paddingBottom,
+                    paddingTop: 0,
+                    paddingLeft: 0,
+                    paddingRight: 0,
                     fontFamily: 'Inter, sans-serif',
                   }}
                   aria-expanded={banglesOpen}

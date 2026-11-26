@@ -1,4 +1,4 @@
-import React, { useState, useContext, useMemo, useRef } from 'react';
+import React, { useState, useContext, useMemo } from 'react';
 import { Link } from 'react-router-dom';
 import {
   Heart,
@@ -17,14 +17,13 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { CartContext, resolveStock, isColorCompletelyOutOfStock } from '../context/CartContext';
 import { useWishlist } from '../context/WishlistContext';
 import { useTheme } from '../context/ThemeContext';
-import { optimizeImageUrl } from '../utils/cloudinary';
 import { sortSizesAscending, getBangleSizeParts } from '../utils/sizeHelper';
 import { getProductUrl } from '../utils/urlHelper';
 import ProductDescriptionDisplay from './ProductDescriptionDisplay';
 import BangleSizeChartModal from './BangleSizeChartModal';
 import ProductImageModal from './ProductImageModal';
+import SwipeGalleryStage from './SwipeGalleryStage';
 import ColorVariationSelector from './ColorVariationSelector';
-import logoImg from '../assets/pretty-glitz-logo.png';
 
 const CollectionProductDetailCard = ({ product, isLast = false }) => {
   const { isDark } = useTheme();
@@ -35,9 +34,6 @@ const CollectionProductDetailCard = ({ product, isLast = false }) => {
   const [selectedColor, setSelectedColor] = useState(null);
 
   const [activeImg, setActiveImg] = useState(0);
-  const [touchStartX, setTouchStartX] = useState(null);
-  const [touchEndX, setTouchEndX] = useState(null);
-  const touchMovedRef = useRef(false);
   const [isEnlargedModalOpen, setIsEnlargedModalOpen] = useState(false);
   const [detailsOpen, setDetailsOpen] = useState(false);
   const [shippingOpen, setShippingOpen] = useState(false);
@@ -224,19 +220,8 @@ const CollectionProductDetailCard = ({ product, isLast = false }) => {
 
   const handleThumbnailClick = navigateToImageIndex;
 
-  const handleGalleryClick = (e) => {
-    if (touchMovedRef.current) return;
-    if (!hasMultipleImages) return;
-    const rect = e.currentTarget.getBoundingClientRect();
-    const clickX = e.clientX - rect.left;
-    const ratio = clickX / rect.width;
-    if (ratio < 0.45) {
-      const prevIdx = (activeImg - 1 + images.length) % images.length;
-      navigateToImageIndex(prevIdx);
-    } else if (ratio > 0.55) {
-      const nextIdx = (activeImg + 1) % images.length;
-      navigateToImageIndex(nextIdx);
-    }
+  const handleGalleryClick = () => {
+    setIsEnlargedModalOpen(true);
   };
 
   const handleShare = async () => {
@@ -301,32 +286,6 @@ const CollectionProductDetailCard = ({ product, isLast = false }) => {
     }
   };
 
-  // Mobile Touch Swipe Handlers
-  const handleTouchStart = (e) => {
-    touchMovedRef.current = false;
-    setTouchEndX(null);
-    setTouchStartX(e.targetTouches[0].clientX);
-  };
-  const handleTouchMove = (e) => {
-    setTouchEndX(e.targetTouches[0].clientX);
-    if (touchStartX && Math.abs(e.targetTouches[0].clientX - touchStartX) > 8) {
-      touchMovedRef.current = true;
-    }
-  };
-  const handleTouchEnd = () => {
-    if (!touchStartX || !touchEndX || !hasMultipleImages) return;
-    const distance = touchStartX - touchEndX;
-    if (Math.abs(distance) > 35) {
-      if (distance > 35) {
-        navigateToImageIndex((activeImg + 1) % images.length);
-      } else {
-        navigateToImageIndex((activeImg - 1 + images.length) % images.length);
-      }
-    }
-  };
-
-  const currentImageUrl = images[activeImg]?.url || images[0]?.url;
-
   return (
     <div className={`collection-product-presentation ${isLast ? 'is-last' : ''}`}>
       <div className="product-detail-layout" style={{ width: '100%' }}>
@@ -339,36 +298,16 @@ const CollectionProductDetailCard = ({ product, isLast = false }) => {
             </span>
           </div>
 
-          <div
+          <SwipeGalleryStage
             className="product-gallery-main collection-product-gallery-main"
-            onClick={handleGalleryClick}
-            onTouchStart={handleTouchStart}
-            onTouchMove={handleTouchMove}
-            onTouchEnd={handleTouchEnd}
-            style={{
-              position: 'relative',
-              touchAction: hasMultipleImages ? 'pan-y' : 'auto',
-            }}
+            images={images}
+            activeIndex={activeImg}
+            onIndexChange={navigateToImageIndex}
+            onStageClick={handleGalleryClick}
+            alt={product.name}
+            imageWidth={1000}
+            hasCornerButton
           >
-            <img
-              src={currentImageUrl ? optimizeImageUrl(currentImageUrl, 1000) : logoImg}
-              alt={product.name}
-              loading="lazy"
-              onError={(e) => {
-                e.currentTarget.onerror = null;
-                e.currentTarget.src = logoImg;
-                e.currentTarget.style.objectFit = 'contain';
-                e.currentTarget.style.padding = '40px';
-              }}
-              style={{
-                width: '100%',
-                height: '100%',
-                objectFit: 'cover',
-                display: 'block',
-                transition: 'transform 0.35s ease',
-              }}
-            />
-
             {/* Desktop Previous / Next Chevron Navigation Arrows */}
             {hasMultipleImages && (
               <>
@@ -389,14 +328,13 @@ const CollectionProductDetailCard = ({ product, isLast = false }) => {
                     height: 38,
                     borderRadius: '50%',
                     background: 'rgba(10, 10, 16, 0.65)',
-                    backdropFilter: 'blur(6px)',
                     border: '1px solid rgba(255, 255, 255, 0.15)',
                     color: '#FFFFFF',
                     alignItems: 'center',
                     justifyContent: 'center',
                     cursor: 'pointer',
-                    zIndex: 3,
-                    transition: 'all 0.2s ease',
+                    zIndex: 6,
+                    transition: 'background-color 0.2s ease',
                   }}
                   onMouseEnter={(e) => (e.currentTarget.style.background = 'rgba(196, 56, 108, 0.9)')}
                   onMouseLeave={(e) => (e.currentTarget.style.background = 'rgba(10, 10, 16, 0.65)')}
@@ -421,14 +359,13 @@ const CollectionProductDetailCard = ({ product, isLast = false }) => {
                     height: 38,
                     borderRadius: '50%',
                     background: 'rgba(10, 10, 16, 0.65)',
-                    backdropFilter: 'blur(6px)',
                     border: '1px solid rgba(255, 255, 255, 0.15)',
                     color: '#FFFFFF',
                     alignItems: 'center',
                     justifyContent: 'center',
                     cursor: 'pointer',
-                    zIndex: 3,
-                    transition: 'all 0.2s ease',
+                    zIndex: 6,
+                    transition: 'background-color 0.2s ease',
                   }}
                   onMouseEnter={(e) => (e.currentTarget.style.background = 'rgba(196, 56, 108, 0.9)')}
                   onMouseLeave={(e) => (e.currentTarget.style.background = 'rgba(10, 10, 16, 0.65)')}
@@ -436,53 +373,6 @@ const CollectionProductDetailCard = ({ product, isLast = false }) => {
                   <ChevronRight size={20} />
                 </button>
               </>
-            )}
-
-            {/* Swipe & Click Dot Indicators (Always visible when multiple images exist) */}
-            {hasMultipleImages && (
-              <div
-                className="collection-gallery-dots"
-                style={{
-                  position: 'absolute',
-                  bottom: 14,
-                  left: '50%',
-                  transform: 'translateX(-50%)',
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: 6,
-                  zIndex: 3,
-                  background: 'rgba(0, 0, 0, 0.35)',
-                  backdropFilter: 'blur(4px)',
-                  WebkitBackdropFilter: 'blur(4px)',
-                  padding: '4px 8px',
-                  borderRadius: 999,
-                }}
-              >
-                {images.map((_, dotIdx) => {
-                  const isCurrent = dotIdx === activeImg;
-                  return (
-                    <button
-                      key={dotIdx}
-                      type="button"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        navigateToImageIndex(dotIdx);
-                      }}
-                      aria-label={`Go to photo ${dotIdx + 1}`}
-                      style={{
-                        width: isCurrent ? 16 : 6,
-                        height: 6,
-                        borderRadius: 3,
-                        background: isCurrent ? 'var(--accent, #C4386C)' : 'rgba(255, 255, 255, 0.55)',
-                        border: 'none',
-                        padding: 0,
-                        cursor: 'pointer',
-                        transition: 'all 0.25s ease',
-                      }}
-                    />
-                  );
-                })}
-              </div>
             )}
 
             {/* Dedicated Expand Button to open enlarged image pop-up */}
@@ -498,7 +388,7 @@ const CollectionProductDetailCard = ({ product, isLast = false }) => {
             >
               <Maximize2 size={16} strokeWidth={2.2} />
             </button>
-          </div>
+          </SwipeGalleryStage>
         </div>
 
         {/* ── Right Column: Info Wrapper (Identical to Product Detail Section) ── */}

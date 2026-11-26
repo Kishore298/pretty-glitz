@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useEffect, useCallback, useRef } from 'react';
+import React, { createContext, useContext, useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import api from '../utils/api';
 import { LS_WISHLIST_KEY } from '../config/constants';
 import { trackProductEvent, syncGuestState } from '../utils/analytics';
@@ -187,21 +187,35 @@ export const WishlistProvider = ({ children }) => {
     syncedRef.current = false;
   }, []);
 
+  const wishlistContextValue = useMemo(
+    () => ({
+      wishlist,
+      isInWishlist,
+      getWishlistCount,
+      addToWishlist,
+      removeFromWishlist,
+      toggleWishlist,
+      syncWithServer,
+      loadServerWishlist,
+      clearWishlist,
+      syncing,
+    }),
+    [
+      wishlist,
+      isInWishlist,
+      getWishlistCount,
+      addToWishlist,
+      removeFromWishlist,
+      toggleWishlist,
+      syncWithServer,
+      loadServerWishlist,
+      clearWishlist,
+      syncing,
+    ]
+  );
+
   return (
-    <WishlistContext.Provider
-      value={{
-        wishlist,
-        isInWishlist,
-        getWishlistCount,
-        addToWishlist,
-        removeFromWishlist,
-        toggleWishlist,
-        syncWithServer,
-        loadServerWishlist,
-        clearWishlist,
-        syncing,
-      }}
-    >
+    <WishlistContext.Provider value={wishlistContextValue}>
       {children}
     </WishlistContext.Provider>
   );

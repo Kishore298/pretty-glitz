@@ -25,6 +25,7 @@ const Wishlist    = lazy(() => import('./pages/Wishlist'));
 const Login       = lazy(() => import('./pages/Login'));
 const Register    = lazy(() => import('./pages/Register'));
 const Account     = lazy(() => import('./pages/Account'));
+const Policies    = lazy(() => import('./pages/Policies'));
 
 // Premium fallback loader
 const PageLoader = () => (
@@ -72,11 +73,11 @@ const AuthSyncBridge = () => {
 function App() {
   return (
     <ThemeProvider>
-      <AuthProvider>
-        <CartProvider>
-          <WishlistProvider>
-            <NotificationProvider>
-              <Router>
+      <Router>
+        <AuthProvider>
+          <CartProvider>
+            <WishlistProvider>
+              <NotificationProvider>
                 <AuthSyncBridge />
                 <ScrollToTop />
                 <PageTracker />
@@ -104,17 +105,25 @@ function App() {
                         <Route path="/register"               element={<Register />} />
                         <Route path="/account"                element={<Account />} />
                         <Route path="/track-order"            element={<Navigate to="/account" replace />} />
+
+                        {/* ── Customer Policy & Care Routes ── */}
+                        <Route path="/shipping-policy"             element={<Policies />} />
+                        <Route path="/cancellation-refund-policy" element={<Policies />} />
+                        <Route path="/return-refund-policy"        element={<Policies />} />
+                        <Route path="/privacy-policy"              element={<Policies />} />
+                        <Route path="/terms-and-conditions"        element={<Policies />} />
+                        <Route path="/terms"                       element={<Policies />} />
                       </Routes>
                     </Suspense>
                   </main>
                   <Footer />
                   <BottomNav />
                 </div>
-              </Router>
-            </NotificationProvider>
-          </WishlistProvider>
-        </CartProvider>
-      </AuthProvider>
+              </NotificationProvider>
+            </WishlistProvider>
+          </CartProvider>
+        </AuthProvider>
+      </Router>
     </ThemeProvider>
   );
 }

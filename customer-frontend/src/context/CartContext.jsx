@@ -1,8 +1,9 @@
-import React, { createContext, useState, useEffect, useCallback, useRef, useContext } from 'react';
+import React, { createContext, useState, useEffect, useCallback, useRef, useContext, useMemo } from 'react';
 import api from '../utils/api';
 import { LS_CART_KEY } from '../config/constants';
 import { trackProductEvent, syncGuestState } from '../utils/analytics';
 import { resolveStock, isColorCompletelyOutOfStock } from '../utils/stockValidator';
+import CartToastContainer from '../components/CartToast';
 
 export { resolveStock, isColorCompletelyOutOfStock };
 export const CartContext = createContext();
@@ -28,6 +29,23 @@ export const CartProvider = ({ children }) => {
   });
 
   const syncedRef = useRef(false);
+  const cartItemsRef = useRef(cartItems);
+  useEffect(() => {
+    cartItemsRef.current = cartItems;
+  }, [cartItems]);
+  const [toasts, setToasts] = useState([]);
+
+  const dismissToast = useCallback((id) => {
+    setToasts(prev => prev.filter(t => t.id !== id));
+  }, []);
+
+  const showToast = useCallback(({ title, message, type = 'success', image = null, duration = 3200, showViewCart = true }) => {
+    const id = `${Date.now()}-${Math.random()}`;
+    setToasts(prev => [...prev.slice(-2), { id, title, message, type, image, showViewCart }]);
+    setTimeout(() => {
+      setToasts(prev => prev.filter(t => t.id !== id));
+    }, duration);
+  }, []);
 
   // ── Persist guest cart to localStorage & sync with analytics ────────────────
   useEffect(() => {
@@ -55,6 +73,12 @@ export const CartProvider = ({ children }) => {
   const addToCart = useCallback(async (product, size, quantity = 1, pieceCount = null, priceOverride = null, colorVariant = null) => {
     const stockInfo = resolveStock(product, size, colorVariant);
     if (!stockInfo.isAvailable) {
+      showToast({
+        title: 'Item Unavailable',
+        message: stockInfo.reason || 'This product is currently out of stock.',
+        type: 'warning',
+        showViewCart: false,
+      });
       return { success: false, reason: stockInfo.reason || 'This product is currently out of stock.' };
     }
 
@@ -110,6 +134,28 @@ export const CartProvider = ({ children }) => {
       }];
     });
 
+    // Luxury toast notification
+    const prodName = typeof product === 'object' ? (product?.name || 'Product') : 'Product';
+    const variantDesc = [colorName, sizeValue ? `Size: ${sizeValue}` : null].filter(Boolean).join(', ');
+    const displayMsg = variantDesc ? `${prodName} (${variantDesc})` : prodName;
+    const toastImg = colorVariantImage || (typeof product === 'object' ? (product?.images?.[0]?.url || product?.image) : null);
+
+    if (limitReached) {
+      showToast({
+        title: 'Stock Limit Reached',
+        message: `Only ${stockInfo.availableStock} in stock. Set to ${targetQty}.`,
+        type: 'warning',
+        image: toastImg,
+      });
+    } else {
+      showToast({
+        title: 'Added to Bag',
+        message: `${displayMsg} added to your shopping bag.`,
+        type: 'success',
+        image: toastImg,
+      });
+    }
+
     // Track analytics event (fire-and-forget, deduplicated on backend)
     trackProductEvent(productId, 'CART_ADD', targetQty, { size: sizeValue, pieceCount, price, colorName });
 
@@ -133,7 +179,7 @@ export const CartProvider = ({ children }) => {
     }
 
     return { success: true, limitReached, quantity: targetQty };
-  }, []);
+  }, [showToast]);
 
   // ── removeFromCart ────────────────────────────────────────────────────────────
 
@@ -141,6 +187,21 @@ export const CartProvider = ({ children }) => {
     const variantKey = typeof productId === 'string' && productId.includes('::')
       ? productId
       : buildVariantKey(toProductId(productId), size, pieceCount, colorVariantId);
+
+    const itemToRemove = cartItemsRef.current.find(i => i.variantKey === variantKey);
+    if (itemToRemove) {
+      const prodName = itemToRemove?.product?.name || 'Product';
+      const variantDesc = [itemToRemove?.colorName, itemToRemove?.size ? `Size: ${itemToRemove.size}` : null].filter(Boolean).join(', ');
+      const displayMsg = variantDesc ? `${prodName} (${variantDesc})` : prodName;
+      const toastImg = itemToRemove?.colorVariantImage || (itemToRemove?.product?.images?.[0]?.url || itemToRemove?.product?.image);
+
+      showToast({
+        title: 'Removed from Bag',
+        message: `${displayMsg} was removed from your shopping bag.`,
+        type: 'removal',
+        image: toastImg,
+      });
+    }
 
     setCartItems(prev => prev.filter(i => i.variantKey !== variantKey));
 
@@ -155,7 +216,7 @@ export const CartProvider = ({ children }) => {
         console.error('[cart] removeFromCart server error:', err);
       }
     }
-  }, []);
+  }, [showToast]);
 
   // ── updateQuantity ────────────────────────────────────────────────────────────
 
@@ -168,6 +229,34 @@ export const CartProvider = ({ children }) => {
       return removeFromCart(targetKey, size, pieceCount, colorVariantId);
     }
 
+    const currentItem = cartItemsRef.current.find(i => i.variantKey === targetKey);
+    if (currentItem) {
+      const stockInfo = resolveStock(currentItem.product, currentItem.size, currentItem.colorVariantId);
+      const toastImg = currentItem?.colorVariantImage || (currentItem?.product?.images?.[0]?.url || currentItem?.product?.image);
+
+      if (!stockInfo.isAvailable) {
+        showToast({
+          title: 'Item Out of Stock',
+          message: `${currentItem.product?.name || 'Item'} is currently out of stock and was removed.`,
+          type: 'warning',
+        });
+      } else if (stockInfo.isStockTracked && quantity > stockInfo.availableStock) {
+        showToast({
+          title: 'Stock Limit Reached',
+          message: `Only ${stockInfo.availableStock} in stock for ${currentItem.product?.name || 'this item'}.`,
+          type: 'warning',
+          image: toastImg,
+        });
+      } else {
+        showToast({
+          title: 'Bag Updated',
+          message: `${currentItem.product?.name || 'Item'} quantity updated to ${quantity}.`,
+          type: 'info',
+          image: toastImg,
+        });
+      }
+    }
+
     setCartItems(prev => {
       const item = prev.find(i => i.variantKey === targetKey);
       if (!item) return prev;
@@ -176,7 +265,6 @@ export const CartProvider = ({ children }) => {
       let safeQty = quantity;
 
       if (!stockInfo.isAvailable) {
-        // Product or variant is completely out of stock
         return prev.filter(i => i.variantKey !== targetKey);
       }
 
@@ -196,7 +284,7 @@ export const CartProvider = ({ children }) => {
         console.error('[cart] updateQuantity server error:', err);
       }
     }
-  }, [removeFromCart]);
+  }, [removeFromCart, showToast]);
 
   // ── isInCart / getCartItemQuantity ────────────────────────────────────────────
 
@@ -226,11 +314,18 @@ export const CartProvider = ({ children }) => {
     setCartItems([]);
     localStorage.removeItem(LS_CART_KEY);
 
+    showToast({
+      title: 'Bag Cleared',
+      message: 'All items were removed from your shopping bag.',
+      type: 'info',
+      showViewCart: false,
+    });
+
     const token = localStorage.getItem('customerToken');
     if (token) {
       try { await api.delete('/cart'); } catch { /* best-effort */ }
     }
-  }, []);
+  }, [showToast]);
 
   // ── getCartTotal / getCartCount ───────────────────────────────────────────────
 
@@ -358,18 +453,30 @@ export const CartProvider = ({ children }) => {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []); // Run on mount
 
+  const cartContextValue = useMemo(
+    () => ({
+      cartItems,
+      addToCart, updateQuantity, removeFromCart, clearCart,
+      isInCart, getCartItemQuantity,
+      getCartTotal, getCartCount,
+      syncWithServer, loadServerCart, clearLocalSync,
+      validateCartStock, resolveStock,
+      showToast,
+    }),
+    [
+      cartItems,
+      addToCart, updateQuantity, removeFromCart, clearCart,
+      isInCart, getCartItemQuantity,
+      getCartTotal, getCartCount,
+      syncWithServer, loadServerCart, clearLocalSync,
+      validateCartStock, showToast,
+    ]
+  );
+
   return (
-    <CartContext.Provider
-      value={{
-        cartItems,
-        addToCart, updateQuantity, removeFromCart, clearCart,
-        isInCart, getCartItemQuantity,
-        getCartTotal, getCartCount,
-        syncWithServer, loadServerCart, clearLocalSync,
-        validateCartStock, resolveStock,
-      }}
-    >
+    <CartContext.Provider value={cartContextValue}>
       {children}
+      <CartToastContainer toasts={toasts} onDismiss={dismissToast} />
     </CartContext.Provider>
   );
 };

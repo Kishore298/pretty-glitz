@@ -16,7 +16,8 @@ import {
   Boxes,
   BellRing,
   Users,
-  Activity
+  Activity,
+  Send
 } from 'lucide-react';
 
 const navGroups = [
@@ -42,6 +43,7 @@ const navGroups = [
   {
     label: 'Marketing & Storefront',
     items: [
+      { to: '/campaigns', label: 'Campaign Manager', Icon: Send },
       { to: '/push-notifications', label: 'Push Notifications', Icon: BellRing },
       { to: '/banners', label: 'Hero Banners', Icon: Image },
       { to: '/offers', label: 'Special Offers', Icon: Tag },

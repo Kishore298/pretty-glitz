@@ -18,6 +18,7 @@ import ProductCardSkeleton from '../components/ProductCardSkeleton';
 import { optimizeImageUrl } from '../utils/cloudinary';
 import logoImg from '../assets/pretty-glitz-logo.png';
 import HeroBannerCarousel from '../components/HeroBannerCarousel';
+import ExclusiveOffersBanner from '../components/ExclusiveOffersBanner';
 
 const Home = () => {
   const [bestsellers, setBestsellers] = useState([]);
@@ -59,11 +60,18 @@ const Home = () => {
   }, []);
 
   useEffect(() => {
+    let timer = null;
     const onResize = () => {
-      setViewportWidth(window.innerWidth);
+      clearTimeout(timer);
+      timer = setTimeout(() => {
+        setViewportWidth(window.innerWidth);
+      }, 150);
     };
-    window.addEventListener('resize', onResize);
-    return () => window.removeEventListener('resize', onResize);
+    window.addEventListener('resize', onResize, { passive: true });
+    return () => {
+      clearTimeout(timer);
+      window.removeEventListener('resize', onResize);
+    };
   }, []);
 
   const fetchBestsellers = async () => {
@@ -761,6 +769,9 @@ const Home = () => {
           </div>
         </section>
       )}
+
+      {/* Exclusive Offers VIP Email Collection Banner */}
+      <ExclusiveOffersBanner />
 
       {/* Brand Values */}
       <section className="section-padding section-py" style={{ maxWidth: 1280, margin: '0 auto' }}>

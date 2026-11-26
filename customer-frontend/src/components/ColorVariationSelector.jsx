@@ -1,5 +1,4 @@
-import React, { useState, useRef, useEffect, useCallback, useMemo } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
+import React, { useState, useRef, useEffect, useLayoutEffect, useCallback, useMemo } from 'react';
 import { ChevronDown, Check } from 'lucide-react';
 import { optimizeImageUrl } from '../utils/cloudinary';
 import { useTheme } from '../context/ThemeContext';
@@ -8,12 +7,10 @@ import { isColorCompletelyOutOfStock } from '../utils/stockValidator';
 /**
  * ColorVariationSelector
  *
- * Fully dynamic, responsive colour selector for Designer Bangles and other variable products.
- * - Dynamically calculates the exact number of thumbnails that fit per row for the available device/container width.
- * - Collapsed state: Row 1 fills 100% of the available horizontal space with zero empty gap on the right.
- * - Expanded state: All colourways flow seamlessly into the exact same responsive grid structure.
- * - "Show all / Show fewer" toggle available both in the header line and below the grid.
- * - Auto-expands if a user selects or views a colour located beyond the first row.
+ * Smooth, responsive colour selector without FLIP layout jumping:
+ * - Collapsed: Single horizontal-scroll strip matching the expanded card size.
+ * - Expanded: Responsive CSS Grid animated smoothly via height measurement (useLayoutEffect)
+ *   and gentle staggered fade-in so cards and surrounding sections glide instead of jumping.
  */
 const ColorVariationSelector = ({
   colorVariants = [],
@@ -23,80 +20,134 @@ const ColorVariationSelector = ({
 }) => {
   const { isDark } = useTheme();
   const [isExpanded, setIsExpanded] = useState(false);
+
+  const outerWrapperRef = useRef(null);
   const containerRef = useRef(null);
   const selectedCardRef = useRef(null);
+  const prevHeightRef = useRef(null);
+  const isFirstMountRef = useRef(true);
+  const animTimeoutRef = useRef(null);
 
-  // Initial estimate of columns based on window width
-  const [columnsPerRow, setColumnsPerRow] = useState(() => {
-    if (typeof window !== 'undefined') {
-      const w = window.innerWidth;
-      if (w < 360) return 5;
-      if (w < 420) return 6;
-      if (w < 520) return 6;
-      if (w < 768) return 7;
-      if (w < 1024) return 8;
-      return 8;
+  const [containerWidth, setContainerWidth] = useState(() =>
+    typeof window !== 'undefined' ? Math.min(window.innerWidth - 32, 560) : 400
+  );
+
+  // Measure container width smoothly (debounced resize + ResizeObserver)
+  const updateWidth = useCallback(() => {
+    if (!outerWrapperRef.current) return;
+    const width = outerWrapperRef.current.clientWidth;
+    if (width > 0) {
+      setContainerWidth(width);
     }
-    return 5;
-  });
-
-  // Dynamically measure container width and calculate how many thumbnail cards fit in a single row
-  const updateColumns = useCallback(() => {
-    if (!containerRef.current) return;
-    const width = containerRef.current.clientWidth;
-    if (!width || width <= 0) return;
-
-    // Mobile: ~70px min card width with 8px gap; Larger: ~76px min card width with 10px gap
-    const isMobile = width < 520;
-    const gap = isMobile ? 8 : 10;
-    const minCardWidth = width < 360 ? 64 : (isMobile ? 70 : 76);
-
-    const cols = Math.max(1, Math.floor((width + gap) / (minCardWidth + gap)));
-    setColumnsPerRow(cols);
   }, []);
 
   useEffect(() => {
-    updateColumns();
-    if (!containerRef.current) return;
+    updateWidth();
+    const el = outerWrapperRef.current;
+    if (!el) return undefined;
 
     let ro = null;
     if (typeof ResizeObserver !== 'undefined') {
-      ro = new ResizeObserver(() => {
-        updateColumns();
-      });
-      ro.observe(containerRef.current);
+      ro = new ResizeObserver(() => updateWidth());
+      ro.observe(el);
     }
-
-    window.addEventListener('resize', updateColumns);
+    window.addEventListener('resize', updateWidth, { passive: true });
     return () => {
       if (ro) ro.disconnect();
-      window.removeEventListener('resize', updateColumns);
+      window.removeEventListener('resize', updateWidth);
     };
-  }, [updateColumns, colorVariants]);
+  }, [updateWidth, colorVariants]);
 
-  // Filter out any colorway that is completely out of stock across all of its sizes
-  const availableColorVariants = useMemo(() => {
-    return (colorVariants || []).filter((cVar) => !isColorCompletelyOutOfStock(cVar));
-  }, [colorVariants]);
+  const availableColorVariants = useMemo(
+    () => (colorVariants || []).filter((cVar) => !isColorCompletelyOutOfStock(cVar)),
+    [colorVariants]
+  );
+
+  const isMobile = containerWidth < 520;
+  const gridGap = isMobile ? 6 : 8;
+  const minCardWidth = containerWidth < 360 ? 64 : isMobile ? 70 : 74;
+  const columnsPerRow = Math.max(1, Math.floor((containerWidth + gridGap) / (minCardWidth + gridGap)));
+  // Exact card width so collapsed row cards match expanded grid column width seamlessly
+  const cardWidth = Math.max(
+    minCardWidth,
+    Math.min(80, Math.floor((containerWidth - gridGap * (columnsPerRow - 1)) / columnsPerRow))
+  );
 
   const totalCount = availableColorVariants.length;
-  // Has more than one visible row on current screen width
   const hasMore = totalCount > columnsPerRow;
 
-  // When in collapsed horizontal scroll mode, scroll selected card into view
+  // Toggle expand/collapse while capturing pre-toggle height for smooth transition
+  const handleToggleExpand = useCallback(() => {
+    const outer = outerWrapperRef.current;
+    if (outer) {
+      prevHeightRef.current = outer.getBoundingClientRect().height;
+    }
+    setIsExpanded((prev) => !prev);
+  }, []);
+
+  // Animate outer wrapper height smoothly when expanding or collapsing
+  useLayoutEffect(() => {
+    const outer = outerWrapperRef.current;
+    const inner = containerRef.current;
+    if (!outer || !inner) return undefined;
+
+    if (isFirstMountRef.current) {
+      isFirstMountRef.current = false;
+      return undefined;
+    }
+
+    const fromHeight = prevHeightRef.current;
+    prevHeightRef.current = null;
+    if (fromHeight === null || fromHeight === undefined) return undefined;
+
+    if (animTimeoutRef.current) clearTimeout(animTimeoutRef.current);
+
+    // Measure natural target height cleanly
+    outer.style.transition = 'none';
+    outer.style.height = 'auto';
+    outer.style.overflow = 'hidden';
+    const targetHeight = outer.getBoundingClientRect().height;
+
+    if (Math.abs(targetHeight - fromHeight) < 2) {
+      outer.style.height = 'auto';
+      outer.style.overflow = 'visible';
+      return undefined;
+    }
+
+    // Lock to starting height, force reflow, then animate cleanly to targetHeight
+    outer.style.height = `${fromHeight}px`;
+    void outer.offsetHeight;
+    outer.style.transition = 'height 0.34s cubic-bezier(0.22, 1, 0.36, 1)';
+    outer.style.height = `${targetHeight}px`;
+
+    const finish = () => {
+      if (outerWrapperRef.current) {
+        outerWrapperRef.current.style.transition = '';
+        outerWrapperRef.current.style.height = 'auto';
+        outerWrapperRef.current.style.overflow = 'visible';
+      }
+    };
+
+    animTimeoutRef.current = setTimeout(finish, 360);
+    return () => {
+      if (animTimeoutRef.current) clearTimeout(animTimeoutRef.current);
+    };
+  }, [isExpanded]);
+
+  // When in collapsed horizontal scroll mode, scroll selected card smoothly into view
   useEffect(() => {
     if (!isExpanded && selectedCardRef.current) {
       try {
         selectedCardRef.current.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' });
-      } catch {}
+      } catch {
+        // ignore older browser scrollIntoView option error
+      }
     }
   }, [selectedColor, isExpanded]);
 
   if (!Array.isArray(availableColorVariants) || availableColorVariants.length === 0) {
     return null;
   }
-
-  const gridGap = (containerRef.current?.clientWidth || 400) < 520 ? 6 : 8;
 
   return (
     <div className="color-variation-selector" style={{ marginBottom: 6 }}>
@@ -137,7 +188,7 @@ const ColorVariationSelector = ({
             {hasMore ? (
               <button
                 type="button"
-                onClick={() => setIsExpanded((prev) => !prev)}
+                onClick={handleToggleExpand}
                 style={{
                   background: 'none',
                   border: 'none',
@@ -158,13 +209,15 @@ const ColorVariationSelector = ({
                 <ChevronDown
                   size={13}
                   style={{
-                    transform: isExpanded ? 'rotate(180deg)' : 'none',
-                    transition: 'transform 0.2s ease',
+                    transform: isExpanded ? 'rotate(180deg)' : 'rotate(0deg)',
+                    transition: 'transform 0.28s cubic-bezier(0.22, 1, 0.36, 1)',
                   }}
                 />
               </button>
             ) : (
-              <span>{totalCount} {totalCount === 1 ? 'colour' : 'colours'}</span>
+              <span>
+                {totalCount} {totalCount === 1 ? 'colour' : 'colours'}
+              </span>
             )}
             )
           </span>
@@ -216,59 +269,57 @@ const ColorVariationSelector = ({
         )}
       </div>
 
-      {/* Colour Variant Thumbnail Cards: Horizontal Scroll by default, Multi-row Grid when expanded */}
-      <motion.div
-        ref={containerRef}
-        layout
-        className="color-variation-container"
-        style={
-          isExpanded
-            ? {
-                display: 'grid',
-                gridTemplateColumns: `repeat(auto-fill, minmax(70px, 1fr))`,
-                gap: gridGap,
-                width: '100%',
-              }
-            : {
-                display: 'flex',
-                flexWrap: 'nowrap',
-                overflowX: 'auto',
-                gap: gridGap,
-                width: '100%',
-                paddingBottom: 4,
-                paddingTop: 1,
-                paddingLeft: 1,
-                paddingRight: 1,
-                scrollbarWidth: 'none',
-                msOverflowStyle: 'none',
-                WebkitOverflowScrolling: 'touch',
-              }
-        }
-      >
-        <AnimatePresence initial={false}>
-          {availableColorVariants.map((cVar) => {
+      {/* Smooth Height-Animated Outer Wrapper */}
+      <div ref={outerWrapperRef} style={{ width: '100%' }}>
+        <div
+          ref={containerRef}
+          className={`color-variation-container ${isExpanded ? 'is-expanded' : 'is-collapsed'}`}
+          style={
+            isExpanded
+              ? {
+                  display: 'grid',
+                  gridTemplateColumns: `repeat(${columnsPerRow}, minmax(0, 1fr))`,
+                  gap: gridGap,
+                  width: '100%',
+                  padding: '2px 1px 4px',
+                  boxSizing: 'border-box',
+                }
+              : {
+                  display: 'flex',
+                  flexWrap: 'nowrap',
+                  overflowX: 'auto',
+                  gap: gridGap,
+                  width: '100%',
+                  padding: '2px 1px 4px',
+                  boxSizing: 'border-box',
+                  scrollbarWidth: 'none',
+                  msOverflowStyle: 'none',
+                  WebkitOverflowScrolling: 'touch',
+                }
+          }
+        >
+          {availableColorVariants.map((cVar, idx) => {
             const isSelected = Boolean(
               (selectedColor?._id && cVar._id && selectedColor._id.toString() === cVar._id.toString()) ||
               (selectedColor?.colorName && cVar.colorName && selectedColor.colorName.toLowerCase() === cVar.colorName.toLowerCase())
             );
 
             const thumbImg = cVar.images?.[0]?.url || fallbackImage;
-            const isOutOfStock = (
+            const isOutOfStock =
               Array.isArray(cVar.sizes) && cVar.sizes.length > 0
                 ? cVar.sizes.every((s) => s.inStock === false)
-                : cVar.inStock === false
-            );
+                : cVar.inStock === false;
+
+            // Gentle staggered reveal only for extra rows when expanded
+            const isExtraRowItem = isExpanded && idx >= columnsPerRow;
 
             return (
-              <motion.button
+              <button
                 key={cVar._id || cVar.colorName}
                 ref={isSelected ? selectedCardRef : null}
-                layout
-                className={`color-variation-card ${isSelected ? 'is-selected' : ''}`}
-                initial={{ opacity: 0, scale: 0.9 }}
-                animate={{ opacity: 1, scale: 1 }}
-                exit={{ opacity: 0, scale: 0.9 }}
-                transition={{ duration: 0.15 }}
+                className={`color-variation-card ${isSelected ? 'is-selected' : ''} ${
+                  isExtraRowItem ? 'pg-color-reveal' : ''
+                }`}
                 type="button"
                 onClick={() => onSelectColor && onSelectColor(cVar)}
                 title={`${cVar.colorName}${isOutOfStock ? ' (Sold Out)' : ''}`}
@@ -285,20 +336,22 @@ const ColorVariationSelector = ({
                     ? '2px solid var(--accent, #C4386C)'
                     : '1px solid var(--border)',
                   background: isSelected
-                    ? (isDark ? 'rgba(196,56,108,0.18)' : 'rgba(196,56,108,0.06)')
-                    : (isDark ? 'rgba(255,255,255,0.03)' : '#FFFFFF'),
-                  boxShadow: isSelected
-                    ? '0 3px 12px rgba(196,56,108,0.25)'
-                    : 'none',
+                    ? isDark
+                      ? 'rgba(196,56,108,0.18)'
+                      : 'rgba(196,56,108,0.06)'
+                    : isDark
+                    ? 'rgba(255,255,255,0.03)'
+                    : '#FFFFFF',
+                  boxShadow: isSelected ? '0 3px 12px rgba(196,56,108,0.25)' : 'none',
                   cursor: 'pointer',
-                  transition: 'border-color 0.15s, box-shadow 0.15s, transform 0.1s',
+                  transition: 'border-color 0.16s ease, box-shadow 0.16s ease, transform 0.14s ease',
                   userSelect: 'none',
                   opacity: isOutOfStock ? 0.5 : 1,
-                  minWidth: isExpanded ? 0 : 70,
-                  width: isExpanded ? '100%' : 70,
+                  width: isExpanded ? '100%' : cardWidth,
+                  minWidth: isExpanded ? 0 : cardWidth,
                   flex: isExpanded ? 'unset' : '0 0 auto',
-                  maxWidth: 80,
                   boxSizing: 'border-box',
+                  animationDelay: isExtraRowItem ? `${Math.min((idx - columnsPerRow) * 22, 180)}ms` : undefined,
                 }}
               >
                 {/* Selected Checkmark Badge */}
@@ -364,6 +417,7 @@ const ColorVariationSelector = ({
                       src={optimizeImageUrl(thumbImg, 120)}
                       alt={cVar.colorName}
                       loading="lazy"
+                      decoding="async"
                       style={{
                         width: '100%',
                         height: '100%',
@@ -404,13 +458,32 @@ const ColorVariationSelector = ({
                 >
                   {cVar.colorName}
                 </span>
-              </motion.button>
+              </button>
             );
           })}
-        </AnimatePresence>
-      </motion.div>
+        </div>
+      </div>
+
+      <style>{`
+        .color-variation-container.is-collapsed::-webkit-scrollbar {
+          display: none;
+        }
+        @keyframes pgColorItemReveal {
+          from {
+            opacity: 0;
+            transform: translateY(6px);
+          }
+          to {
+            opacity: 1;
+            transform: translateY(0);
+          }
+        }
+        .pg-color-reveal {
+          animation: pgColorItemReveal 0.26s cubic-bezier(0.22, 1, 0.36, 1) both;
+        }
+      `}</style>
     </div>
   );
 };
 
-export default ColorVariationSelector;
+export default React.memo(ColorVariationSelector);

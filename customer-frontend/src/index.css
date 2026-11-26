@@ -1105,16 +1105,13 @@ section,
 }
 
 .product-gallery-dots,
-.collection-gallery-dots {
+.collection-gallery-dots,
+.pg-gallery-dots-pill {
   display: flex;
 }
 
-@media (min-width: 769px) {
-
-  .product-gallery-dots,
-  .collection-gallery-dots {
-    display: none !important;
-  }
+.pg-gallery-dots-pill::-webkit-scrollbar {
+  display: none;
 }
 
 @media (max-width: 480px) {

@@ -246,12 +246,12 @@ const Wishlist = () => {
         alignItems: 'center',
         justifyContent: 'space-between',
         flexWrap: 'wrap',
-        gap: 12,
-        marginBottom: 20,
+        gap: 10,
+        marginBottom: 16,
         borderBottom: `1px solid var(--border)`,
-        paddingBottom: 14,
+        paddingBottom: 10,
       }}>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 10, minWidth: 0 }}>
           {/* Back button */}
           <button
             type="button"
@@ -259,8 +259,8 @@ const Wishlist = () => {
             aria-label="Go back"
             title="Go back"
             style={{
-              width: 38,
-              height: 38,
+              width: 34,
+              height: 34,
               borderRadius: 10,
               background: isDark ? 'rgba(255, 255, 255, 0.05)' : 'rgba(0, 0, 0, 0.035)',
               border: '1px solid var(--border)',
@@ -283,13 +283,13 @@ const Wishlist = () => {
               e.currentTarget.style.transform = 'none';
             }}
           >
-            <ArrowLeft size={18} />
+            <ArrowLeft size={16} />
           </button>
 
           <div style={{
-            width: 40,
-            height: 40,
-            borderRadius: 12,
+            width: 34,
+            height: 34,
+            borderRadius: 10,
             background: 'linear-gradient(135deg, rgba(225,29,72,0.15), rgba(196,56,108,0.15))',
             border: '1px solid rgba(225,29,72,0.25)',
             display: 'flex',
@@ -298,23 +298,25 @@ const Wishlist = () => {
             color: '#E11D48',
             flexShrink: 0,
           }}>
-            <Heart size={20} style={{ fill: '#E11D48' }} />
+            <Heart size={16} style={{ fill: '#E11D48' }} />
           </div>
-          <div>
+          <div style={{ minWidth: 0 }}>
             <h1 style={{
-              fontSize: '1.75rem',
+              fontSize: 'clamp(1.22rem, 3vw, 1.48rem)',
               fontWeight: 700,
               fontFamily: "'Cormorant Garamond', serif",
               margin: 0,
               color: 'var(--text)',
-              letterSpacing: '0.02em',
+              letterSpacing: '0.01em',
+              lineHeight: 1.15,
             }}>
               My Wishlist
             </h1>
             <p style={{
-              fontSize: '0.85rem',
+              fontSize: '0.76rem',
               color: 'var(--text-secondary)',
-              margin: '2px 0 0',
+              margin: '1px 0 0',
+              lineHeight: 1.25,
             }}>
               {count === 0 ? 'No items saved yet' : `${count} item${count > 1 ? 's' : ''} saved for later`}
             </p>
@@ -327,19 +329,19 @@ const Wishlist = () => {
             style={{
               display: 'inline-flex',
               alignItems: 'center',
-              gap: 8,
-              fontSize: '0.85rem',
+              gap: 6,
+              fontSize: '0.78rem',
               fontWeight: 600,
               color: 'var(--accent)',
               textDecoration: 'none',
-              padding: '8px 16px',
-              borderRadius: 8,
+              padding: '6px 12px',
+              borderRadius: 999,
               background: isDark ? 'rgba(255,255,255,0.05)' : 'rgba(26,17,24,0.04)',
               border: '1px solid var(--border)',
               transition: 'all 0.2s ease',
             }}
           >
-            <ShoppingBag size={16} />
+            <ShoppingBag size={14} />
             Go to Cart
           </Link>
         )}
